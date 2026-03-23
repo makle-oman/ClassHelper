@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -23,8 +23,6 @@ const menuGroups: MenuItem[][] = [
   ],
   [
     { icon: 'settings', label: '设置', subtitle: '账号与偏好设置', colorKey: 'blue' },
-    { icon: 'help-circle', label: '帮助与反馈', subtitle: '使用帮助和问题反馈', colorKey: 'purple' },
-    { icon: 'information-circle', label: '关于', subtitle: '版本信息', colorKey: 'cyan' },
   ],
 ];
 
@@ -61,7 +59,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
             </View>
-            <TouchableOpacity style={styles.editProfileBtn}>
+            <TouchableOpacity style={styles.editProfileBtn} onPress={() => router.push('/profile-edit')}>
               <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
           </View>
@@ -134,6 +132,16 @@ export default function ProfileScreen() {
         <TouchableOpacity
           style={[styles.logoutBtn, { backgroundColor: colors.surface }]}
           activeOpacity={0.7}
+          onPress={() => {
+            Alert.alert('退出登录', '确定要退出当前账号吗？', [
+              { text: '取消', style: 'cancel' },
+              {
+                text: '退出',
+                style: 'destructive',
+                onPress: () => router.replace('/(auth)/login' as any),
+              },
+            ]);
+          }}
         >
           <Ionicons name="log-out-outline" size={20} color={colors.error} />
           <Text style={[styles.logoutText, { color: colors.error }]}>退出登录</Text>

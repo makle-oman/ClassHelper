@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -26,8 +27,11 @@ const mockStudents: Record<string, StudentDetail> = {
     parentName: '张伟', parentRelation: '父亲', parentPhone: '138****1234',
     recentScores: [
       { exam: '期中考试', subject: '语文', score: 92, fullScore: 100 },
-      { exam: '第二单元测验', subject: '数学', score: 85, fullScore: 100 },
-      { exam: '第一单元测验', subject: '语文', score: 88, fullScore: 100 },
+      { exam: '期中考试', subject: '数学', score: 85, fullScore: 100 },
+      { exam: '第二单元测验', subject: '数学', score: 78, fullScore: 100 },
+      { exam: '第二单元测验', subject: '语文', score: 88, fullScore: 100 },
+      { exam: '第一单元测验', subject: '语文', score: 82, fullScore: 100 },
+      { exam: '第一单元测验', subject: '数学', score: 75, fullScore: 100 },
     ],
     attendance: { totalDays: 120, present: 115, late: 3, absent: 1, leave: 1 },
   },
@@ -37,8 +41,11 @@ const mockStudents: Record<string, StudentDetail> = {
     parentName: '李芳', parentRelation: '母亲', parentPhone: '139****5678',
     recentScores: [
       { exam: '期中考试', subject: '语文', score: 96, fullScore: 100 },
-      { exam: '第二单元测验', subject: '数学', score: 91, fullScore: 100 },
-      { exam: '第一单元测验', subject: '语文', score: 94, fullScore: 100 },
+      { exam: '期中考试', subject: '数学', score: 91, fullScore: 100 },
+      { exam: '第二单元测验', subject: '数学', score: 88, fullScore: 100 },
+      { exam: '第二单元测验', subject: '语文', score: 94, fullScore: 100 },
+      { exam: '第一单元测验', subject: '语文', score: 90, fullScore: 100 },
+      { exam: '第一单元测验', subject: '数学', score: 85, fullScore: 100 },
     ],
     attendance: { totalDays: 120, present: 118, late: 1, absent: 0, leave: 1 },
   },
@@ -54,13 +61,124 @@ export default function StudentDetailScreen() {
   const colors = useTheme();
   const { id } = useLocalSearchParams();
   const studentId = typeof id === 'string' ? id : '1';
-  const student = mockStudents[studentId] || mockStudents['1'];
+  const [studentsData, setStudentsData] = useState(mockStudents);
+  const student = studentsData[studentId] || studentsData['1'];
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: student.name,
+    gender: student.gender as '男' | '女',
+    birthDate: student.birthDate,
+    parentName: student.parentName,
+    parentRelation: student.parentRelation,
+    parentPhone: student.parentPhone,
+  });
+
+  const handleSaveEdit = () => {
+    if (!editForm.name.trim()) {
+      Alert.alert('提示', '学生姓名不能为空');
+      return;
+    }
+    setStudentsData((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        name: editForm.name.trim(),
+        gender: editForm.gender,
+        birthDate: editForm.birthDate.trim(),
+        parentName: editForm.parentName.trim(),
+        parentRelation: editForm.parentRelation.trim(),
+        parentPhone: editForm.parentPhone.trim(),
+      },
+    }));
+    setShowEditModal(false);
+  };
+
+  const handleCall = () => {
+    const phone = student.parentPhone.replace(/\*/g, '');
+    if (phone.length < 5) {
+      Alert.alert('提示', '当前号码不完整，无法拨打');
+      return;
+    }
+    Linking.openURL(`tel:${student.parentPhone}`);
+  };
+
+  const handleDeleteStudent = () => {
+    Alert.alert(
+      '删除学生',
+      `确定要删除"${student.name}"吗？此操作不可恢复。`,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '删除',
+          style: 'destructive',
+          onPress: () => {
+            // TODO: 后续对接后端 API
+            Alert.alert('已删除', `${student.name}已从班级中移除`, [
+              { text: '确定', onPress: () => router.back() },
+            ]);
+          },
+        },
+      ]
+    );
+  };
 
   const attendanceRate = student.attendance.totalDays > 0
     ? ((student.attendance.present / student.attendance.totalDays) * 100).toFixed(1)
     : '0';
 
   const getSubjectColor = (subject: string) => subjectColors[subject] || subjectColors['语文'];
+
+  // 综合分析计算
+  const analyzeStudent = () => {
+    const scores = student.recentScores;
+
+    // 按科目分组
+    const bySubject: Record<string, number[]> = {};
+    scores.forEach((s) => {
+      if (!bySubject[s.subject]) bySubject[s.subject] = [];
+      bySubject[s.subject].push(s.score);
+    });
+
+    // 科目分析
+    const subjectAnalysis = Object.entries(bySubject).map(([subject, scores]) => ({
+      subject,
+      avg: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 10) / 10,
+      max: Math.max(...scores),
+      min: Math.min(...scores),
+      trend: scores.length >= 2 ? (scores[0] >= scores[1] ? 'up' : 'down') : 'stable',
+      diff: scores.length >= 2 ? Math.abs(scores[0] - scores[1]) : 0,
+    }));
+
+    // 总平均分
+    const totalAvg = Math.round(scores.reduce((a, b) => a + b.score, 0) / scores.length * 10) / 10;
+
+    // 等级
+    const level = totalAvg >= 90 ? '优秀' : totalAvg >= 80 ? '良好' : totalAvg >= 70 ? '中等' : '需努力';
+
+    // 最强/最弱科目
+    const sorted = [...subjectAnalysis].sort((a, b) => b.avg - a.avg);
+    const strongest = sorted[0];
+    const weakest = sorted.length > 1 ? sorted[sorted.length - 1] : null;
+
+    // 考勤率
+    const attendRate = student.attendance.totalDays > 0
+      ? (student.attendance.present / student.attendance.totalDays * 100)
+      : 100;
+
+    // 生成评语
+    let comment = `${student.name}同学总体表现${level}，`;
+    if (strongest) comment += `${strongest.subject}成绩突出（平均${strongest.avg}分）`;
+    if (weakest && weakest.subject !== strongest?.subject) comment += `，${weakest.subject}还有提升空间（平均${weakest.avg}分）`;
+    comment += '。';
+    if (attendRate >= 98) comment += '出勤表现非常好，继续保持！';
+    else if (attendRate >= 95) comment += '出勤情况良好。';
+    else comment += '建议注意出勤，保证学习时间。';
+
+    return { subjectAnalysis, totalAvg, level, comment };
+  };
+
+  const analysis = analyzeStudent();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -70,9 +188,20 @@ export default function StudentDetailScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.navTitle, { color: colors.text }]}>{student.name}</Text>
-        <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="create-outline" size={22} color={colors.text} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => {
+            setEditForm({
+              name: student.name, gender: student.gender, birthDate: student.birthDate,
+              parentName: student.parentName, parentRelation: student.parentRelation, parentPhone: student.parentPhone,
+            });
+            setShowEditModal(true);
+          }}>
+            <Ionicons name="create-outline" size={18} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={handleDeleteStudent}>
+            <Ionicons name="trash-outline" size={18} color={colors.error} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -165,7 +294,7 @@ export default function StudentDetailScreen() {
               </View>
               <View style={styles.phoneRow}>
                 <Text style={[styles.infoValue, { color: colors.text }]}>{student.parentPhone}</Text>
-                <TouchableOpacity style={[styles.callBtn, { backgroundColor: colors.palette.green.bg }]}>
+                <TouchableOpacity style={[styles.callBtn, { backgroundColor: colors.palette.green.bg }]} onPress={handleCall}>
                   <Ionicons name="call" size={14} color={colors.palette.green.text} />
                 </TouchableOpacity>
               </View>
@@ -208,6 +337,58 @@ export default function StudentDetailScreen() {
                 </View>
               );
             })}
+          </View>
+        </View>
+
+        {/* 综合分析 */}
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <View style={[styles.sectionDot, { backgroundColor: colors.palette.purple.text }]} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>综合分析</Text>
+          </View>
+
+          <View style={[styles.analysisCard, { backgroundColor: colors.surface }]}>
+            {/* 总体等级 */}
+            <View style={styles.analysisLevelRow}>
+              <View style={styles.analysisLevelLeft}>
+                <Text style={[styles.analysisLevelLabel, { color: colors.textSecondary }]}>总体评价</Text>
+                <View style={[styles.analysisLevelBadge, { backgroundColor: analysis.totalAvg >= 90 ? colors.successLight : analysis.totalAvg >= 80 ? colors.primaryLight : analysis.totalAvg >= 70 ? colors.warningLight : colors.errorLight }]}>
+                  <Text style={[styles.analysisLevelText, { color: analysis.totalAvg >= 90 ? colors.success : analysis.totalAvg >= 80 ? colors.primary : analysis.totalAvg >= 70 ? colors.warning : colors.error }]}>{analysis.level}</Text>
+                </View>
+              </View>
+              <Text style={[styles.analysisAvgScore, { color: colors.primary }]}>{analysis.totalAvg}</Text>
+            </View>
+
+            <View style={[styles.analysisDivider, { backgroundColor: colors.divider }]} />
+
+            {/* 各科分析 */}
+            {analysis.subjectAnalysis.map((item) => {
+              const sc = subjectColors[item.subject] || subjectColors['语文'];
+              return (
+                <View key={item.subject} style={styles.subjectRow}>
+                  <View style={[styles.subjectDot, { backgroundColor: sc.text }]} />
+                  <Text style={[styles.subjectName, { color: colors.text }]}>{item.subject}</Text>
+                  <Text style={[styles.subjectAvg, { color: colors.textSecondary }]}>均分 {item.avg}</Text>
+                  <View style={styles.subjectRange}>
+                    <Text style={[styles.subjectRangeText, { color: colors.textTertiary }]}>{item.min}~{item.max}</Text>
+                  </View>
+                  {item.trend !== 'stable' && (
+                    <View style={[styles.trendBadge, { backgroundColor: item.trend === 'up' ? colors.successLight : colors.errorLight }]}>
+                      <Ionicons name={item.trend === 'up' ? 'arrow-up' : 'arrow-down'} size={10} color={item.trend === 'up' ? colors.success : colors.error} />
+                      <Text style={[styles.trendText, { color: item.trend === 'up' ? colors.success : colors.error }]}>{item.diff}</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            <View style={[styles.analysisDivider, { backgroundColor: colors.divider }]} />
+
+            {/* 评语 */}
+            <View style={styles.commentSection}>
+              <Ionicons name="chatbubble-outline" size={14} color={colors.textTertiary} />
+              <Text style={[styles.commentText, { color: colors.textSecondary }]}>{analysis.comment}</Text>
+            </View>
           </View>
         </View>
 
@@ -255,6 +436,107 @@ export default function StudentDetailScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* 编辑学生弹窗 */}
+      <Modal visible={showEditModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>编辑学生信息</Text>
+              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                <Ionicons name="close" size={22} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>姓名</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+                  value={editForm.name}
+                  onChangeText={(t) => setEditForm({ ...editForm, name: t })}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>性别</Text>
+                <View style={styles.chipRow}>
+                  {(['男', '女'] as const).map((g) => (
+                    <TouchableOpacity
+                      key={g}
+                      style={[styles.chip, {
+                        backgroundColor: editForm.gender === g ? (g === '男' ? colors.palette.blue.bg : colors.palette.red.bg) : colors.surfaceSecondary,
+                        borderColor: editForm.gender === g ? (g === '男' ? colors.palette.blue.text : colors.palette.red.text) : colors.border,
+                      }]}
+                      onPress={() => setEditForm({ ...editForm, gender: g })}
+                    >
+                      <Ionicons name={g === '男' ? 'male' : 'female'} size={14} color={editForm.gender === g ? (g === '男' ? colors.palette.blue.text : colors.palette.red.text) : colors.textTertiary} />
+                      <Text style={[styles.chipText, { color: editForm.gender === g ? (g === '男' ? colors.palette.blue.text : colors.palette.red.text) : colors.textSecondary }]}>{g}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>出生日期</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+                  placeholder="如：2016-03-15"
+                  placeholderTextColor={colors.textTertiary}
+                  value={editForm.birthDate}
+                  onChangeText={(t) => setEditForm({ ...editForm, birthDate: t })}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>家长姓名</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+                  value={editForm.parentName}
+                  onChangeText={(t) => setEditForm({ ...editForm, parentName: t })}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>与学生关系</Text>
+                <View style={styles.chipRow}>
+                  {['父亲', '母亲', '其他'].map((r) => (
+                    <TouchableOpacity
+                      key={r}
+                      style={[styles.chip, {
+                        backgroundColor: editForm.parentRelation === r ? colors.primaryLight : colors.surfaceSecondary,
+                        borderColor: editForm.parentRelation === r ? colors.primary : colors.border,
+                      }]}
+                      onPress={() => setEditForm({ ...editForm, parentRelation: r })}
+                    >
+                      <Text style={[styles.chipText, { color: editForm.parentRelation === r ? colors.primary : colors.textSecondary }]}>{r}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>家长电话</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+                  keyboardType="phone-pad"
+                  value={editForm.parentPhone}
+                  onChangeText={(t) => setEditForm({ ...editForm, parentPhone: t })}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={[styles.modalCancelBtn, { borderColor: colors.border }]} onPress={() => setShowEditModal(false)}>
+                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalConfirmBtn, { backgroundColor: colors.primary }]} onPress={handleSaveEdit}>
+                <Text style={styles.modalConfirmText}>保存</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -544,4 +826,41 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
   },
+  // === Modal ===
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+
+  // 综合分析
+  analysisCard: { marginHorizontal: 20, borderRadius: 14, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1 },
+  analysisLevelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  analysisLevelLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  analysisLevelLabel: { fontSize: 13 },
+  analysisLevelBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 },
+  analysisLevelText: { fontSize: 12, fontWeight: '700' },
+  analysisAvgScore: { fontSize: 28, fontWeight: '800' },
+  analysisDivider: { height: 0.5, marginVertical: 14 },
+  subjectRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
+  subjectDot: { width: 6, height: 6, borderRadius: 3 },
+  subjectName: { fontSize: 14, fontWeight: '600', width: 36 },
+  subjectAvg: { fontSize: 13, flex: 1 },
+  subjectRange: {},
+  subjectRangeText: { fontSize: 11 },
+  trendBadge: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginLeft: 6 },
+  trendText: { fontSize: 10, fontWeight: '700' },
+  commentSection: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  commentText: { fontSize: 13, lineHeight: 20, flex: 1 },
+  modalContent: { width: '100%', maxWidth: 420, borderRadius: 20, overflow: 'hidden', maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
+  modalTitle: { fontSize: 18, fontWeight: '700' },
+  modalBody: { paddingHorizontal: 20, paddingVertical: 12 },
+  formGroup: { marginBottom: 16 },
+  formLabel: { fontSize: 13, fontWeight: '500', marginBottom: 8 },
+  formInput: { height: 44, borderRadius: 12, paddingHorizontal: 14, fontSize: 14, borderWidth: 1 } as any,
+  chipRow: { flexDirection: 'row', gap: 8 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
+  chipText: { fontSize: 13, fontWeight: '600' },
+  modalFooter: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8 },
+  modalCancelBtn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  modalCancelText: { fontSize: 14, fontWeight: '600' },
+  modalConfirmBtn: { flex: 1.5, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  modalConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
 });

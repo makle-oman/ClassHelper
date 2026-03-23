@@ -14,12 +14,11 @@ const tabs: { name: string; title: string; icon: IoniconsName; iconOutline: Ioni
   { name: 'profile', title: '我的', icon: 'person', iconOutline: 'person-outline' },
 ];
 
-const TAB_CONTENT_HEIGHT = 50;
-
 export default function TabsLayout() {
   const colors = useTheme();
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 4 : 0);
+  const tabBarHeight = 56 + bottomInset;
 
   return (
     <Tabs
@@ -29,19 +28,17 @@ export default function TabsLayout() {
           backgroundColor: colors.tabBar,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 0.5,
-          height: TAB_CONTENT_HEIGHT + bottomInset,
+          height: tabBarHeight,
           paddingBottom: bottomInset,
-          paddingTop: 4,
         },
         tabBarActiveTintColor: colors.tabBarActive,
         tabBarInactiveTintColor: colors.tabBarInactive,
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: '500',
-          marginTop: 0,
         },
         tabBarIconStyle: {
-          marginBottom: -2,
+          marginBottom: 0,
         },
       }}
     >

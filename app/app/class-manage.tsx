@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -28,6 +28,7 @@ export default function ClassManageScreen() {
   const colors = useTheme();
   const [classes, setClasses] = useState<ClassInfo[]>(mockClasses);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingClass, setEditingClass] = useState<ClassInfo | null>(null);
   const [selectedGrade, setSelectedGrade] = useState(3);
   const [classNumber, setClassNumber] = useState('');
 
@@ -47,6 +48,49 @@ export default function ClassManageScreen() {
     setClassNumber('');
     setSelectedGrade(3);
     setShowCreateModal(false);
+  };
+
+  const handleEdit = (cls: ClassInfo) => {
+    setEditingClass(cls);
+    setSelectedGrade(cls.gradeNumber);
+    setClassNumber(cls.classNumber.toString());
+    setShowCreateModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!classNumber.trim() || !editingClass) return;
+    const grade = gradeNames[selectedGrade - 1];
+    setClasses(classes.map((c) =>
+      c.id === editingClass.id
+        ? { ...c, grade, gradeNumber: selectedGrade, classNumber: parseInt(classNumber, 10), name: `${grade}${classNumber}班` }
+        : c
+    ));
+    setEditingClass(null);
+    setClassNumber('');
+    setSelectedGrade(3);
+    setShowCreateModal(false);
+  };
+
+  const handleDelete = (cls: ClassInfo) => {
+    Alert.alert(
+      '删除班级',
+      `确定要删除"${cls.name}"吗？删除后该班级下的学生数据将保留但不再关联此班级。`,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '删除',
+          style: 'destructive',
+          onPress: () => setClasses(classes.filter((c) => c.id !== cls.id)),
+        },
+      ]
+    );
+  };
+
+  const closeModal = () => {
+    setShowCreateModal(false);
+    setEditingClass(null);
+    setClassNumber('');
+    setSelectedGrade(3);
   };
 
   return (
@@ -106,6 +150,7 @@ export default function ClassManageScreen() {
                   key={cls.id}
                   style={[styles.classCard, { backgroundColor: colors.surface }]}
                   activeOpacity={0.7}
+                  onPress={() => router.push('/(tabs)/students' as any)}
                 >
                   {/* 左侧彩色条 */}
                   <View style={[styles.classColorBar, { backgroundColor: gc.text }]} />
@@ -134,8 +179,21 @@ export default function ClassManageScreen() {
                     </View>
                   </View>
 
-                  <View style={styles.classArrow}>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                  <View style={styles.classActions}>
+                    <TouchableOpacity
+                      style={[styles.classActionBtn, { backgroundColor: colors.palette.blue.bg }]}
+                      onPress={(e) => { e.stopPropagation(); handleEdit(cls); }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Ionicons name="create-outline" size={14} color={colors.palette.blue.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.classActionBtn, { backgroundColor: colors.palette.red.bg }]}
+                      onPress={(e) => { e.stopPropagation(); handleDelete(cls); }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Ionicons name="trash-outline" size={14} color={colors.palette.red.text} />
+                    </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
               );
@@ -146,13 +204,13 @@ export default function ClassManageScreen() {
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* 创建班级弹窗 */}
+      {/* 创建/编辑班级弹窗 */}
       <Modal visible={showCreateModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>创建班级</Text>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{editingClass ? '编辑班级' : '创建班级'}</Text>
+              <TouchableOpacity onPress={closeModal}>
                 <Ionicons name="close" size={22} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
@@ -195,15 +253,15 @@ export default function ClassManageScreen() {
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={[styles.modalCancelBtn, { borderColor: colors.border }]}
-                onPress={() => setShowCreateModal(false)}
+                onPress={closeModal}
               >
                 <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalConfirmBtn, { backgroundColor: colors.primary }]}
-                onPress={handleCreate}
+                onPress={editingClass ? handleSaveEdit : handleCreate}
               >
-                <Text style={styles.modalConfirmText}>确认创建</Text>
+                <Text style={styles.modalConfirmText}>{editingClass ? '保存修改' : '确认创建'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -255,6 +313,8 @@ const styles = StyleSheet.create({
   classMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   classMetaText: { fontSize: 11 },
   classArrow: { paddingRight: 14 },
+  classActions: { flexDirection: 'row', gap: 8, paddingRight: 14 },
+  classActionBtn: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },

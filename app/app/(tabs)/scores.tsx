@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -52,7 +52,78 @@ export default function ScoresScreen() {
   const colors = useTheme();
   const [selectedTab, setSelectedTab] = useState<'list' | 'analysis'>('list');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newExam, setNewExam] = useState({ name: '', subject: '语文', className: '三年级2班', fullScore: '100' });
+  const [newExam, setNewExam] = useState({ name: '', subject: '语文', className: '三年级2班', fullScore: '100', date: '' });
+  const [exams, setExams] = useState<Exam[]>(mockExams);
+
+  // 日期选择器
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [pickerYear, setPickerYear] = useState(2026);
+  const [pickerMonth, setPickerMonth] = useState(3);
+  const [pickerDay, setPickerDay] = useState(1);
+  const dpYears = Array.from({ length: 10 }, (_, i) => 2024 + i);
+  const dpMonths = Array.from({ length: 12 }, (_, i) => i + 1);
+  const dpDaysInMonth = new Date(pickerYear, pickerMonth, 0).getDate();
+  const dpDays = Array.from({ length: dpDaysInMonth }, (_, i) => i + 1);
+
+  const openExamDatePicker = () => {
+    if (newExam.date) {
+      const p = newExam.date.split('-');
+      setPickerYear(parseInt(p[0]) || 2026);
+      setPickerMonth(parseInt(p[1]) || 3);
+      setPickerDay(parseInt(p[2]) || 1);
+    } else {
+      const now = new Date();
+      setPickerYear(now.getFullYear());
+      setPickerMonth(now.getMonth() + 1);
+      setPickerDay(now.getDate());
+    }
+    setDatePickerVisible(true);
+  };
+
+  const confirmExamDate = () => {
+    const d = Math.min(pickerDay, dpDaysInMonth);
+    setNewExam({ ...newExam, date: `${pickerYear}-${String(pickerMonth).padStart(2, '0')}-${String(d).padStart(2, '0')}` });
+    setDatePickerVisible(false);
+  };
+
+  const handleCreateExam = () => {
+    if (!newExam.name.trim()) return;
+    const created: Exam = {
+      id: Date.now().toString(),
+      name: newExam.name.trim(),
+      subject: newExam.subject,
+      date: newExam.date || new Date().toISOString().split('T')[0],
+      className: newExam.className,
+      fullScore: parseInt(newExam.fullScore) || 100,
+      enteredCount: 0,
+      totalStudents: 43,
+    };
+    setExams([created, ...exams]);
+    setNewExam({ name: '', subject: '语文', className: '三年级2班', fullScore: '100', date: '' });
+    setShowCreateModal(false);
+  };
+
+  const handleImportScores = () => {
+    Alert.alert(
+      'Excel 导入成绩',
+      '请选择包含成绩数据的 Excel 文件（.xlsx）\n\n模板格式：学号、姓名、分数\n\n提示：可在电脑端访问系统下载标准模板',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '下载模板',
+          onPress: () => {
+            Alert.alert('模板下载', '请在电脑浏览器中打开系统后台，进入「成绩管理」页面下载 Excel 导入模板');
+          },
+        },
+        {
+          text: '选择文件',
+          onPress: () => {
+            Alert.alert('导入成功', '已成功导入 43 名学生的成绩');
+          },
+        },
+      ]
+    );
+  };
 
   const getSubjectColor = (subject: string) => subjectColors[subject] || subjectColors['语文'];
 
@@ -95,9 +166,9 @@ export default function ScoresScreen() {
           {/* 概览统计 */}
           <View style={styles.overviewRow}>
             {[
-              { label: '本学期考试', value: mockExams.length.toString(), icon: 'document-text' as const, colorKey: 'blue' as const },
-              { label: '待录入', value: mockExams.filter(e => e.enteredCount < e.totalStudents).length.toString(), icon: 'create' as const, colorKey: 'orange' as const },
-              { label: '已完成', value: mockExams.filter(e => e.enteredCount >= e.totalStudents).length.toString(), icon: 'checkmark-circle' as const, colorKey: 'green' as const },
+              { label: '本学期考试', value: exams.length.toString(), icon: 'document-text' as const, colorKey: 'blue' as const },
+              { label: '待录入', value: exams.filter(e => e.enteredCount < e.totalStudents).length.toString(), icon: 'create' as const, colorKey: 'orange' as const },
+              { label: '已完成', value: exams.filter(e => e.enteredCount >= e.totalStudents).length.toString(), icon: 'checkmark-circle' as const, colorKey: 'green' as const },
             ].map((item) => (
               <View key={item.label} style={[styles.overviewCard, { backgroundColor: colors.surface }]}>
                 <View style={[styles.overviewIconBox, { backgroundColor: colors.palette[item.colorKey].bg }]}>
@@ -111,7 +182,7 @@ export default function ScoresScreen() {
 
           {/* 考试列表 */}
           <View style={styles.listSection}>
-            {mockExams.map((exam) => {
+            {exams.map((exam) => {
               const sc = getSubjectColor(exam.subject);
               const isComplete = exam.enteredCount >= exam.totalStudents;
               const progress = exam.totalStudents > 0 ? exam.enteredCount / exam.totalStudents : 0;
@@ -190,7 +261,7 @@ export default function ScoresScreen() {
               );
             })}
           </View>
-          <View style={{ height: 80 }} />
+          <View style={{ height: 100 }} />
         </ScrollView>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -295,18 +366,29 @@ export default function ScoresScreen() {
               </View>
             </View>
           </View>
-          <View style={{ height: 24 }} />
+          <View style={{ height: 100 }} />
         </ScrollView>
       )}
 
-      {/* 创建考试浮动按钮 */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-        activeOpacity={0.85}
-        onPress={() => setShowCreateModal(true)}
-      >
-        <Ionicons name="add" size={26} color="#FFF" />
-      </TouchableOpacity>
+      {/* 底部操作按钮 */}
+      <View style={styles.fabGroup}>
+        <TouchableOpacity
+          style={[styles.fabSecondary, { backgroundColor: colors.surface, borderColor: colors.primary }]}
+          activeOpacity={0.7}
+          onPress={handleImportScores}
+        >
+          <Ionicons name="cloud-upload-outline" size={15} color={colors.primary} />
+          <Text style={[styles.fabSecondaryText, { color: colors.primary }]}>导入</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.primary }]}
+          activeOpacity={0.85}
+          onPress={() => setShowCreateModal(true)}
+        >
+          <Ionicons name="add" size={18} color="#FFF" />
+          <Text style={styles.fabText}>创建考试</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* 创建考试弹窗 */}
       <Modal visible={showCreateModal} transparent animationType="fade">
@@ -329,6 +411,20 @@ export default function ScoresScreen() {
                   value={newExam.name}
                   onChangeText={(t) => setNewExam({ ...newExam, name: t })}
                 />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>考试日期</Text>
+                <TouchableOpacity
+                  style={[styles.datePickerBtn, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+                  onPress={openExamDatePicker}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="calendar-outline" size={16} color={newExam.date ? colors.primary : colors.textTertiary} />
+                  <Text style={{ fontSize: 14, color: newExam.date ? colors.text : colors.textTertiary }}>
+                    {newExam.date || '选择考试日期'}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.formRow}>
@@ -389,13 +485,66 @@ export default function ScoresScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalConfirmBtn, { backgroundColor: colors.primary }]}
-                onPress={() => { setShowCreateModal(false); }}
+                onPress={() => { handleCreateExam(); }}
               >
                 <Text style={styles.modalConfirmText}>创建并录入</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* 日期选择器 */}
+      <Modal visible={datePickerVisible} transparent animationType="slide" onRequestClose={() => setDatePickerVisible(false)}>
+        <TouchableOpacity style={styles.dpOverlay} activeOpacity={1} onPress={() => setDatePickerVisible(false)}>
+          <View style={[styles.dpContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={[styles.dpHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dpTitle, { color: colors.text }]}>选择考试日期</Text>
+            <View style={styles.dpColumns}>
+              <View style={styles.dpColumn}>
+                <Text style={[styles.dpColLabel, { color: colors.textTertiary }]}>年</Text>
+                <ScrollView style={styles.dpScroll} showsVerticalScrollIndicator={false}>
+                  {dpYears.map((y) => (
+                    <TouchableOpacity key={y} style={[styles.dpOption, pickerYear === y && { backgroundColor: colors.primaryLight }]} onPress={() => setPickerYear(y)}>
+                      <Text style={[styles.dpOptionText, { color: pickerYear === y ? colors.primary : colors.text, fontWeight: pickerYear === y ? '700' : '400' }]}>{y}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={styles.dpColumn}>
+                <Text style={[styles.dpColLabel, { color: colors.textTertiary }]}>月</Text>
+                <ScrollView style={styles.dpScroll} showsVerticalScrollIndicator={false}>
+                  {dpMonths.map((m) => (
+                    <TouchableOpacity key={m} style={[styles.dpOption, pickerMonth === m && { backgroundColor: colors.primaryLight }]} onPress={() => setPickerMonth(m)}>
+                      <Text style={[styles.dpOptionText, { color: pickerMonth === m ? colors.primary : colors.text, fontWeight: pickerMonth === m ? '700' : '400' }]}>{m}月</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={styles.dpColumn}>
+                <Text style={[styles.dpColLabel, { color: colors.textTertiary }]}>日</Text>
+                <ScrollView style={styles.dpScroll} showsVerticalScrollIndicator={false}>
+                  {dpDays.map((d) => (
+                    <TouchableOpacity key={d} style={[styles.dpOption, pickerDay === d && { backgroundColor: colors.primaryLight }]} onPress={() => setPickerDay(d)}>
+                      <Text style={[styles.dpOptionText, { color: pickerDay === d ? colors.primary : colors.text, fontWeight: pickerDay === d ? '700' : '400' }]}>{d}日</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+            <Text style={[styles.dpPreview, { color: colors.primary }]}>
+              {pickerYear}-{String(pickerMonth).padStart(2, '0')}-{String(Math.min(pickerDay, dpDaysInMonth)).padStart(2, '0')}
+            </Text>
+            <View style={styles.dpActions}>
+              <TouchableOpacity style={[styles.dpCancelBtn, { borderColor: colors.border }]} onPress={() => setDatePickerVisible(false)}>
+                <Text style={[styles.dpCancelText, { color: colors.textSecondary }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.dpConfirmBtn, { backgroundColor: colors.primary }]} onPress={confirmExamDate}>
+                <Text style={styles.dpConfirmText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -443,7 +592,11 @@ const styles = StyleSheet.create({
   examStatLabel: { fontSize: 10 },
 
   // FAB
-  fab: { position: 'absolute', bottom: 20, right: 20, width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#4CC590', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
+  fabGroup: { position: 'absolute', bottom: 30, right: 20, flexDirection: 'row', gap: 8 },
+  fabSecondary: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 38, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 },
+  fabSecondaryText: { fontSize: 12, fontWeight: '600' },
+  fab: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 38, paddingHorizontal: 14, borderRadius: 12, shadowColor: '#4CC590', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
+  fabText: { fontSize: 12, fontWeight: '700', color: '#FFF' },
 
   // Analysis
   analysisContent: { paddingHorizontal: 20, paddingTop: 12, gap: 14 },
@@ -504,4 +657,23 @@ const styles = StyleSheet.create({
   modalCancelText: { fontSize: 14, fontWeight: '600' },
   modalConfirmBtn: { flex: 1.5, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   modalConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  // Date picker button
+  datePickerBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 44, borderRadius: 12, paddingHorizontal: 14, borderWidth: 1 },
+  // Date picker modal
+  dpOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  dpContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34, paddingHorizontal: 20 },
+  dpHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 14 },
+  dpTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  dpColumns: { flexDirection: 'row', gap: 10, height: 200 },
+  dpColumn: { flex: 1 },
+  dpColLabel: { fontSize: 12, fontWeight: '600', textAlign: 'center', marginBottom: 8 },
+  dpScroll: { flex: 1 },
+  dpOption: { paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  dpOptionText: { fontSize: 15 },
+  dpPreview: { fontSize: 18, fontWeight: '800', textAlign: 'center', marginTop: 16, marginBottom: 16 },
+  dpActions: { flexDirection: 'row', gap: 10 },
+  dpCancelBtn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  dpCancelText: { fontSize: 14, fontWeight: '600' },
+  dpConfirmBtn: { flex: 1.5, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  dpConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
 });

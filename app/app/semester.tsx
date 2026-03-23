@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Platform, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -34,6 +34,42 @@ export default function SemesterScreen() {
     endDate: '',
     weeksCount: '',
   });
+
+  // 日期选择器状态
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [datePickerField, setDatePickerField] = useState<'startDate' | 'endDate'>('startDate');
+  const [pickerYear, setPickerYear] = useState(2026);
+  const [pickerMonth, setPickerMonth] = useState(1);
+  const [pickerDay, setPickerDay] = useState(1);
+
+  const years = Array.from({ length: 10 }, (_, i) => 2024 + i);
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const daysInMonth = new Date(pickerYear, pickerMonth, 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const openDatePicker = (field: 'startDate' | 'endDate') => {
+    const current = newSemester[field];
+    if (current) {
+      const parts = current.split('-');
+      setPickerYear(parseInt(parts[0]) || 2026);
+      setPickerMonth(parseInt(parts[1]) || 1);
+      setPickerDay(parseInt(parts[2]) || 1);
+    } else {
+      const now = new Date();
+      setPickerYear(now.getFullYear());
+      setPickerMonth(now.getMonth() + 1);
+      setPickerDay(now.getDate());
+    }
+    setDatePickerField(field);
+    setDatePickerVisible(true);
+  };
+
+  const confirmDatePicker = () => {
+    const day = Math.min(pickerDay, daysInMonth);
+    const dateStr = `${pickerYear}-${String(pickerMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setNewSemester({ ...newSemester, [datePickerField]: dateStr });
+    setDatePickerVisible(false);
+  };
 
   const activeSemester = semesters.find((s) => s.status === 'active');
   const endedSemesters = semesters.filter((s) => s.status === 'ended');
@@ -275,24 +311,30 @@ export default function SemesterScreen() {
 
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>开始日期</Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
-                  placeholder="如：2026-02-17"
-                  placeholderTextColor={colors.textTertiary}
-                  value={newSemester.startDate}
-                  onChangeText={(t) => setNewSemester({ ...newSemester, startDate: t })}
-                />
+                <TouchableOpacity
+                  style={[styles.datePickerBtn, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+                  onPress={() => openDatePicker('startDate')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="calendar-outline" size={16} color={newSemester.startDate ? colors.primary : colors.textTertiary} />
+                  <Text style={[styles.datePickerText, { color: newSemester.startDate ? colors.text : colors.textTertiary }]}>
+                    {newSemester.startDate || '选择开始日期'}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>结束日期</Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
-                  placeholder="如：2026-06-30"
-                  placeholderTextColor={colors.textTertiary}
-                  value={newSemester.endDate}
-                  onChangeText={(t) => setNewSemester({ ...newSemester, endDate: t })}
-                />
+                <TouchableOpacity
+                  style={[styles.datePickerBtn, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+                  onPress={() => openDatePicker('endDate')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="calendar-outline" size={16} color={newSemester.endDate ? colors.primary : colors.textTertiary} />
+                  <Text style={[styles.datePickerText, { color: newSemester.endDate ? colors.text : colors.textTertiary }]}>
+                    {newSemester.endDate || '选择结束日期'}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.formGroup}>
@@ -352,6 +394,89 @@ export default function SemesterScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* 日期选择器弹窗 */}
+      <Modal visible={datePickerVisible} transparent animationType="slide" onRequestClose={() => setDatePickerVisible(false)}>
+        <TouchableOpacity style={styles.dateModalOverlay} activeOpacity={1} onPress={() => setDatePickerVisible(false)}>
+          <View style={[styles.dateModalContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={[styles.dateModalHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dateModalTitle, { color: colors.text }]}>
+              {datePickerField === 'startDate' ? '选择开始日期' : '选择结束日期'}
+            </Text>
+
+            {/* 年月日选择 */}
+            <View style={styles.dateColumns}>
+              {/* 年 */}
+              <View style={styles.dateColumn}>
+                <Text style={[styles.dateColumnLabel, { color: colors.textTertiary }]}>年</Text>
+                <ScrollView style={styles.dateScroll} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                  {years.map((y) => (
+                    <Pressable
+                      key={y}
+                      style={[styles.dateOption, pickerYear === y && { backgroundColor: colors.primaryLight }]}
+                      onPress={() => setPickerYear(y)}
+                    >
+                      <Text style={[styles.dateOptionText, { color: pickerYear === y ? colors.primary : colors.text, fontWeight: pickerYear === y ? '700' : '400' }]}>
+                        {y}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* 月 */}
+              <View style={styles.dateColumn}>
+                <Text style={[styles.dateColumnLabel, { color: colors.textTertiary }]}>月</Text>
+                <ScrollView style={styles.dateScroll} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                  {months.map((m) => (
+                    <Pressable
+                      key={m}
+                      style={[styles.dateOption, pickerMonth === m && { backgroundColor: colors.primaryLight }]}
+                      onPress={() => setPickerMonth(m)}
+                    >
+                      <Text style={[styles.dateOptionText, { color: pickerMonth === m ? colors.primary : colors.text, fontWeight: pickerMonth === m ? '700' : '400' }]}>
+                        {m}月
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* 日 */}
+              <View style={styles.dateColumn}>
+                <Text style={[styles.dateColumnLabel, { color: colors.textTertiary }]}>日</Text>
+                <ScrollView style={styles.dateScroll} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                  {days.map((d) => (
+                    <Pressable
+                      key={d}
+                      style={[styles.dateOption, pickerDay === d && { backgroundColor: colors.primaryLight }]}
+                      onPress={() => setPickerDay(d)}
+                    >
+                      <Text style={[styles.dateOptionText, { color: pickerDay === d ? colors.primary : colors.text, fontWeight: pickerDay === d ? '700' : '400' }]}>
+                        {d}日
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+
+            {/* 预览 */}
+            <Text style={[styles.datePreview, { color: colors.primary }]}>
+              {pickerYear}-{String(pickerMonth).padStart(2, '0')}-{String(Math.min(pickerDay, daysInMonth)).padStart(2, '0')}
+            </Text>
+
+            <View style={styles.dateModalActions}>
+              <TouchableOpacity style={[styles.dateModalCancelBtn, { borderColor: colors.border }]} onPress={() => setDatePickerVisible(false)}>
+                <Text style={[styles.dateModalCancelText, { color: colors.textSecondary }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.dateModalConfirmBtn, { backgroundColor: colors.primary }]} onPress={confirmDatePicker}>
+                <Text style={styles.dateModalConfirmText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -625,4 +750,34 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
   },
+  // === Date Picker Button ===
+  datePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    height: 44,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+  },
+  datePickerText: {
+    fontSize: 14,
+  },
+  // === Date Picker Modal ===
+  dateModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  dateModalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34, paddingHorizontal: 20 },
+  dateModalHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 14 },
+  dateModalTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  dateColumns: { flexDirection: 'row', gap: 10, height: 200 },
+  dateColumn: { flex: 1 },
+  dateColumnLabel: { fontSize: 12, fontWeight: '600', textAlign: 'center', marginBottom: 8 },
+  dateScroll: { flex: 1 },
+  dateOption: { paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  dateOptionText: { fontSize: 15 },
+  datePreview: { fontSize: 18, fontWeight: '800', textAlign: 'center', marginTop: 16, marginBottom: 16 },
+  dateModalActions: { flexDirection: 'row', gap: 10 },
+  dateModalCancelBtn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  dateModalCancelText: { fontSize: 14, fontWeight: '600' },
+  dateModalConfirmBtn: { flex: 1.5, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  dateModalConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
 });

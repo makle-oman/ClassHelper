@@ -46,6 +46,30 @@ const mockMonthlyStats = [
 
 const WEEKDAYS = ['\u5468\u65E5', '\u5468\u4E00', '\u5468\u4E8C', '\u5468\u4E09', '\u5468\u56DB', '\u5468\u4E94', '\u5468\u516D'];
 
+// 学生个人出勤率 Mock 数据
+interface StudentAttendanceStats {
+  id: string;
+  name: string;
+  gender: '\u7537' | '\u5973';
+  totalDays: number;
+  presentDays: number;
+  lateDays: number;
+  absentDays: number;
+  leaveDays: number;
+  rate: number;
+}
+
+const mockStudentStats: StudentAttendanceStats[] = [
+  { id: '1', name: '\u5F20\u5C0F\u660E', gender: '\u7537', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
+  { id: '2', name: '\u674E\u5C0F\u7EA2', gender: '\u5973', totalDays: 22, presentDays: 21, lateDays: 1, absentDays: 0, leaveDays: 0, rate: 95.5 },
+  { id: '3', name: '\u738B\u5927\u529B', gender: '\u7537', totalDays: 22, presentDays: 20, lateDays: 0, absentDays: 1, leaveDays: 1, rate: 90.9 },
+  { id: '4', name: '\u8D75\u5C0F\u71D5', gender: '\u5973', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
+  { id: '5', name: '\u5218\u5929\u5B9D', gender: '\u7537', totalDays: 22, presentDays: 19, lateDays: 2, absentDays: 1, leaveDays: 0, rate: 86.4 },
+  { id: '6', name: '\u9648\u7F8E\u4E3D', gender: '\u5973', totalDays: 22, presentDays: 21, lateDays: 0, absentDays: 0, leaveDays: 1, rate: 95.5 },
+  { id: '7', name: '\u5B59\u6D69\u7136', gender: '\u7537', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
+  { id: '8', name: '\u5468\u5C0F\u5A77', gender: '\u5973', totalDays: 22, presentDays: 20, lateDays: 1, absentDays: 1, leaveDays: 0, rate: 90.9 },
+];
+
 function formatDate(date: Date): string {
   const y = date.getFullYear();
   const m = date.getMonth() + 1;
@@ -64,6 +88,7 @@ export default function AttendanceScreen() {
   const [currentDate, setDate] = useState(new Date());
   const [selectedClass, setSelectedClass] = useState('\u4E09\u5E74\u7EA71\u73ED');
   const [students, setStudents] = useState<StudentAttendance[]>(initialStudents);
+  const [statsView, setStatsView] = useState<'daily' | 'student'>('daily');
 
   const today = new Date();
 

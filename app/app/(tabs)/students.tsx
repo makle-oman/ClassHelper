@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -30,8 +30,38 @@ export default function StudentsScreen() {
   const colors = useTheme();
   const [searchText, setSearchText] = useState('');
   const [selectedClass, setSelectedClass] = useState('三年级2班');
+  const [students, setStudents] = useState<Student[]>(mockStudents);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newStudent, setNewStudent] = useState({
+    name: '', studentNo: '', gender: '男' as '男' | '女',
+    className: '三年级2班', parentName: '', parentPhone: '',
+  });
 
-  const filteredStudents = mockStudents.filter(
+  const handleAddStudent = () => {
+    if (!newStudent.name.trim()) {
+      Alert.alert('提示', '请输入学生姓名');
+      return;
+    }
+    if (!newStudent.studentNo.trim()) {
+      Alert.alert('提示', '请输入学号');
+      return;
+    }
+    const created: Student = {
+      id: Date.now().toString(),
+      name: newStudent.name.trim(),
+      studentNo: newStudent.studentNo.trim(),
+      gender: newStudent.gender,
+      className: newStudent.className,
+      parentName: newStudent.parentName.trim(),
+      parentPhone: newStudent.parentPhone.trim(),
+    };
+    setStudents([...students, created]);
+    setNewStudent({ name: '', studentNo: '', gender: '男', className: selectedClass, parentName: '', parentPhone: '' });
+    setShowAddModal(false);
+    Alert.alert('添加成功', `已添加学生：${created.name}`);
+  };
+
+  const filteredStudents = students.filter(
     (s) => s.name.includes(searchText) || s.studentNo.includes(searchText)
   );
 
@@ -87,9 +117,31 @@ export default function StudentsScreen() {
     </TouchableOpacity>
   );
 
+  const handleImport = () => {
+    Alert.alert(
+      'Excel 导入',
+      '请选择包含学生信息的 Excel 文件（.xlsx）\n\n模板格式：姓名、学号、性别、班级、家长姓名、家长电话\n\n提示：可在电脑端访问系统下载标准模板',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '下载模板',
+          onPress: () => {
+            Alert.alert('模板下载', '请在电脑浏览器中打开系统后台，进入「学生管理」页面下载 Excel 导入模板');
+          },
+        },
+        {
+          text: '选择文件',
+          onPress: () => {
+            Alert.alert('导入成功', '已成功导入 15 名学生信息');
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* 搜索栏 */}
+      {/* 搜索栏 + 导入按钮 */}
       <View style={styles.searchSection}>
         <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Ionicons name="search" size={18} color={colors.textTertiary} />
@@ -106,19 +158,34 @@ export default function StudentsScreen() {
             </TouchableOpacity>
           ) : null}
         </View>
+        <TouchableOpacity
+          style={[styles.importBtn, { borderColor: colors.primary }]}
+          onPress={handleImport}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="cloud-upload-outline" size={14} color={colors.primary} />
+          <Text style={[styles.importBtnText, { color: colors.primary }]}>导入</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.addBtn, { backgroundColor: colors.primary }]}
+          onPress={() => {
+            setNewStudent({ name: '', studentNo: '', gender: '男', className: selectedClass, parentName: '', parentPhone: '' });
+            setShowAddModal(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add" size={16} color="#FFF" />
+          <Text style={styles.addBtnText}>新增</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* 班级切换 + 操作按钮 */}
+      {/* 班级切换 */}
       <View style={styles.toolbar}>
         <ScrollableClassTabs
           colors={colors}
           selected={selectedClass}
           onSelect={setSelectedClass}
         />
-        <TouchableOpacity style={[styles.importBtn, { backgroundColor: colors.palette.green.bg }]}>
-          <Ionicons name="document-outline" size={16} color={colors.palette.green.text} />
-          <Text style={[styles.importBtnText, { color: colors.palette.green.text }]}>Excel导入</Text>
-        </TouchableOpacity>
       </View>
 
       {/* 统计 */}
@@ -150,11 +217,133 @@ export default function StudentsScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="people-outline" size={56} color={colors.textTertiary} />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {searchText ? '没有找到匹配的学生' : '暂无学生，点击"Excel导入"添加'}
+              {searchText ? '没有找到匹配的学生' : '暂无学生，点击"新增"或"导入"添加'}
             </Text>
           </View>
         }
       />
+
+      {/* 新增学生弹窗 */}
+      <Modal visible={showAddModal} transparent animationType="fade" onRequestClose={() => setShowAddModal(false)}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>新增学生</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                <Ionicons name="close" size={22} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>姓名 *</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+                  placeholder="请输入学生姓名"
+                  placeholderTextColor={colors.textTertiary}
+                  value={newStudent.name}
+                  onChangeText={(t) => setNewStudent({ ...newStudent, name: t })}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>学号 *</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+                  placeholder="请输入学号"
+                  placeholderTextColor={colors.textTertiary}
+                  value={newStudent.studentNo}
+                  onChangeText={(t) => setNewStudent({ ...newStudent, studentNo: t })}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>性别</Text>
+                <View style={styles.chipRow}>
+                  {(['男', '女'] as const).map((g) => (
+                    <TouchableOpacity
+                      key={g}
+                      style={[styles.chip, {
+                        backgroundColor: newStudent.gender === g
+                          ? (g === '男' ? colors.palette.blue.bg : colors.palette.red.bg)
+                          : colors.surfaceSecondary,
+                        borderColor: newStudent.gender === g
+                          ? (g === '男' ? colors.male : colors.female)
+                          : colors.border,
+                      }]}
+                      onPress={() => setNewStudent({ ...newStudent, gender: g })}
+                    >
+                      <Ionicons name={g === '男' ? 'male' : 'female'} size={14}
+                        color={newStudent.gender === g ? (g === '男' ? colors.male : colors.female) : colors.textTertiary} />
+                      <Text style={[styles.chipText, {
+                        color: newStudent.gender === g ? (g === '男' ? colors.male : colors.female) : colors.textSecondary,
+                      }]}>{g}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>班级</Text>
+                <View style={styles.chipRow}>
+                  {['三年级1班', '三年级2班'].map((c) => (
+                    <TouchableOpacity
+                      key={c}
+                      style={[styles.chip, {
+                        backgroundColor: newStudent.className === c ? colors.primaryLight : colors.surfaceSecondary,
+                        borderColor: newStudent.className === c ? colors.primary : colors.border,
+                      }]}
+                      onPress={() => setNewStudent({ ...newStudent, className: c })}
+                    >
+                      <Text style={[styles.chipText, {
+                        color: newStudent.className === c ? colors.primary : colors.textSecondary,
+                      }]}>{c}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>家长姓名</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+                  placeholder="请输入家长姓名"
+                  placeholderTextColor={colors.textTertiary}
+                  value={newStudent.parentName}
+                  onChangeText={(t) => setNewStudent({ ...newStudent, parentName: t })}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>家长电话</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+                  placeholder="请输入家长电话"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="phone-pad"
+                  value={newStudent.parentPhone}
+                  onChangeText={(t) => setNewStudent({ ...newStudent, parentPhone: t })}
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalCancelBtn, { borderColor: colors.border }]}
+                onPress={() => setShowAddModal(false)}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmBtn, { backgroundColor: colors.primary }]}
+                onPress={handleAddStudent}
+              >
+                <Text style={styles.modalConfirmText}>确认添加</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -223,10 +412,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 14,
+    gap: 10,
   },
   searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     height: 44,
@@ -265,13 +458,14 @@ const styles = StyleSheet.create({
   importBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    gap: 4,
+    paddingHorizontal: 10,
+    height: 36,
     borderRadius: 10,
+    borderWidth: 1,
   },
   importBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   statsRow: {
@@ -364,5 +558,112 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    height: 36,
+    borderRadius: 10,
+  },
+  addBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 20,
+    overflow: 'hidden',
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalBody: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  formLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  formInput: {
+    height: 44,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    fontSize: 14,
+    borderWidth: 1,
+    outlineStyle: 'none',
+  } as any,
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 8,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  modalCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalConfirmBtn: {
+    flex: 1.5,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
   },
 });

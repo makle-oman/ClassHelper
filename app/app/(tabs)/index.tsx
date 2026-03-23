@@ -16,12 +16,12 @@ interface QuickAction {
 }
 
 const quickActions: QuickAction[] = [
-  { icon: 'people', label: '学生管理', colorKey: 'blue' },
+  { icon: 'people', label: '学生管理', colorKey: 'blue', route: '/(tabs)/students' },
   { icon: 'checkbox', label: '考勤打卡', colorKey: 'green', route: '/attendance' },
   { icon: 'document-text', label: '布置作业', colorKey: 'orange', route: '/homework' },
   { icon: 'megaphone', label: '发通知', colorKey: 'red', route: '/notices' },
-  { icon: 'stats-chart', label: '成绩录入', colorKey: 'purple' },
-  { icon: 'calendar', label: '课程表', colorKey: 'cyan' },
+  { icon: 'stats-chart', label: '成绩录入', colorKey: 'purple', route: '/(tabs)/scores' },
+  { icon: 'calendar', label: '课程表', colorKey: 'cyan', route: '/(tabs)/schedule' },
 ];
 
 const todayCourses = [
@@ -113,7 +113,7 @@ export default function HomeScreen() {
                 <Text style={[styles.countBadgeText, { color: colors.primary }]}>{todayCourses.length}</Text>
               </View>
             </View>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/schedule' as any)}>
               <Text style={[styles.seeAll, { color: colors.textTertiary }]}>查看全部</Text>
             </TouchableOpacity>
           </View>
@@ -132,6 +132,7 @@ export default function HomeScreen() {
                   key={i}
                   style={[styles.courseCard, { width: SCREEN_WIDTH * 0.7 }]}
                   activeOpacity={0.8}
+                  onPress={() => router.push('/(tabs)/schedule' as any)}
                 >
                   {/* 顶部彩色条 */}
                   <View style={[styles.courseCardTop, { backgroundColor: color }]}>
@@ -180,9 +181,9 @@ export default function HomeScreen() {
 
           <View style={[styles.todoListCard, { backgroundColor: colors.surface }]}>
             {[
-              { text: '三年级2班 数学作业待批改', time: '2小时前', icon: 'document-text' as IoniconsName, colorKey: 'orange' as const, urgent: false },
-              { text: '张小明家长提交了请假申请', time: '30分钟前', icon: 'hand-left' as IoniconsName, colorKey: 'red' as const, urgent: true },
-              { text: '下周一教研活动，请提前准备', time: '今天', icon: 'calendar' as IoniconsName, colorKey: 'blue' as const, urgent: false },
+              { text: '三年级2班 数学作业待批改', time: '2小时前', icon: 'document-text' as IoniconsName, colorKey: 'orange' as const, urgent: false, route: '/homework' },
+              { text: '张小明家长提交了请假申请', time: '30分钟前', icon: 'hand-left' as IoniconsName, colorKey: 'red' as const, urgent: true, route: '/leave-approval' },
+              { text: '下周一教研活动，请提前准备', time: '今天', icon: 'calendar' as IoniconsName, colorKey: 'blue' as const, urgent: false, route: '/notices' },
             ].map((item, i, arr) => (
               <TouchableOpacity
                 key={i}
@@ -191,6 +192,7 @@ export default function HomeScreen() {
                   i < arr.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.divider },
                 ]}
                 activeOpacity={0.6}
+                onPress={() => router.push(item.route as any)}
               >
                 <View style={[styles.todoIconBox, { backgroundColor: colors.palette[item.colorKey].bg }]}>
                   <Ionicons name={item.icon} size={16} color={colors.palette[item.colorKey].text} />
