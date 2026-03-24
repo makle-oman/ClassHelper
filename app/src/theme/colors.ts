@@ -1,4 +1,67 @@
-export const lightColors = {
+type PaletteEntry = {
+  bg: string;
+  text: string;
+};
+
+type CourseColor = {
+  bg: string;
+  text: string;
+};
+
+type HolidayColors = {
+  bg: string;
+  text: string;
+  border: string;
+};
+
+export interface ThemeColors {
+  primary: string;
+  primaryLight: string;
+  primaryDark: string;
+  primaryGradientStart: string;
+  primaryGradientEnd: string;
+  background: string;
+  surface: string;
+  surfaceSecondary: string;
+  surfaceElevated: string;
+  text: string;
+  textSecondary: string;
+  textTertiary: string;
+  textOnPrimary: string;
+  border: string;
+  borderLight: string;
+  divider: string;
+  success: string;
+  successLight: string;
+  warning: string;
+  warningLight: string;
+  error: string;
+  errorLight: string;
+  info: string;
+  infoLight: string;
+  male: string;
+  female: string;
+  online: string;
+  tabBar: string;
+  tabBarBorder: string;
+  tabBarActive: string;
+  tabBarInactive: string;
+  statusBar: 'light' | 'dark';
+  card: string;
+  cardShadow: string;
+  courseColors: CourseColor[];
+  holiday: HolidayColors;
+  palette: {
+    blue: PaletteEntry;
+    green: PaletteEntry;
+    orange: PaletteEntry;
+    red: PaletteEntry;
+    purple: PaletteEntry;
+    cyan: PaletteEntry;
+  };
+}
+
+export const lightColors: ThemeColors = {
   // 主色调 - 清新绿
   primary: '#4CC590',
   primaryLight: '#E8F8F0',
@@ -77,7 +140,7 @@ export const lightColors = {
   },
 };
 
-export const darkColors = {
+export const darkColors: ThemeColors = {
   primary: '#5DD9A3',
   primaryLight: '#1A2E25',
   primaryDark: '#4CC590',
@@ -143,5 +206,3 @@ export const darkColors = {
     cyan: { bg: '#0D2A2E', text: '#22D3EE' },
   },
 };
-
-export type ThemeColors = typeof lightColors;

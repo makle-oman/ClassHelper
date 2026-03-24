@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Platform, Pressable } from 'react-native';
+﻿import { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -34,62 +34,84 @@ export default function SemesterScreen() {
     endDate: '',
     weeksCount: '',
   });
-
-  // 日期选择器状态
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [datePickerField, setDatePickerField] = useState<'startDate' | 'endDate'>('startDate');
   const [pickerYear, setPickerYear] = useState(2026);
   const [pickerMonth, setPickerMonth] = useState(1);
   const [pickerDay, setPickerDay] = useState(1);
 
-  const years = Array.from({ length: 10 }, (_, i) => 2024 + i);
-  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const years = Array.from({ length: 10 }, (_, index) => 2024 + index);
+  const months = Array.from({ length: 12 }, (_, index) => index + 1);
   const daysInMonth = new Date(pickerYear, pickerMonth, 0).getDate();
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const days = Array.from({ length: daysInMonth }, (_, index) => index + 1);
+
+  const activeSemester = semesters.find((item) => item.status === 'active');
+  const endedSemesters = semesters.filter((item) => item.status === 'ended');
+  const archivedSemesters = semesters.filter((item) => item.status === 'archived');
+
+  const totalSemesterCount = semesters.length;
+  const totalArchivedCount = archivedSemesters.length;
+  const activeProgress = activeSemester && activeSemester.currentWeek
+    ? Math.min((activeSemester.currentWeek / activeSemester.weeksCount) * 100, 100)
+    : 0;
+  const totalWeeks = useMemo(() => semesters.reduce((sum, item) => sum + item.weeksCount, 0), [semesters]);
+
+  const formatDate = (date: string) => date.replace(/-/g, '.');
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)/index');
+  };
 
   const openDatePicker = (field: 'startDate' | 'endDate') => {
     const current = newSemester[field];
     if (current) {
-      const parts = current.split('-');
-      setPickerYear(parseInt(parts[0]) || 2026);
-      setPickerMonth(parseInt(parts[1]) || 1);
-      setPickerDay(parseInt(parts[2]) || 1);
+      const [year, month, day] = current.split('-').map((item) => parseInt(item, 10));
+      setPickerYear(year || 2026);
+      setPickerMonth(month || 1);
+      setPickerDay(day || 1);
     } else {
       const now = new Date();
       setPickerYear(now.getFullYear());
       setPickerMonth(now.getMonth() + 1);
       setPickerDay(now.getDate());
     }
+
     setDatePickerField(field);
     setDatePickerVisible(true);
   };
 
   const confirmDatePicker = () => {
-    const day = Math.min(pickerDay, daysInMonth);
-    const dateStr = `${pickerYear}-${String(pickerMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    setNewSemester({ ...newSemester, [datePickerField]: dateStr });
+    const safeDay = Math.min(pickerDay, daysInMonth);
+    const value = `${pickerYear}-${String(pickerMonth).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+    setNewSemester((prev) => ({ ...prev, [datePickerField]: value }));
     setDatePickerVisible(false);
   };
 
-  const activeSemester = semesters.find((s) => s.status === 'active');
-  const endedSemesters = semesters.filter((s) => s.status === 'ended');
-  const archivedSemesters = semesters.filter((s) => s.status === 'archived');
+  const resetCreateForm = () => {
+    setNewSemester({ name: '', startDate: '', endDate: '', weeksCount: '' });
+    setSetAsCurrent(false);
+  };
 
-  const formatDate = (date: string) => date.replace(/-/g, '.');
+  const closeCreateModal = () => {
+    resetCreateForm();
+    setShowCreateModal(false);
+  };
 
   const handleArchive = (semester: Semester) => {
     Alert.alert(
       '确认归档',
-      '归档后该学期数据将变为只读，无法再进行修改操作。确定要归档吗？',
+      '归档后该学期会进入只读状态，历史课程、成绩和考勤仍可查看，但不能继续编辑。',
       [
         { text: '取消', style: 'cancel' },
         {
           text: '确认归档',
           style: 'destructive',
           onPress: () => {
-            setSemesters((prev) =>
-              prev.map((s) => (s.id === semester.id ? { ...s, status: 'archived' as SemesterStatus } : s))
-            );
+            setSemesters((prev) => prev.map((item) => (item.id === semester.id ? { ...item, status: 'archived' } : item)));
           },
         },
       ]
@@ -98,17 +120,17 @@ export default function SemesterScreen() {
 
   const handleSetActive = (semester: Semester) => {
     setSemesters((prev) =>
-      prev.map((s) => {
-        if (s.id === semester.id) return { ...s, status: 'active' as SemesterStatus, currentWeek: 1 };
-        if (s.status === 'active') return { ...s, status: 'ended' as SemesterStatus, currentWeek: undefined };
-        return s;
+      prev.map((item) => {
+        if (item.id === semester.id) return { ...item, status: 'active', currentWeek: 1 };
+        if (item.status === 'active') return { ...item, status: 'ended', currentWeek: undefined };
+        return item;
       })
     );
   };
 
   const handleCreate = () => {
     if (!newSemester.name.trim() || !newSemester.startDate.trim() || !newSemester.endDate.trim() || !newSemester.weeksCount.trim()) {
-      Alert.alert('提示', '请填写所有必填项');
+      Alert.alert('提示', '请完整填写学期名称、起止日期和总周数。');
       return;
     }
 
@@ -123,176 +145,200 @@ export default function SemesterScreen() {
     };
 
     setSemesters((prev) => {
-      let updated = [...prev];
-      if (setAsCurrent) {
-        updated = updated.map((s) =>
-          s.status === 'active' ? { ...s, status: 'ended' as SemesterStatus, currentWeek: undefined } : s
-        );
-      }
-      return [created, ...updated];
+      const normalized = setAsCurrent
+        ? prev.map((item) =>
+            item.status === 'active' ? { ...item, status: 'ended' as SemesterStatus, currentWeek: undefined } : item
+          )
+        : prev;
+      return [created, ...normalized];
     });
 
-    setNewSemester({ name: '', startDate: '', endDate: '', weeksCount: '' });
-    setSetAsCurrent(false);
-    setShowCreateModal(false);
+    closeCreateModal();
   };
+
+  const selectedDatePreview = `${pickerYear}-${String(pickerMonth).padStart(2, '0')}-${String(Math.min(pickerDay, daysInMonth)).padStart(2, '0')}`;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* 顶部导航 */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text }]}>学期管理</Text>
-        <TouchableOpacity onPress={() => setShowCreateModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="add" size={26} color={colors.primary} />
-        </TouchableOpacity>
+      <View style={styles.topSection}>
+        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
+          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+          <View style={styles.heroTopBar}>
+            <TouchableOpacity
+              style={styles.heroBackButton}
+              onPress={handleBack}
+              activeOpacity={0.78}
+            >
+              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.heroPageTitle}>学期管理</Text>
+            <TouchableOpacity
+              style={styles.heroActionButton}
+              onPress={() => setShowCreateModal(true)}
+              activeOpacity={0.78}
+            >
+              <Ionicons name="add" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.heroEyebrow}>学期状态看板</Text>
+          <Text style={styles.heroTitle}>{activeSemester ? activeSemester.name : '尚未设置当前学期'}</Text>
+          <Text style={styles.heroSubtitle}>
+            {activeSemester
+              ? `${formatDate(activeSemester.startDate)} - ${formatDate(activeSemester.endDate)} · 当前第 ${activeSemester.currentWeek} 周`
+              : '建议先创建并激活当前学期，课程表、成绩和考勤会更容易建立静态闭环。'}
+          </Text>
+          <View style={styles.heroStatsRow}>
+            {[
+              { label: '学期总数', value: totalSemesterCount.toString() },
+              { label: '累计周数', value: totalWeeks.toString() },
+              { label: '已归档', value: totalArchivedCount.toString() },
+            ].map((item, index) => (
+              <View
+                key={item.label}
+                style={[
+                  styles.heroStatItem,
+                  index < 2 && { borderRightWidth: 0.5, borderRightColor: 'rgba(255,255,255,0.14)' },
+                ]}
+              >
+                <Text style={styles.heroStatValue}>{item.value}</Text>
+                <Text style={styles.heroStatLabel}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {activeSemester && (
+          <View style={[styles.activeCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.sectionRow}>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>当前学期进度</Text>
+                <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>突出活跃学期，方便后续静态页面联动</Text>
+              </View>
+              <View style={[styles.activeBadge, { backgroundColor: colors.primaryLight }]}> 
+                <Text style={[styles.activeBadgeText, { color: colors.primary }]}>进行中</Text>
+              </View>
+            </View>
+            <View style={styles.detailRow}>
+              <View style={[styles.detailItem, { backgroundColor: colors.surfaceSecondary }]}> 
+                <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>起止日期</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{formatDate(activeSemester.startDate)} - {formatDate(activeSemester.endDate)}</Text>
+              </View>
+              <View style={[styles.detailItem, { backgroundColor: colors.surfaceSecondary }]}> 
+                <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>总周数</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{activeSemester.weeksCount} 周</Text>
+              </View>
+            </View>
+            <View style={styles.progressHeader}>
+              <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>学期进度</Text>
+              <Text style={[styles.progressValue, { color: colors.primary }]}>{activeSemester.currentWeek}/{activeSemester.weeksCount}</Text>
+            </View>
+            <View style={[styles.progressTrack, { backgroundColor: colors.primaryLight }]}> 
+              <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${activeProgress}%` }]} />
+            </View>
+          </View>
+        )}
+
+        <View style={styles.sectionRow}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>历史学期</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>可设为当前，也可归档为只读</Text>
+          </View>
+        </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* 当前学期 */}
-        {activeSemester && (
-          <View style={styles.activeSection}>
-            <View
-              style={[
-                styles.activeCard,
-                {
-                  backgroundColor: colors.primaryLight,
-                  borderLeftColor: colors.primary,
-                },
-              ]}
-            >
-              {/* 当前学期 badge */}
-              <View style={[styles.activeBadge, { backgroundColor: colors.primary }]}>
-                <Text style={styles.activeBadgeText}>当前学期</Text>
-              </View>
-
-              <Text style={[styles.activeName, { color: colors.text }]}>{activeSemester.name}</Text>
-
-              {/* 日期行 */}
-              <View style={styles.dateRow}>
-                <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
-                <Text style={[styles.dateText, { color: colors.textSecondary }]}>
-                  {formatDate(activeSemester.startDate)} - {formatDate(activeSemester.endDate)}
-                </Text>
-              </View>
-
-              {/* 周信息 */}
-              <Text style={[styles.weekInfo, { color: colors.textSecondary }]}>
-                共{activeSemester.weeksCount}周，当前第{activeSemester.currentWeek}周
-              </Text>
-
-              {/* 进度条 */}
-              <View style={styles.progressSection}>
-                <View style={[styles.progressTrack, { backgroundColor: colors.primary + '20' }]}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${((activeSemester.currentWeek || 0) / activeSemester.weeksCount) * 100}%`,
-                        backgroundColor: colors.primary,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.progressText, { color: colors.primaryDark }]}>
-                  {activeSemester.currentWeek}/{activeSemester.weeksCount}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* 历史学期 */}
-        {endedSemesters.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionDot, { backgroundColor: colors.palette.blue.text }]} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>历史学期</Text>
-            </View>
-
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {endedSemesters.length > 0 ? (
+          <View style={styles.listSection}>
             {endedSemesters.map((semester) => (
-              <View key={semester.id} style={[styles.semesterCard, { backgroundColor: colors.surface }]}>
+              <View key={semester.id} style={[styles.semesterCard, { backgroundColor: colors.surface }]}> 
                 <View style={styles.cardHeader}>
-                  <Text style={[styles.cardName, { color: colors.text }]}>{semester.name}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: colors.surfaceSecondary }]}>
-                    <Text style={[styles.statusBadgeText, { color: colors.textTertiary }]}>已结束</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>{semester.name}</Text>
+                    <Text style={[styles.cardMeta, { color: colors.textTertiary }]}>
+                      {formatDate(semester.startDate)} - {formatDate(semester.endDate)} · {semester.weeksCount} 周
+                    </Text>
+                  </View>
+                  <View style={[styles.statusChip, { backgroundColor: colors.surfaceSecondary }]}> 
+                    <Text style={[styles.statusChipText, { color: colors.textTertiary }]}>已结束</Text>
                   </View>
                 </View>
-
-                <View style={styles.dateRow}>
-                  <Ionicons name="calendar-outline" size={13} color={colors.textTertiary} />
-                  <Text style={[styles.cardDateText, { color: colors.textTertiary }]}>
-                    {formatDate(semester.startDate)} - {formatDate(semester.endDate)}
-                  </Text>
-                </View>
-
-                <View style={styles.cardActions}>
+                <View style={[styles.cardFooter, { borderTopColor: colors.divider }]}> 
                   <TouchableOpacity
-                    style={[styles.outlinedBtn, { borderColor: colors.primary }]}
+                    style={[styles.secondaryButton, { backgroundColor: colors.primaryLight }]}
+                    activeOpacity={0.75}
                     onPress={() => handleSetActive(semester)}
-                    activeOpacity={0.7}
                   >
-                    <Text style={[styles.outlinedBtnText, { color: colors.primary }]}>设为当前</Text>
+                    <Ionicons name="refresh-outline" size={14} color={colors.primary} />
+                    <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>设为当前</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.outlinedBtn, { borderColor: colors.palette.orange.text }]}
+                    style={[styles.secondaryButton, { backgroundColor: colors.palette.orange.bg }]}
+                    activeOpacity={0.75}
                     onPress={() => handleArchive(semester)}
-                    activeOpacity={0.7}
                   >
-                    <Text style={[styles.outlinedBtnText, { color: colors.palette.orange.text }]}>归档</Text>
+                    <Ionicons name="archive-outline" size={14} color={colors.palette.orange.text} />
+                    <Text style={[styles.secondaryButtonText, { color: colors.palette.orange.text }]}>归档</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ))}
           </View>
+        ) : (
+          <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}> 
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>暂无历史学期</Text>
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>创建新学期后，这里会沉淀可切换的历史学期记录。</Text>
+          </View>
         )}
 
-        {/* 已归档学期 */}
-        {archivedSemesters.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionDot, { backgroundColor: colors.textTertiary }]} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>已归档学期</Text>
-            </View>
+        <View style={styles.sectionRow}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>已归档学期</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>归档后默认只读，适合作为历史资料页</Text>
+          </View>
+        </View>
 
+        {archivedSemesters.length > 0 ? (
+          <View style={styles.listSection}>
             {archivedSemesters.map((semester) => (
-              <View key={semester.id} style={[styles.semesterCard, { backgroundColor: colors.surface, opacity: 0.7 }]}>
+              <View key={semester.id} style={[styles.semesterCard, { backgroundColor: colors.surface, opacity: 0.92 }]}> 
                 <View style={styles.cardHeader}>
-                  <Text style={[styles.cardName, { color: colors.text }]}>{semester.name}</Text>
-                  <View style={styles.archivedBadgeRow}>
-                    <View style={[styles.statusBadge, { backgroundColor: colors.surfaceSecondary }]}>
-                      <Text style={[styles.statusBadgeText, { color: colors.textTertiary }]}>已归档</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>{semester.name}</Text>
+                    <Text style={[styles.cardMeta, { color: colors.textTertiary }]}>
+                      {formatDate(semester.startDate)} - {formatDate(semester.endDate)} · {semester.weeksCount} 周
+                    </Text>
+                  </View>
+                  <View style={styles.archivedBadges}>
+                    <View style={[styles.statusChip, { backgroundColor: colors.surfaceSecondary }]}> 
+                      <Text style={[styles.statusChipText, { color: colors.textTertiary }]}>已归档</Text>
                     </View>
-                    <View style={[styles.readonlyBadge, { backgroundColor: colors.palette.orange.bg }]}>
+                    <View style={[styles.lockChip, { backgroundColor: colors.palette.orange.bg }]}> 
                       <Ionicons name="lock-closed" size={10} color={colors.palette.orange.text} />
-                      <Text style={[styles.readonlyText, { color: colors.palette.orange.text }]}>只读</Text>
+                      <Text style={[styles.lockChipText, { color: colors.palette.orange.text }]}>只读</Text>
                     </View>
                   </View>
                 </View>
-
-                <View style={styles.dateRow}>
-                  <Ionicons name="calendar-outline" size={13} color={colors.textTertiary} />
-                  <Text style={[styles.cardDateText, { color: colors.textTertiary }]}>
-                    {formatDate(semester.startDate)} - {formatDate(semester.endDate)}
-                  </Text>
-                </View>
               </View>
             ))}
           </View>
+        ) : (
+          <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}> 
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>暂无归档学期</Text>
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>学期结束后归档，可保留课程表、成绩和考勤的历史快照。</Text>
+          </View>
         )}
-
-        <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* 创建学期弹窗 */}
-      <Modal visible={showCreateModal} transparent animationType="fade">
+      <Modal visible={showCreateModal} transparent animationType="fade" onRequestClose={closeCreateModal}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}> 
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>创建学期</Text>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+              <View>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>创建学期</Text>
+                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>静态阶段先把学期信息和状态管理清晰化</Text>
+              </View>
+              <TouchableOpacity onPress={closeCreateModal}>
                 <Ionicons name="close" size={22} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
@@ -301,23 +347,23 @@ export default function SemesterScreen() {
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>学期名称</Text>
                 <TextInput
-                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, color: colors.text }]}
                   placeholder="如：2025-2026学年第二学期"
                   placeholderTextColor={colors.textTertiary}
                   value={newSemester.name}
-                  onChangeText={(t) => setNewSemester({ ...newSemester, name: t })}
+                  onChangeText={(value) => setNewSemester((prev) => ({ ...prev, name: value }))}
                 />
               </View>
 
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>开始日期</Text>
                 <TouchableOpacity
-                  style={[styles.datePickerBtn, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+                  style={[styles.dateField, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+                  activeOpacity={0.75}
                   onPress={() => openDatePicker('startDate')}
-                  activeOpacity={0.7}
                 >
                   <Ionicons name="calendar-outline" size={16} color={newSemester.startDate ? colors.primary : colors.textTertiary} />
-                  <Text style={[styles.datePickerText, { color: newSemester.startDate ? colors.text : colors.textTertiary }]}>
+                  <Text style={[styles.dateFieldText, { color: newSemester.startDate ? colors.text : colors.textTertiary }]}>
                     {newSemester.startDate || '选择开始日期'}
                   </Text>
                 </TouchableOpacity>
@@ -326,12 +372,12 @@ export default function SemesterScreen() {
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>结束日期</Text>
                 <TouchableOpacity
-                  style={[styles.datePickerBtn, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+                  style={[styles.dateField, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+                  activeOpacity={0.75}
                   onPress={() => openDatePicker('endDate')}
-                  activeOpacity={0.7}
                 >
                   <Ionicons name="calendar-outline" size={16} color={newSemester.endDate ? colors.primary : colors.textTertiary} />
-                  <Text style={[styles.datePickerText, { color: newSemester.endDate ? colors.text : colors.textTertiary }]}>
+                  <Text style={[styles.dateFieldText, { color: newSemester.endDate ? colors.text : colors.textTertiary }]}>
                     {newSemester.endDate || '选择结束日期'}
                   </Text>
                 </TouchableOpacity>
@@ -340,139 +386,115 @@ export default function SemesterScreen() {
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>总周数</Text>
                 <TextInput
-                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border, width: 100 }]}
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, color: colors.text }]}
                   placeholder="如：18"
                   placeholderTextColor={colors.textTertiary}
                   keyboardType="number-pad"
                   value={newSemester.weeksCount}
-                  onChangeText={(t) => setNewSemester({ ...newSemester, weeksCount: t })}
+                  onChangeText={(value) => setNewSemester((prev) => ({ ...prev, weeksCount: value }))}
                 />
               </View>
 
               <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>设为当前学期</Text>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>是否设为当前学期</Text>
                 <TouchableOpacity
                   style={[
-                    styles.toggleChip,
-                    {
-                      backgroundColor: setAsCurrent ? colors.primaryLight : colors.surfaceSecondary,
-                      borderColor: setAsCurrent ? colors.primary : colors.border,
-                    },
+                    styles.toggleCard,
+                    { backgroundColor: setAsCurrent ? colors.primaryLight : colors.surfaceSecondary, borderColor: setAsCurrent ? colors.primary : colors.border },
                   ]}
-                  onPress={() => setSetAsCurrent(!setAsCurrent)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.75}
+                  onPress={() => setSetAsCurrent((prev) => !prev)}
                 >
-                  <Text
-                    style={[
-                      styles.toggleChipText,
-                      { color: setAsCurrent ? colors.primary : colors.textTertiary },
-                    ]}
-                  >
-                    {setAsCurrent ? '是' : '否'}
-                  </Text>
+                  <Ionicons name={setAsCurrent ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={setAsCurrent ? colors.primary : colors.textTertiary} />
+                  <Text style={[styles.toggleCardText, { color: setAsCurrent ? colors.primary : colors.textSecondary }]}>创建后立即作为当前学期使用</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.modalFooter}>
               <TouchableOpacity
-                style={[styles.modalCancelBtn, { borderColor: colors.border }]}
-                onPress={() => {
-                  setNewSemester({ name: '', startDate: '', endDate: '', weeksCount: '' });
-                  setSetAsCurrent(false);
-                  setShowCreateModal(false);
-                }}
+                style={[styles.modalCancelButton, { borderColor: colors.border }]}
+                activeOpacity={0.75}
+                onPress={closeCreateModal}
               >
                 <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalConfirmBtn, { backgroundColor: colors.primary }]}
+                style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
+                activeOpacity={0.82}
                 onPress={handleCreate}
               >
-                <Text style={styles.modalConfirmText}>创建</Text>
+                <Text style={styles.modalConfirmText}>创建学期</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* 日期选择器弹窗 */}
       <Modal visible={datePickerVisible} transparent animationType="slide" onRequestClose={() => setDatePickerVisible(false)}>
-        <TouchableOpacity style={styles.dateModalOverlay} activeOpacity={1} onPress={() => setDatePickerVisible(false)}>
-          <View style={[styles.dateModalContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
-            <View style={[styles.dateModalHandle, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dateModalTitle, { color: colors.text }]}>
-              {datePickerField === 'startDate' ? '选择开始日期' : '选择结束日期'}
-            </Text>
-
-            {/* 年月日选择 */}
+        <TouchableOpacity style={styles.datePickerOverlay} activeOpacity={1} onPress={() => setDatePickerVisible(false)}>
+          <View style={[styles.datePickerCard, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={[styles.datePickerHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.datePickerTitle, { color: colors.text }]}>{datePickerField === 'startDate' ? '选择开始日期' : '选择结束日期'}</Text>
             <View style={styles.dateColumns}>
-              {/* 年 */}
               <View style={styles.dateColumn}>
                 <Text style={[styles.dateColumnLabel, { color: colors.textTertiary }]}>年</Text>
-                <ScrollView style={styles.dateScroll} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                  {years.map((y) => (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {years.map((year) => (
                     <Pressable
-                      key={y}
-                      style={[styles.dateOption, pickerYear === y && { backgroundColor: colors.primaryLight }]}
-                      onPress={() => setPickerYear(y)}
+                      key={year}
+                      style={[styles.dateOption, pickerYear === year && { backgroundColor: colors.primaryLight }]}
+                      onPress={() => setPickerYear(year)}
                     >
-                      <Text style={[styles.dateOptionText, { color: pickerYear === y ? colors.primary : colors.text, fontWeight: pickerYear === y ? '700' : '400' }]}>
-                        {y}
-                      </Text>
+                      <Text style={[styles.dateOptionText, { color: pickerYear === year ? colors.primary : colors.text }]}>{year}</Text>
                     </Pressable>
                   ))}
                 </ScrollView>
               </View>
-
-              {/* 月 */}
               <View style={styles.dateColumn}>
                 <Text style={[styles.dateColumnLabel, { color: colors.textTertiary }]}>月</Text>
-                <ScrollView style={styles.dateScroll} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                  {months.map((m) => (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {months.map((month) => (
                     <Pressable
-                      key={m}
-                      style={[styles.dateOption, pickerMonth === m && { backgroundColor: colors.primaryLight }]}
-                      onPress={() => setPickerMonth(m)}
+                      key={month}
+                      style={[styles.dateOption, pickerMonth === month && { backgroundColor: colors.primaryLight }]}
+                      onPress={() => setPickerMonth(month)}
                     >
-                      <Text style={[styles.dateOptionText, { color: pickerMonth === m ? colors.primary : colors.text, fontWeight: pickerMonth === m ? '700' : '400' }]}>
-                        {m}月
-                      </Text>
+                      <Text style={[styles.dateOptionText, { color: pickerMonth === month ? colors.primary : colors.text }]}>{month}月</Text>
                     </Pressable>
                   ))}
                 </ScrollView>
               </View>
-
-              {/* 日 */}
               <View style={styles.dateColumn}>
                 <Text style={[styles.dateColumnLabel, { color: colors.textTertiary }]}>日</Text>
-                <ScrollView style={styles.dateScroll} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                  {days.map((d) => (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {days.map((day) => (
                     <Pressable
-                      key={d}
-                      style={[styles.dateOption, pickerDay === d && { backgroundColor: colors.primaryLight }]}
-                      onPress={() => setPickerDay(d)}
+                      key={day}
+                      style={[styles.dateOption, pickerDay === day && { backgroundColor: colors.primaryLight }]}
+                      onPress={() => setPickerDay(day)}
                     >
-                      <Text style={[styles.dateOptionText, { color: pickerDay === d ? colors.primary : colors.text, fontWeight: pickerDay === d ? '700' : '400' }]}>
-                        {d}日
-                      </Text>
+                      <Text style={[styles.dateOptionText, { color: pickerDay === day ? colors.primary : colors.text }]}>{day}日</Text>
                     </Pressable>
                   ))}
                 </ScrollView>
               </View>
             </View>
-
-            {/* 预览 */}
-            <Text style={[styles.datePreview, { color: colors.primary }]}>
-              {pickerYear}-{String(pickerMonth).padStart(2, '0')}-{String(Math.min(pickerDay, daysInMonth)).padStart(2, '0')}
-            </Text>
-
-            <View style={styles.dateModalActions}>
-              <TouchableOpacity style={[styles.dateModalCancelBtn, { borderColor: colors.border }]} onPress={() => setDatePickerVisible(false)}>
-                <Text style={[styles.dateModalCancelText, { color: colors.textSecondary }]}>取消</Text>
+            <Text style={[styles.datePreview, { color: colors.primary }]}>{selectedDatePreview}</Text>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalCancelButton, { borderColor: colors.border }]}
+                activeOpacity={0.75}
+                onPress={() => setDatePickerVisible(false)}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.dateModalConfirmBtn, { backgroundColor: colors.primary }]} onPress={confirmDatePicker}>
-                <Text style={styles.dateModalConfirmText}>确定</Text>
+              <TouchableOpacity
+                style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
+                activeOpacity={0.82}
+                onPress={confirmDatePicker}
+              >
+                <Text style={styles.modalConfirmText}>确定</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -483,186 +505,127 @@ export default function SemesterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-
-  // Nav
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-  },
-  navTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-  },
-
-  // Active semester
-  activeSection: {
+  container: { flex: 1 },
+  topSection: { paddingHorizontal: 20, zIndex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 0, paddingBottom: 24 },
+  heroCard: {
+    marginHorizontal: -20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  activeCard: {
-    borderRadius: 16,
-    borderLeftWidth: 4,
-    padding: 18,
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  activeBadge: {
-    position: 'absolute',
-    top: 14,
-    right: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  activeBadgeText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  activeName: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 12,
-    paddingRight: 80,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  dateText: {
-    fontSize: 13,
-  },
-  weekInfo: {
-    fontSize: 13,
-    marginBottom: 12,
-  },
-  progressSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  progressTrack: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
+    paddingTop: 10,
+    paddingBottom: 4,
     overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 11,
-    fontWeight: '600',
-    width: 40,
-    textAlign: 'right',
-  },
-
-  // Sections
-  section: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     marginBottom: 12,
   },
-  sectionDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+  heroTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+  heroBackButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
-
-  // Semester card
-  semesterCard: {
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
+  heroActionButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
+  heroPageTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  heroDecorLarge: {
+    position: 'absolute',
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    top: -32,
+    right: -12,
+  },
+  heroDecorSmall: {
+    position: 'absolute',
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    bottom: -20,
+    right: 26,
+  },
+  heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
+  heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
+  heroSubtitle: { color: 'rgba(255,255,255,0.86)', fontSize: 11, lineHeight: 16, marginTop: 4 },
+  heroStatsRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingVertical: 4,
+  },
+  heroStatItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 5 },
+  heroStatValue: { color: '#FFF', fontSize: 16, fontWeight: '800' },
+  heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, marginTop: 2 },
+  activeCard: {
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 1,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  sectionTitle: { fontSize: 16, fontWeight: '700' },
+  sectionHint: { fontSize: 12, marginTop: 4 },
+  activeBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  activeBadgeText: { fontSize: 12, fontWeight: '700' },
+  detailRow: { flexDirection: 'row', gap: 10 },
+  detailItem: { flex: 1, borderRadius: 16, padding: 10 },
+  detailLabel: { fontSize: 12, fontWeight: '500' },
+  detailValue: { fontSize: 14, fontWeight: '700', marginTop: 6 },
+  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, marginBottom: 8 },
+  progressLabel: { fontSize: 13, fontWeight: '600' },
+  progressValue: { fontSize: 13, fontWeight: '700' },
+  progressTrack: { height: 8, borderRadius: 999, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 999 },
+  listSection: { gap: 10, marginBottom: 14 },
+  semesterCard: {
+    borderRadius: 18,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
   },
-  cardName: {
-    fontSize: 15,
-    fontWeight: '600',
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  cardTitle: { fontSize: 15, fontWeight: '700' },
+  cardMeta: { fontSize: 12, marginTop: 6, lineHeight: 17 },
+  statusChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  statusChipText: { fontSize: 11, fontWeight: '700' },
+  cardFooter: { flexDirection: 'row', gap: 8, marginTop: 12, paddingTop: 10, borderTopWidth: 0.5 },
+  secondaryButton: {
     flex: 1,
-    marginRight: 10,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  cardDateText: {
-    fontSize: 12,
-  },
-  cardActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 14,
-  },
-  outlinedBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  outlinedBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // Archived
-  archivedBadgeRow: {
+    height: 38,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
   },
-  readonlyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  readonlyText: {
-    fontSize: 10,
-    fontWeight: '600',
-  },
-
-  // Modal
+  secondaryButtonText: { fontSize: 13, fontWeight: '700' },
+  archivedBadges: { alignItems: 'flex-end', gap: 6 },
+  lockChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  lockChipText: { fontSize: 11, fontWeight: '700' },
+  emptyCard: { borderRadius: 20, padding: 20, marginBottom: 14 },
+  emptyTitle: { fontSize: 16, fontWeight: '700' },
+  emptyText: { fontSize: 13, lineHeight: 20, marginTop: 8 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -670,114 +633,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  modalContent: {
-    width: '100%',
-    maxWidth: 420,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
+  modalCard: { width: '100%', maxWidth: 420, borderRadius: 24, overflow: 'hidden' },
   modalHeader: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 8,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  modalBody: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  formLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  formInput: {
-    height: 44,
-    borderRadius: 12,
+  modalTitle: { fontSize: 18, fontWeight: '700' },
+  modalHint: { fontSize: 12, marginTop: 4 },
+  modalBody: { paddingHorizontal: 20, paddingVertical: 12 },
+  formGroup: { marginBottom: 16 },
+  formLabel: { fontSize: 13, fontWeight: '600', marginBottom: 10 },
+  formInput: { height: 46, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 14 },
+  dateField: {
+    height: 46,
+    borderRadius: 14,
+    borderWidth: 1,
     paddingHorizontal: 14,
-    fontSize: 14,
-    borderWidth: 1,
-    outlineStyle: 'none',
-  } as any,
-  toggleChip: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  toggleChipText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 8,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  modalCancelText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modalConfirmBtn: {
-    flex: 1.5,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalConfirmText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  // === Date Picker Button ===
-  datePickerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    height: 44,
-    borderRadius: 12,
-    paddingHorizontal: 14,
+    gap: 8,
+  },
+  dateFieldText: { fontSize: 14, fontWeight: '500' },
+  toggleCard: {
     borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  datePickerText: {
-    fontSize: 14,
-  },
-  // === Date Picker Modal ===
-  dateModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  dateModalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34, paddingHorizontal: 20 },
-  dateModalHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 14 },
-  dateModalTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
-  dateColumns: { flexDirection: 'row', gap: 10, height: 200 },
-  dateColumn: { flex: 1 },
-  dateColumnLabel: { fontSize: 12, fontWeight: '600', textAlign: 'center', marginBottom: 8 },
-  dateScroll: { flex: 1 },
-  dateOption: { paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
-  dateOptionText: { fontSize: 15 },
-  datePreview: { fontSize: 18, fontWeight: '800', textAlign: 'center', marginTop: 16, marginBottom: 16 },
-  dateModalActions: { flexDirection: 'row', gap: 10 },
-  dateModalCancelBtn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  dateModalCancelText: { fontSize: 14, fontWeight: '600' },
-  dateModalConfirmBtn: { flex: 1.5, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  dateModalConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  toggleCardText: { fontSize: 14, fontWeight: '600' },
+  modalFooter: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 4 },
+  modalCancelButton: { flex: 1, height: 46, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  modalConfirmButton: { flex: 1.35, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  modalCancelText: { fontSize: 14, fontWeight: '600' },
+  modalConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  datePickerOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
+  datePickerCard: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20, maxHeight: '78%' },
+  datePickerHandle: { width: 44, height: 5, borderRadius: 999, alignSelf: 'center', marginBottom: 14 },
+  datePickerTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center' },
+  dateColumns: { flexDirection: 'row', gap: 12, marginTop: 18 },
+  dateColumn: { flex: 1, maxHeight: 260 },
+  dateColumnLabel: { fontSize: 12, fontWeight: '600', marginBottom: 10, textAlign: 'center' },
+  dateOption: { borderRadius: 12, paddingVertical: 10, alignItems: 'center', marginBottom: 8 },
+  dateOptionText: { fontSize: 14, fontWeight: '600' },
+  datePreview: { textAlign: 'center', fontSize: 16, fontWeight: '700', marginTop: 16 },
 });

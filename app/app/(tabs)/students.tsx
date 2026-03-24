@@ -1,5 +1,17 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  Modal,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -16,10 +28,10 @@ interface Student {
 }
 
 const mockStudents: Student[] = [
-  { id: '1', name: '张小明', studentNo: '2024001', gender: '男', className: '三年级2班', parentName: '张伟', parentPhone: '138****1234' },
-  { id: '2', name: '李小红', studentNo: '2024002', gender: '女', className: '三年级2班', parentName: '李强', parentPhone: '139****5678' },
-  { id: '3', name: '王小刚', studentNo: '2024003', gender: '男', className: '三年级2班', parentName: '王磊', parentPhone: '136****9012' },
-  { id: '4', name: '赵小丽', studentNo: '2024004', gender: '女', className: '三年级2班', parentName: '赵敏', parentPhone: '137****3456' },
+  { id: '1', name: '张小明', studentNo: '2024001', gender: '男', className: '三年级1班', parentName: '张伟', parentPhone: '138****1234' },
+  { id: '2', name: '李小红', studentNo: '2024002', gender: '女', className: '三年级1班', parentName: '李强', parentPhone: '139****5678' },
+  { id: '3', name: '王小刚', studentNo: '2024003', gender: '男', className: '三年级1班', parentName: '王磊', parentPhone: '136****9012' },
+  { id: '4', name: '赵小丽', studentNo: '2024004', gender: '女', className: '三年级1班', parentName: '赵敏', parentPhone: '137****3456' },
   { id: '5', name: '陈小华', studentNo: '2024005', gender: '男', className: '三年级2班', parentName: '陈刚', parentPhone: '135****7890' },
   { id: '6', name: '刘小芳', studentNo: '2024006', gender: '女', className: '三年级2班', parentName: '刘洋', parentPhone: '133****2345' },
   { id: '7', name: '孙小龙', studentNo: '2024007', gender: '男', className: '三年级2班', parentName: '孙涛', parentPhone: '131****6789' },
@@ -33,8 +45,12 @@ export default function StudentsScreen() {
   const [students, setStudents] = useState<Student[]>(mockStudents);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newStudent, setNewStudent] = useState({
-    name: '', studentNo: '', gender: '男' as '男' | '女',
-    className: '三年级2班', parentName: '', parentPhone: '',
+    name: '',
+    studentNo: '',
+    gender: '男' as '男' | '女',
+    className: '三年级2班',
+    parentName: '',
+    parentPhone: '',
   });
 
   const handleAddStudent = () => {
@@ -56,19 +72,28 @@ export default function StudentsScreen() {
       parentPhone: newStudent.parentPhone.trim(),
     };
     setStudents([...students, created]);
-    setNewStudent({ name: '', studentNo: '', gender: '男', className: selectedClass, parentName: '', parentPhone: '' });
+    setNewStudent({
+      name: '',
+      studentNo: '',
+      gender: '男',
+      className: selectedClass,
+      parentName: '',
+      parentPhone: '',
+    });
     setShowAddModal(false);
     Alert.alert('添加成功', `已添加学生：${created.name}`);
   };
 
-  const filteredStudents = students.filter(
-    (s) => s.name.includes(searchText) || s.studentNo.includes(searchText)
+  const classStudents = students.filter((student) => student.className === selectedClass);
+  const filteredStudents = classStudents.filter(
+    (student) => student.name.includes(searchText) || student.studentNo.includes(searchText),
   );
 
-  const maleCount = filteredStudents.filter((s) => s.gender === '男').length;
-  const femaleCount = filteredStudents.filter((s) => s.gender === '女').length;
+  const maleCount = classStudents.filter((student) => student.gender === '男').length;
+  const femaleCount = classStudents.filter((student) => student.gender === '女').length;
+  const visibleCount = filteredStudents.length;
 
-  const renderStudent = ({ item, index }: { item: Student; index: number }) => (
+  const renderStudent = ({ item }: { item: Student }) => (
     <TouchableOpacity
       style={[styles.studentCard, { backgroundColor: colors.surface }]}
       activeOpacity={0.7}
@@ -91,20 +116,24 @@ export default function StudentsScreen() {
       </View>
       <View style={styles.studentInfo}>
         <View style={styles.studentNameRow}>
-          <Text style={[styles.studentName, { color: colors.text }]}>{item.name}</Text>
-          <View
-            style={[
-              styles.genderBadge,
-              { backgroundColor: item.gender === '男' ? colors.palette.blue.bg : colors.palette.red.bg },
-            ]}
-          >
-            <Ionicons
-              name={item.gender === '男' ? 'male' : 'female'}
-              size={12}
-              color={item.gender === '男' ? colors.male : colors.female}
-            />
+          <View style={styles.studentTitleGroup}>
+            <Text style={[styles.studentName, { color: colors.text }]}>{item.name}</Text>
+            <View
+              style={[
+                styles.genderBadge,
+                { backgroundColor: item.gender === '男' ? colors.palette.blue.bg : colors.palette.red.bg },
+              ]}
+            >
+              <Ionicons
+                name={item.gender === '男' ? 'male' : 'female'}
+                size={12}
+                color={item.gender === '男' ? colors.male : colors.female}
+              />
+            </View>
           </View>
-          <Text style={[styles.studentNo, { color: colors.textTertiary }]}>{item.studentNo}</Text>
+          <View style={[styles.studentNoBadge, { backgroundColor: colors.surfaceSecondary }]}>
+            <Text style={[styles.studentNo, { color: colors.textTertiary }]}>{item.studentNo}</Text>
+          </View>
         </View>
         <View style={styles.studentMetaRow}>
           <Ionicons name="people-outline" size={13} color={colors.textTertiary} />
@@ -135,81 +164,121 @@ export default function StudentsScreen() {
             Alert.alert('导入成功', '已成功导入 15 名学生信息');
           },
         },
-      ]
+      ],
     );
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* 搜索栏 + 导入按钮 */}
-      <View style={styles.searchSection}>
-        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="search" size={18} color={colors.textTertiary} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="搜索学生姓名或学号"
-            placeholderTextColor={colors.textTertiary}
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-          {searchText ? (
-            <TouchableOpacity onPress={() => setSearchText('')}>
-              <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-        <TouchableOpacity
-          style={[styles.importBtn, { borderColor: colors.primary }]}
-          onPress={handleImport}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="cloud-upload-outline" size={14} color={colors.primary} />
-          <Text style={[styles.importBtnText, { color: colors.primary }]}>导入</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: colors.primary }]}
-          onPress={() => {
-            setNewStudent({ name: '', studentNo: '', gender: '男', className: selectedClass, parentName: '', parentPhone: '' });
-            setShowAddModal(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="add" size={16} color="#FFF" />
-          <Text style={styles.addBtnText}>新增</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 班级切换 */}
-      <View style={styles.toolbar}>
-        <ScrollableClassTabs
-          colors={colors}
-          selected={selectedClass}
-          onSelect={setSelectedClass}
-        />
-      </View>
-
-      {/* 统计 */}
-      <View style={styles.statsRow}>
-        <Text style={[styles.statsText, { color: colors.textSecondary }]}>
-          共 <Text style={{ color: colors.primary, fontWeight: '700' }}>{filteredStudents.length}</Text> 名学生
-        </Text>
-        <View style={styles.genderStats}>
-          <View style={styles.genderStatItem}>
-            <Ionicons name="male" size={14} color={colors.male} />
-            <Text style={[styles.genderStatText, { color: colors.textSecondary }]}>{maleCount}</Text>
+      <View style={styles.topSection}>
+        <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+          <View style={[styles.summaryHero, { backgroundColor: colors.primary }]}>
+            <View style={[styles.summaryDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+            <View style={[styles.summaryDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+            <Text style={styles.summaryEyebrow}>学生花名册</Text>
+            <Text style={styles.summaryClassName}>{selectedClass}</Text>
+            <Text style={styles.summaryHint}>快速查看班级学生、家长信息和导入状态</Text>
           </View>
-          <View style={styles.genderStatItem}>
-            <Ionicons name="female" size={14} color={colors.female} />
-            <Text style={[styles.genderStatText, { color: colors.textSecondary }]}>{femaleCount}</Text>
+
+          <View style={styles.summaryStatsRow}>
+            {[
+              { label: '班级人数', value: classStudents.length.toString(), color: colors.primary },
+              { label: '男生', value: maleCount.toString(), color: colors.male },
+              { label: '女生', value: femaleCount.toString(), color: colors.female },
+            ].map((item, index) => (
+              <View
+                key={`${item.label}-${index}`}
+                style={[
+                  styles.summaryStatItem,
+                  index < 2 && { borderRightWidth: 0.5, borderRightColor: colors.divider },
+                ]}
+              >
+                <Text style={[styles.summaryStatValue, { color: item.color }]}>{item.value}</Text>
+                <Text style={[styles.summaryStatLabel, { color: colors.textTertiary }]}>{item.label}</Text>
+              </View>
+            ))}
           </View>
         </View>
+
+        <View style={styles.fixedPanel}>
+          <View style={styles.toolbar}>
+            <ScrollableClassTabs
+              colors={colors}
+              selected={selectedClass}
+              onSelect={setSelectedClass}
+            />
+          </View>
+
+          <View style={[styles.searchCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.searchSection}>
+              <View style={[styles.searchBar, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+                <Ionicons name="search" size={18} color={colors.textTertiary} />
+                <TextInput
+                  style={[styles.searchInput, { color: colors.text }]}
+                  placeholder="搜索学生姓名或学号"
+                  placeholderTextColor={colors.textTertiary}
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
+                {searchText ? (
+                  <TouchableOpacity onPress={() => setSearchText('')}>
+                    <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <TouchableOpacity
+                style={[styles.importBtn, { borderColor: colors.primary }]}
+                onPress={handleImport}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="cloud-upload-outline" size={14} color={colors.primary} />
+                <Text style={[styles.importBtnText, { color: colors.primary }]}>导入</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setNewStudent({
+                    name: '',
+                    studentNo: '',
+                    gender: newStudent.gender,
+                    className: selectedClass,
+                    parentName: '',
+                    parentPhone: '',
+                  });
+                  setShowAddModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add" size={16} color="#FFF" />
+                <Text style={styles.addBtnText}>新增</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchFooter}>
+              <Text style={[styles.statsText, { color: colors.textSecondary }]}>
+                当前展示 <Text style={{ color: colors.primary, fontWeight: '700' }}>{visibleCount}</Text> 名学生
+              </Text>
+              <Text style={[styles.searchFooterText, { color: colors.textTertiary }]}>支持按姓名或学号快速检索</Text>
+            </View>
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>班级花名册</Text>
+              <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>学生基础信息与家长联系方式</Text>
+            </View>
+            <View style={[styles.sectionBadge, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.sectionBadgeText, { color: colors.primary }]}>{visibleCount}</Text>
+            </View>
+          </View>
+        </View>
       </View>
 
-      {/* 学生列表 */}
       <FlatList
         data={filteredStudents}
         renderItem={renderStudent}
         keyExtractor={(item) => item.id}
+        style={styles.studentList}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         showsVerticalScrollIndicator={false}
@@ -217,13 +286,12 @@ export default function StudentsScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="people-outline" size={56} color={colors.textTertiary} />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {searchText ? '没有找到匹配的学生' : '暂无学生，点击"新增"或"导入"添加'}
+              {searchText ? '没有找到匹配的学生' : '当前班级暂无学生，点击“新增”或“导入”添加'}
             </Text>
           </View>
         }
       />
 
-      {/* 新增学生弹窗 */}
       <Modal visible={showAddModal} transparent animationType="fade" onRequestClose={() => setShowAddModal(false)}>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
@@ -242,7 +310,7 @@ export default function StudentsScreen() {
                   placeholder="请输入学生姓名"
                   placeholderTextColor={colors.textTertiary}
                   value={newStudent.name}
-                  onChangeText={(t) => setNewStudent({ ...newStudent, name: t })}
+                  onChangeText={(text) => setNewStudent({ ...newStudent, name: text })}
                 />
               </View>
 
@@ -253,31 +321,48 @@ export default function StudentsScreen() {
                   placeholder="请输入学号"
                   placeholderTextColor={colors.textTertiary}
                   value={newStudent.studentNo}
-                  onChangeText={(t) => setNewStudent({ ...newStudent, studentNo: t })}
+                  onChangeText={(text) => setNewStudent({ ...newStudent, studentNo: text })}
                 />
               </View>
 
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>性别</Text>
                 <View style={styles.chipRow}>
-                  {(['男', '女'] as const).map((g) => (
+                  {(['男', '女'] as const).map((gender) => (
                     <TouchableOpacity
-                      key={g}
-                      style={[styles.chip, {
-                        backgroundColor: newStudent.gender === g
-                          ? (g === '男' ? colors.palette.blue.bg : colors.palette.red.bg)
-                          : colors.surfaceSecondary,
-                        borderColor: newStudent.gender === g
-                          ? (g === '男' ? colors.male : colors.female)
-                          : colors.border,
-                      }]}
-                      onPress={() => setNewStudent({ ...newStudent, gender: g })}
+                      key={gender}
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor: newStudent.gender === gender
+                            ? gender === '男'
+                              ? colors.palette.blue.bg
+                              : colors.palette.red.bg
+                            : colors.surfaceSecondary,
+                          borderColor: newStudent.gender === gender
+                            ? gender === '男'
+                              ? colors.male
+                              : colors.female
+                            : colors.border,
+                        },
+                      ]}
+                      onPress={() => setNewStudent({ ...newStudent, gender })}
                     >
-                      <Ionicons name={g === '男' ? 'male' : 'female'} size={14}
-                        color={newStudent.gender === g ? (g === '男' ? colors.male : colors.female) : colors.textTertiary} />
-                      <Text style={[styles.chipText, {
-                        color: newStudent.gender === g ? (g === '男' ? colors.male : colors.female) : colors.textSecondary,
-                      }]}>{g}</Text>
+                      <Ionicons
+                        name={gender === '男' ? 'male' : 'female'}
+                        size={14}
+                        color={newStudent.gender === gender ? (gender === '男' ? colors.male : colors.female) : colors.textTertiary}
+                      />
+                      <Text
+                        style={[
+                          styles.chipText,
+                          {
+                            color: newStudent.gender === gender ? (gender === '男' ? colors.male : colors.female) : colors.textSecondary,
+                          },
+                        ]}
+                      >
+                        {gender}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -286,18 +371,28 @@ export default function StudentsScreen() {
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>班级</Text>
                 <View style={styles.chipRow}>
-                  {['三年级1班', '三年级2班'].map((c) => (
+                  {['三年级1班', '三年级2班'].map((className) => (
                     <TouchableOpacity
-                      key={c}
-                      style={[styles.chip, {
-                        backgroundColor: newStudent.className === c ? colors.primaryLight : colors.surfaceSecondary,
-                        borderColor: newStudent.className === c ? colors.primary : colors.border,
-                      }]}
-                      onPress={() => setNewStudent({ ...newStudent, className: c })}
+                      key={className}
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor: newStudent.className === className ? colors.primaryLight : colors.surfaceSecondary,
+                          borderColor: newStudent.className === className ? colors.primary : colors.border,
+                        },
+                      ]}
+                      onPress={() => setNewStudent({ ...newStudent, className })}
                     >
-                      <Text style={[styles.chipText, {
-                        color: newStudent.className === c ? colors.primary : colors.textSecondary,
-                      }]}>{c}</Text>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          {
+                            color: newStudent.className === className ? colors.primary : colors.textSecondary,
+                          },
+                        ]}
+                      >
+                        {className}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -310,7 +405,7 @@ export default function StudentsScreen() {
                   placeholder="请输入家长姓名"
                   placeholderTextColor={colors.textTertiary}
                   value={newStudent.parentName}
-                  onChangeText={(t) => setNewStudent({ ...newStudent, parentName: t })}
+                  onChangeText={(text) => setNewStudent({ ...newStudent, parentName: text })}
                 />
               </View>
 
@@ -322,7 +417,7 @@ export default function StudentsScreen() {
                   placeholderTextColor={colors.textTertiary}
                   keyboardType="phone-pad"
                   value={newStudent.parentPhone}
-                  onChangeText={(t) => setNewStudent({ ...newStudent, parentPhone: t })}
+                  onChangeText={(text) => setNewStudent({ ...newStudent, parentPhone: text })}
                 />
               </View>
             </ScrollView>
@@ -355,34 +450,38 @@ function ScrollableClassTabs({
 }: {
   colors: any;
   selected: string;
-  onSelect: (c: string) => void;
+  onSelect: (className: string) => void;
 }) {
   const classes = ['三年级1班', '三年级2班'];
+
   return (
-    <View style={styles.classTabs}>
-      {classes.map((cls) => (
-        <TouchableOpacity
-          key={cls}
-          style={[
-            styles.classTab,
-            {
-              backgroundColor: selected === cls ? colors.primary : colors.surface,
-              borderColor: selected === cls ? colors.primary : colors.border,
-            },
-          ]}
-          onPress={() => onSelect(cls)}
-          activeOpacity={0.7}
-        >
-          <Text
+    <View style={[styles.classTabsCard, { backgroundColor: colors.surface }]}>
+      <View style={[styles.classTabs, { backgroundColor: colors.surfaceSecondary }]}>
+        {classes.map((className) => (
+          <TouchableOpacity
+            key={className}
             style={[
-              styles.classTabText,
-              { color: selected === cls ? '#FFF' : colors.textSecondary },
+              styles.classTab,
+              {
+                backgroundColor: selected === className ? colors.surface : 'transparent',
+                borderColor: selected === className ? colors.primary : 'transparent',
+              },
             ]}
+            onPress={() => onSelect(className)}
+            activeOpacity={0.7}
           >
-            {cls}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            <Text
+              style={[
+                styles.classTabText,
+                { color: selected === className ? colors.primary : colors.textSecondary },
+                selected === className && { fontWeight: '700' },
+              ]}
+            >
+              {className}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
@@ -391,31 +490,125 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  topSection: {
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
+    zIndex: 1,
   },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+  fixedPanel: {
+    paddingBottom: 4,
+  },
+  studentList: {
+    flex: 1,
+  },
+  summaryCard: {
+    marginHorizontal: -20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  summaryHero: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
+    overflow: 'hidden',
+  },
+  summaryDecorLarge: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    top: -35,
+    right: -20,
+  },
+  summaryDecorSmall: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    bottom: -24,
+    left: -10,
+  },
+  summaryEyebrow: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.68)',
     letterSpacing: 0.3,
   },
-  addBtn: {
-    width: 34,
-    height: 34,
+  summaryClassName: {
+    marginTop: 4,
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  summaryHint: {
+    marginTop: 4,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.78)',
+  },
+  summaryStatsRow: {
+    flexDirection: 'row',
+  },
+  summaryStatItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  summaryStatValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  summaryStatLabel: {
+    fontSize: 11,
+    marginTop: 3,
+  },
+  toolbar: {
+    paddingTop: 12,
+  },
+  classTabsCard: {
+    borderRadius: 16,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  classTabs: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 3,
+    gap: 6,
+  },
+  classTab: {
+    flex: 1,
+    paddingVertical: 9,
     borderRadius: 10,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  classTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  searchCard: {
+    marginTop: 12,
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   searchSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 14,
     gap: 10,
   },
   searchBar: {
@@ -434,27 +627,6 @@ const styles = StyleSheet.create({
     height: '100%',
     outlineStyle: 'none',
   } as any,
-  toolbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 14,
-  },
-  classTabs: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  classTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  classTabText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
   importBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -468,38 +640,67 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  statsRow: {
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    height: 36,
+    borderRadius: 10,
+  },
+  addBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  searchFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 8,
+    marginTop: 10,
+  },
+  searchFooterText: {
+    fontSize: 11,
   },
   statsText: {
     fontSize: 13,
   },
-  genderStats: {
+  sectionHeader: {
+    paddingTop: 12,
+    paddingBottom: 8,
     flexDirection: 'row',
-    gap: 12,
-  },
-  genderStatItem: {
-    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 3,
   },
-  genderStatText: {
-    fontSize: 13,
-    fontWeight: '500',
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    marginTop: 3,
+  },
+  sectionBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  sectionBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   list: {
     paddingHorizontal: 20,
     paddingBottom: 24,
+    flexGrow: 1,
   },
   studentCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    padding: 13,
     borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -508,21 +709,27 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
   },
   studentInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 10,
   },
   studentNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+  },
+  studentTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -538,8 +745,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  studentNoBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
   studentNo: {
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '600',
   },
   studentMetaRow: {
     flexDirection: 'row',
@@ -558,19 +771,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    height: 36,
-    borderRadius: 10,
-  },
-  addBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
   },
   modalOverlay: {
     flex: 1,

@@ -1,25 +1,10 @@
-import { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  ScrollView,
-  Platform,
-  Alert,
-  Modal,
-  TextInput,
-} from 'react-native';
+﻿import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Platform, Alert, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme, useThemeMode } from '../src/theme';
-import {
-  getReminderSettings,
-  saveReminderSettings,
-  type ReminderSettings,
-} from '../src/services/reminderSettings';
+import { getReminderSettings, saveReminderSettings, type ReminderSettings } from '../src/services/reminderSettings';
 import { requestNotificationPermission, cancelAllCourseReminders } from '../src/services/courseReminder';
 
 const MINUTE_OPTIONS = [5, 10, 15, 20, 30];
@@ -34,10 +19,7 @@ const themeModeLabels: Record<ThemeModeType, string> = {
 export default function SettingsScreen() {
   const colors = useTheme();
   const { themeMode, setThemeMode } = useThemeMode();
-  const [settings, setSettings] = useState<ReminderSettings>({
-    enabled: true,
-    minutesBefore: 10,
-  });
+  const [settings, setSettings] = useState<ReminderSettings>({ enabled: true, minutesBefore: 10 });
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -60,15 +42,15 @@ export default function SettingsScreen() {
       await cancelAllCourseReminders();
     }
 
-    const newSettings = { ...settings, enabled };
-    setSettings(newSettings);
-    await saveReminderSettings(newSettings);
+    const nextSettings = { ...settings, enabled };
+    setSettings(nextSettings);
+    await saveReminderSettings(nextSettings);
   };
 
   const handleMinutesChange = async (minutes: number) => {
-    const newSettings = { ...settings, minutesBefore: minutes };
-    setSettings(newSettings);
-    await saveReminderSettings(newSettings);
+    const nextSettings = { ...settings, minutesBefore: minutes };
+    setSettings(nextSettings);
+    await saveReminderSettings(nextSettings);
   };
 
   const handleSubmitFeedback = () => {
@@ -76,40 +58,89 @@ export default function SettingsScreen() {
       Alert.alert('提示', '请输入反馈内容');
       return;
     }
-    // TODO: 后续对接后端推送到管理后台
-    Alert.alert('提交成功', '感谢您的反馈，我们会尽快处理！');
+
+    Alert.alert('提交成功', '感谢你的反馈，我们会尽快查看。');
     setFeedbackText('');
     setShowFeedbackModal(false);
   };
 
+  const themeOptions: { mode: ThemeModeType; label: string; icon: keyof typeof Ionicons.glyphMap; description: string }[] = [
+    { mode: 'system', label: '跟随系统', icon: 'phone-portrait-outline', description: '自动匹配系统当前外观' },
+    { mode: 'light', label: '浅色模式', icon: 'sunny-outline', description: '界面更明亮，适合白天使用' },
+    { mode: 'dark', label: '深色模式', icon: 'moon-outline', description: '降低夜间视觉刺激，更沉稳' },
+  ];
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* 顶部导航 */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text }]}>设置</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
+        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* 课前提醒 */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>课程提醒</Text>
+        <View style={styles.navBar}>
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={20} color="#FFF" />
+          </TouchableOpacity>
+          <View style={styles.navCenter}>
+            <Text style={styles.navTitle}>设置</Text>
+            <Text style={styles.navSubtitle}>提醒 · 主题 · 反馈</Text>
+          </View>
+          <View style={styles.navGhost} />
         </View>
 
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroEyebrowWrap}>
+              <Ionicons name="sparkles-outline" size={12} color="rgba(255,255,255,0.88)" />
+              <Text style={styles.heroEyebrow}>偏好中心</Text>
+            </View>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeLabel}>当前主题</Text>
+              <Text style={styles.heroBadgeValue}>{themeModeLabels[themeMode]}</Text>
+            </View>
+          </View>
+          <Text style={styles.heroTitle}>常用设置集中到一个入口</Text>
+          <Text style={styles.heroSubtitle}>课程提醒、外观模式和帮助反馈统一成同一套卡片层级，查看更快，操作也更顺手。</Text>
+          <View style={styles.heroStatsRow}>
+            {[
+              { label: '提醒', value: settings.enabled ? '开启' : '关闭' },
+              { label: '提前', value: `${settings.minutesBefore} 分钟` },
+              { label: '反馈', value: '已就绪' },
+            ].map((item) => (
+              <View key={item.label} style={styles.heroStatChip}>
+                <Text style={styles.heroStatLabel}>{item.label}</Text>
+                <Text style={styles.heroStatValue}>{item.value}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.pageContent}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleWrap}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>课程提醒</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>针对“我的课程”自动调度提醒</Text>
+          </View>
+          <View style={[styles.sectionBadge, { backgroundColor: settings.enabled ? colors.palette.green.bg : colors.surfaceSecondary }]}>
+            <Text style={[styles.sectionBadgeText, { color: settings.enabled ? colors.palette.green.text : colors.textSecondary }]}>
+              {settings.enabled ? '已开启' : '已关闭'}
+            </Text>
+          </View>
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}> 
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: colors.palette.green.bg }]}>
-                <Ionicons name="notifications" size={18} color={colors.palette.green.text} />
+              <View style={[styles.settingIcon, { backgroundColor: colors.palette.green.bg }]}> 
+                <Ionicons name="notifications-outline" size={18} color={colors.palette.green.text} />
               </View>
-              <View>
+              <View style={styles.settingBody}>
                 <Text style={[styles.settingTitle, { color: colors.text }]}>课前提醒</Text>
-                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>
-                  在您的课程开始前发送通知提醒
-                </Text>
+                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>课程开始前发送本地通知，帮助老师提前进入状态</Text>
               </View>
             </View>
             <Switch
@@ -125,181 +156,247 @@ export default function SettingsScreen() {
             <>
               <View style={[styles.divider, { backgroundColor: colors.divider }]} />
               <View style={styles.minutesSection}>
-                <Text style={[styles.minutesLabel, { color: colors.textSecondary }]}>提前提醒时间</Text>
-                <View style={styles.minutesOptions}>
-                  {MINUTE_OPTIONS.map((min) => {
-                    const isSelected = settings.minutesBefore === min;
+                <View style={[styles.minutesPanel, { backgroundColor: colors.surfaceSecondary }]}>
+                  <View style={styles.minutesHeader}>
+                    <Text style={[styles.formLabel, { color: colors.textSecondary }]}>提醒时间</Text>
+                    <Text style={[styles.minutesValue, { color: colors.primary }]}>{settings.minutesBefore} 分钟前</Text>
+                  </View>
+                <View style={styles.minutesWrap}>
+                  {MINUTE_OPTIONS.map((minute) => {
+                    const selected = settings.minutesBefore === minute;
                     return (
                       <TouchableOpacity
-                        key={min}
+                        key={minute}
                         style={[
                           styles.minuteChip,
                           {
-                            backgroundColor: isSelected ? colors.primary : colors.surfaceSecondary,
-                            borderColor: isSelected ? colors.primary : colors.border,
+                            backgroundColor: selected ? colors.primary : colors.surfaceSecondary,
+                            borderColor: selected ? colors.primary : colors.border,
                           },
                         ]}
-                        onPress={() => handleMinutesChange(min)}
-                        activeOpacity={0.7}
+                        activeOpacity={0.75}
+                        onPress={() => handleMinutesChange(minute)}
                       >
-                        <Text style={[styles.minuteChipText, { color: isSelected ? '#FFF' : colors.textSecondary }]}>
-                          {min}分钟
-                        </Text>
+                        <Text style={[styles.minuteChipText, { color: selected ? '#FFF' : colors.textSecondary }]}>{minute} 分钟</Text>
                       </TouchableOpacity>
                     );
                   })}
+                </View>
                 </View>
               </View>
             </>
           )}
         </View>
 
-        <View style={styles.tipSection}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.textTertiary} />
-          <Text style={[styles.tipText, { color: colors.textTertiary }]}>
-            课前提醒仅对标记为"我的课程"的课程生效，每天打开APP时会自动调度当天的提醒。
-          </Text>
+        <View style={[styles.tipCard, { backgroundColor: colors.surface }]}> 
+          <View style={[styles.tipIconWrap, { backgroundColor: colors.surfaceSecondary }]}>
+            <Ionicons name="information-circle-outline" size={15} color={colors.textTertiary} />
+          </View>
+          <Text style={[styles.tipText, { color: colors.textTertiary }]}>提醒仅对标记为“我的课程”的课程生效，打开 App 时会自动刷新当天提醒计划。</Text>
         </View>
 
-        {/* 通用 */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>通用</Text>
+          <View style={styles.sectionTitleWrap}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>显示与个性化</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>统一主题入口和说明文案</Text>
+          </View>
+          <View style={[styles.sectionBadge, { backgroundColor: colors.palette.purple.bg }]}>
+            <Text style={[styles.sectionBadgeText, { color: colors.palette.purple.text }]}>{themeModeLabels[themeMode]}</Text>
+          </View>
         </View>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <TouchableOpacity style={styles.settingRow} onPress={() => setShowThemeModal(true)}>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+          <TouchableOpacity style={styles.settingRow} activeOpacity={0.75} onPress={() => setShowThemeModal(true)}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: colors.palette.purple.bg }]}>
-                <Ionicons name="color-palette" size={18} color={colors.palette.purple.text} />
+              <View style={[styles.settingIcon, { backgroundColor: colors.palette.purple.bg }]}> 
+                <Ionicons name="color-palette-outline" size={18} color={colors.palette.purple.text} />
               </View>
-              <Text style={[styles.settingTitle, { color: colors.text }]}>主题</Text>
+              <View style={styles.settingBody}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>主题模式</Text>
+                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>跟随系统或手动切换浅色、深色模式</Text>
+              </View>
             </View>
             <View style={styles.settingRight}>
-              <Text style={[styles.settingValue, { color: colors.textTertiary }]}>{themeModeLabels[themeMode]}</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+              <View style={[styles.valueBadge, { backgroundColor: colors.palette.purple.bg }]}>
+                <Text style={[styles.valueBadgeText, { color: colors.palette.purple.text }]}>{themeModeLabels[themeMode]}</Text>
+              </View>
+              <View style={[styles.chevronWrap, { backgroundColor: colors.surfaceSecondary }]}>
+                <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+              </View>
             </View>
           </TouchableOpacity>
         </View>
 
-        {/* 其他 */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>其他</Text>
+          <View style={styles.sectionTitleWrap}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>帮助与反馈</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>让意见反馈和版本信息更容易发现</Text>
+          </View>
+          <View style={[styles.sectionBadge, { backgroundColor: colors.palette.cyan.bg }]}>
+            <Text style={[styles.sectionBadgeText, { color: colors.palette.cyan.text }]}>v1.0.0</Text>
+          </View>
         </View>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <TouchableOpacity style={styles.settingRow} onPress={() => setShowFeedbackModal(true)}>
+        <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+          <TouchableOpacity style={styles.settingRow} activeOpacity={0.75} onPress={() => setShowFeedbackModal(true)}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: colors.palette.orange.bg }]}>
-                <Ionicons name="chatbubble-ellipses" size={18} color={colors.palette.orange.text} />
+              <View style={[styles.settingIcon, { backgroundColor: colors.palette.orange.bg }]}> 
+                <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.palette.orange.text} />
               </View>
-              <View>
+              <View style={styles.settingBody}>
                 <Text style={[styles.settingTitle, { color: colors.text }]}>意见反馈</Text>
-                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>问题反馈和建议</Text>
+                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>记录体验问题、需求建议和细节优化想法</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+            <View style={[styles.chevronWrap, { backgroundColor: colors.surfaceSecondary }]}>
+              <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+            </View>
           </TouchableOpacity>
 
           <View style={[styles.divider, { backgroundColor: colors.divider }]} />
 
-          <TouchableOpacity style={styles.settingRow} onPress={() => setShowAboutModal(true)}>
+          <TouchableOpacity style={styles.settingRow} activeOpacity={0.75} onPress={() => setShowAboutModal(true)}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: colors.palette.cyan.bg }]}>
-                <Ionicons name="information-circle" size={18} color={colors.palette.cyan.text} />
+              <View style={[styles.settingIcon, { backgroundColor: colors.palette.cyan.bg }]}> 
+                <Ionicons name="information-circle-outline" size={18} color={colors.palette.cyan.text} />
               </View>
-              <View>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>关于</Text>
-                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>版本信息</Text>
+              <View style={styles.settingBody}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>关于应用</Text>
+                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>查看版本说明与基础产品介绍</Text>
               </View>
             </View>
             <View style={styles.settingRight}>
-              <Text style={[styles.settingValue, { color: colors.textTertiary }]}>v1.0.0</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+              <View style={[styles.valueBadge, { backgroundColor: colors.palette.cyan.bg }]}>
+                <Text style={[styles.valueBadgeText, { color: colors.palette.cyan.text }]}>v1.0.0</Text>
+              </View>
+              <View style={[styles.chevronWrap, { backgroundColor: colors.surfaceSecondary }]}>
+                <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+              </View>
             </View>
           </TouchableOpacity>
         </View>
-
-        <View style={{ height: 40 }} />
+        </View>
       </ScrollView>
 
-      {/* 主题选择弹窗 */}
       <Modal visible={showThemeModal} transparent animationType="fade" onRequestClose={() => setShowThemeModal(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowThemeModal(false)}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>选择主题</Text>
-            {([
-              { mode: 'system' as ThemeModeType, label: '跟随系统', icon: 'phone-portrait-outline' as const },
-              { mode: 'light' as ThemeModeType, label: '浅色模式', icon: 'sunny-outline' as const },
-              { mode: 'dark' as ThemeModeType, label: '深色模式', icon: 'moon-outline' as const },
-            ]).map((item) => (
+          <View style={[styles.modalSheet, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHero}>
+              <View style={[styles.modalHeroIcon, { backgroundColor: colors.palette.purple.bg }]}>
+                <Ionicons name="color-palette-outline" size={20} color={colors.palette.purple.text} />
+              </View>
+              <View style={styles.modalHeroTextWrap}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>选择主题模式</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>切换到更适合当前环境的界面外观。</Text>
+              </View>
+              <TouchableOpacity style={[styles.modalCloseButton, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setShowThemeModal(false)}>
+                <Ionicons name="close" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+            {themeOptions.map((item) => (
               <TouchableOpacity
                 key={item.mode}
-                style={[styles.optionRow, themeMode === item.mode && { backgroundColor: colors.primaryLight }]}
-                onPress={() => { setThemeMode(item.mode); setShowThemeModal(false); }}
+                style={[
+                  styles.optionRow,
+                  {
+                    backgroundColor: themeMode === item.mode ? colors.primaryLight : colors.surfaceSecondary,
+                    borderColor: themeMode === item.mode ? colors.primary : colors.border,
+                  },
+                ]}
+                activeOpacity={0.75}
+                onPress={() => {
+                  setThemeMode(item.mode);
+                  setShowThemeModal(false);
+                }}
               >
                 <View style={styles.optionLeft}>
-                  <Ionicons name={item.icon} size={18} color={themeMode === item.mode ? colors.primary : colors.textSecondary} />
-                  <Text style={[styles.optionText, { color: themeMode === item.mode ? colors.primary : colors.text }]}>{item.label}</Text>
+                  <View style={[styles.optionIconWrap, { backgroundColor: themeMode === item.mode ? '#FFFFFF' : colors.surface }]}>
+                    <Ionicons name={item.icon} size={18} color={themeMode === item.mode ? colors.primary : colors.textSecondary} />
+                  </View>
+                  <View style={styles.optionCopy}>
+                    <Text style={[styles.optionText, { color: themeMode === item.mode ? colors.primary : colors.text }]}>{item.label}</Text>
+                    <Text style={[styles.optionHint, { color: themeMode === item.mode ? colors.primary : colors.textTertiary }]}>{item.description}</Text>
+                  </View>
                 </View>
-                {themeMode === item.mode && <Ionicons name="checkmark" size={20} color={colors.primary} />}
+                {themeMode === item.mode && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
               </TouchableOpacity>
             ))}
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>
 
-      {/* 关于弹窗 */}
       <Modal visible={showAboutModal} transparent animationType="fade" onRequestClose={() => setShowAboutModal(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowAboutModal(false)}>
-          <View style={[styles.aboutModal, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
-            <View style={[styles.aboutIcon, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.aboutIconText, { color: colors.primary }]}>C</Text>
+          <View style={[styles.modalSheet, styles.aboutSheet, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHero}>
+              <View style={[styles.modalHeroIcon, { backgroundColor: colors.primaryLight }]}>
+                <Text style={[styles.aboutIconText, { color: colors.primary }]}>C</Text>
+              </View>
+              <View style={styles.modalHeroTextWrap}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>ClassHelper</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>版本 1.0.0</Text>
+              </View>
+              <TouchableOpacity style={[styles.modalCloseButton, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setShowAboutModal(false)}>
+                <Ionicons name="close" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
             </View>
-            <Text style={[styles.aboutName, { color: colors.text }]}>ClassHelper</Text>
-            <Text style={[styles.aboutVersion, { color: colors.textTertiary }]}>版本 1.0.0</Text>
-            <View style={[styles.aboutDivider, { backgroundColor: colors.divider }]} />
-            <Text style={[styles.aboutDesc, { color: colors.textSecondary }]}>
-              面向小学教师的智能教学管理工具，帮助教师高效管理班级、学生、课程、成绩和考勤。
-            </Text>
-            <View style={styles.aboutInfoList}>
+            <View style={styles.modalBody}>
+            <Text style={[styles.aboutDesc, { color: colors.textSecondary }]}>面向小学教师的教学管理助手，帮助老师更高效地管理班级、学生、课程、成绩和考勤。</Text>
+            <View style={[styles.aboutInfoCard, { backgroundColor: colors.surfaceSecondary }]}> 
               <View style={styles.aboutInfoRow}>
                 <Text style={[styles.aboutInfoLabel, { color: colors.textTertiary }]}>更新日期</Text>
                 <Text style={[styles.aboutInfoValue, { color: colors.text }]}>2026-03-23</Text>
               </View>
+              <View style={styles.aboutInfoRow}>
+                <Text style={[styles.aboutInfoLabel, { color: colors.textTertiary }]}>当前阶段</Text>
+                <Text style={[styles.aboutInfoValue, { color: colors.text }]}>前端静态完善</Text>
+              </View>
             </View>
-            <TouchableOpacity style={[styles.aboutCloseBtn, { backgroundColor: colors.primary }]} onPress={() => setShowAboutModal(false)}>
-              <Text style={styles.aboutCloseBtnText}>关闭</Text>
+            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} activeOpacity={0.82} onPress={() => setShowAboutModal(false)}>
+              <Text style={styles.primaryButtonText}>关闭</Text>
             </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>
 
-      {/* 意见反馈弹窗 */}
       <Modal visible={showFeedbackModal} transparent animationType="fade" onRequestClose={() => setShowFeedbackModal(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowFeedbackModal(false)}>
-          <View style={[styles.feedbackModal, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>意见反馈</Text>
-
-            <TextInput
-              style={[styles.feedbackInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
-              placeholder="请描述您遇到的问题或建议..."
-              placeholderTextColor={colors.textTertiary}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-              value={feedbackText}
-              onChangeText={setFeedbackText}
-            />
-            <TouchableOpacity
-              style={[styles.submitBtn, { backgroundColor: colors.primary }]}
-              onPress={handleSubmitFeedback}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="send" size={16} color="#FFF" />
-              <Text style={styles.submitBtnText}>提交反馈</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.closeTextBtn]} onPress={() => setShowFeedbackModal(false)}>
-              <Text style={[styles.closeTextBtnText, { color: colors.textTertiary }]}>取消</Text>
-            </TouchableOpacity>
+          <View style={[styles.modalSheet, styles.feedbackSheet, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHero}>
+              <View style={[styles.modalHeroIcon, { backgroundColor: colors.palette.orange.bg }]}>
+                <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.palette.orange.text} />
+              </View>
+              <View style={styles.modalHeroTextWrap}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>意见反馈</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>欢迎把你看到的 UI 细节、交互建议或功能想法记录下来。</Text>
+              </View>
+              <TouchableOpacity style={[styles.modalCloseButton, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setShowFeedbackModal(false)}>
+                <Ionicons name="close" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+            <View style={[styles.feedbackInputWrap, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.feedbackInput, { color: colors.text }]}
+                placeholder="请描述你遇到的问题或建议..."
+                placeholderTextColor={colors.textTertiary}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+                value={feedbackText}
+                onChangeText={setFeedbackText}
+              />
+            </View>
+            </View>
+            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+              <TouchableOpacity style={[styles.modalCancelButton, { borderColor: colors.border }]} activeOpacity={0.75} onPress={() => setShowFeedbackModal(false)}>
+                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]} activeOpacity={0.82} onPress={handleSubmitFeedback}>
+                <Text style={styles.modalConfirmText}>提交反馈</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -309,52 +406,284 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  navBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
-  navTitle: { fontSize: 17, fontWeight: '700' },
-  sectionHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
-  sectionLabel: { fontSize: 13, fontWeight: '500' },
-  card: { marginHorizontal: 20, borderRadius: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1 },
-  settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
+  topSection: {
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    paddingBottom: 12,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  navBar: { flexDirection: 'row', alignItems: 'center' },
+  navButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  navCenter: { flex: 1, marginLeft: 10 },
+  navGhost: { width: 36, height: 36 },
+  navTitle: { fontSize: 16, fontWeight: '800', color: '#FFF' },
+  navSubtitle: { marginTop: 1, fontSize: 11, color: 'rgba(255,255,255,0.78)' },
+  heroCard: { paddingTop: 10 },
+  heroDecorLarge: {
+    position: 'absolute',
+    width: 156,
+    height: 156,
+    borderRadius: 78,
+    top: -62,
+    right: -18,
+  },
+  heroDecorSmall: {
+    position: 'absolute',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    bottom: -24,
+    right: 24,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  heroEyebrowWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
+  heroEyebrow: { color: 'rgba(255,255,255,0.86)', fontSize: 10, fontWeight: '700' },
+  heroBadge: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
+  heroBadgeLabel: { color: 'rgba(255,255,255,0.72)', fontSize: 10, fontWeight: '700' },
+  heroBadgeValue: { marginTop: 2, color: '#FFF', fontSize: 13, fontWeight: '800' },
+  heroTitle: { marginTop: 10, color: '#FFF', fontSize: 20, fontWeight: '800' },
+  heroSubtitle: { marginTop: 6, color: 'rgba(255,255,255,0.84)', fontSize: 12, lineHeight: 18 },
+  heroStatsRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  heroStatChip: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  heroStatValue: { color: '#FFF', fontSize: 13, fontWeight: '800', textAlign: 'center' },
+  scrollContent: { paddingBottom: 28 },
+  pageContent: { paddingHorizontal: 12, paddingTop: 10 },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  sectionTitleWrap: { flex: 1 },
+  sectionTitle: { fontSize: 16, fontWeight: '800' },
+  sectionSubtitle: { marginTop: 3, fontSize: 12, lineHeight: 17 },
+  sectionBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  sectionBadgeText: { fontSize: 11, fontWeight: '700' },
+  card: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+  },
   settingLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  settingIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  settingTitle: { fontSize: 15, fontWeight: '500' },
-  settingDesc: { fontSize: 12, marginTop: 2 },
-  settingRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  settingValue: { fontSize: 14 },
-  divider: { height: 0.5, marginLeft: 62 },
-  minutesSection: { paddingHorizontal: 16, paddingVertical: 14 },
-  minutesLabel: { fontSize: 13, fontWeight: '500', marginBottom: 12 },
-  minutesOptions: { flexDirection: 'row', gap: 8 },
-  minuteChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
-  minuteChipText: { fontSize: 13, fontWeight: '600' },
-  tipSection: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, paddingHorizontal: 20, paddingTop: 12 },
-  tipText: { fontSize: 12, flex: 1, lineHeight: 18 },
-  // Modals
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  modalContent: { width: '100%', maxWidth: 360, borderRadius: 20, paddingVertical: 20, paddingHorizontal: 4 },
-  modalTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 16, paddingHorizontal: 16 },
-  optionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 10, marginHorizontal: 8, marginBottom: 4 },
-  optionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  optionText: { fontSize: 15, fontWeight: '500' },
-  // About
-  aboutModal: { width: '100%', maxWidth: 360, borderRadius: 20, padding: 24, alignItems: 'center' },
-  aboutIcon: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  aboutIconText: { fontSize: 28, fontWeight: '800' },
-  aboutName: { fontSize: 22, fontWeight: '800' },
-  aboutVersion: { fontSize: 13, marginTop: 4 },
-  aboutDivider: { width: '100%', height: 0.5, marginVertical: 16 },
-  aboutDesc: { fontSize: 13, lineHeight: 20, textAlign: 'center' },
-  aboutInfoList: { width: '100%', marginTop: 16, gap: 8 },
-  aboutInfoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  settingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingBody: { flex: 1, minWidth: 0 },
+  settingTitle: { fontSize: 15, fontWeight: '800' },
+  settingDesc: { marginTop: 4, fontSize: 12, lineHeight: 18 },
+  settingRight: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 10 },
+  valueBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  valueBadgeText: { fontSize: 11, fontWeight: '700' },
+  chevronWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  divider: { height: 0.5, marginLeft: 68 },
+  minutesSection: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16 },
+  minutesPanel: { borderRadius: 16, padding: 12 },
+  minutesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 10,
+  },
+  formLabel: { fontSize: 12, fontWeight: '700' },
+  minutesValue: { fontSize: 12, fontWeight: '800' },
+  minutesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  minuteChip: {
+    minWidth: 76,
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  minuteChipText: { fontSize: 13, fontWeight: '700' },
+  tipCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  tipIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tipText: { flex: 1, fontSize: 12, lineHeight: 18 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 20,
+  },
+  modalSheet: { width: '100%', maxWidth: 400, borderRadius: 24, overflow: 'hidden' },
+  aboutSheet: { maxWidth: 380 },
+  feedbackSheet: { maxWidth: 420 },
+  modalHero: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 14,
+  },
+  modalHeroIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalHeroTextWrap: { flex: 1 },
+  modalTitle: { fontSize: 18, fontWeight: '800' },
+  modalSubtitle: { marginTop: 4, fontSize: 12, lineHeight: 18 },
+  modalCloseButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBody: { paddingHorizontal: 18, paddingBottom: 18 },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  optionLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  optionIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionCopy: { flex: 1 },
+  optionText: { fontSize: 15, fontWeight: '700' },
+  optionHint: { marginTop: 3, fontSize: 11, lineHeight: 16 },
+  aboutIconText: { fontSize: 24, fontWeight: '800' },
+  aboutDesc: { fontSize: 13, lineHeight: 20 },
+  aboutInfoCard: { width: '100%', borderRadius: 18, padding: 14, marginTop: 16, gap: 12 },
+  aboutInfoRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   aboutInfoLabel: { fontSize: 13 },
-  aboutInfoValue: { fontSize: 13, fontWeight: '500' },
-  aboutCloseBtn: { width: '100%', height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
-  aboutCloseBtnText: { color: '#FFF', fontSize: 15, fontWeight: '600' },
-  // Feedback
-  feedbackModal: { width: '100%', maxWidth: 400, borderRadius: 20, padding: 20 },
-  feedbackInput: { height: 140, borderRadius: 12, paddingHorizontal: 14, paddingTop: 12, fontSize: 14, borderWidth: 1, textAlignVertical: 'top' } as any,
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 12, marginTop: 12 },
-  submitBtnText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
-  closeTextBtn: { alignItems: 'center', paddingVertical: 12 },
-  closeTextBtnText: { fontSize: 14 },
+  aboutInfoValue: { fontSize: 13, fontWeight: '700' },
+  primaryButton: {
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 18,
+  },
+  primaryButtonText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
+  feedbackInputWrap: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  feedbackInput: { minHeight: 128, padding: 0, fontSize: 14 },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 18,
+    borderTopWidth: 1,
+  },
+  modalCancelButton: {
+    flex: 1,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmButton: {
+    flex: 1.35,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelText: { fontSize: 14, fontWeight: '700' },
+  modalConfirmText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
 });

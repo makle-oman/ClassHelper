@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,8 +26,6 @@ interface ArchivedClass {
 
 const gradeColorKeys = ['blue', 'green', 'orange', 'red', 'purple', 'cyan'] as const;
 const getGradeColorKey = (gradeNum: number) => gradeColorKeys[(gradeNum - 1) % 6];
-
-const gradeNames = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
 const gradeChars = ['一', '二', '三', '四', '五', '六'];
 
 const mockClasses: ClassForPromotion[] = [
@@ -45,175 +43,216 @@ export default function PromotionScreen() {
   const [classes] = useState<ClassForPromotion[]>(mockClasses);
   const [archived] = useState<ArchivedClass[]>(mockArchived);
 
-  const promotableClasses = classes.filter((c) => !c.isGraduating);
-  const graduatingClasses = classes.filter((c) => c.isGraduating);
+  const promotableClasses = classes.filter((item) => !item.isGraduating);
+  const graduatingClasses = classes.filter((item) => item.isGraduating);
+  const totalStudents = useMemo(() => classes.reduce((sum, item) => sum + item.studentCount, 0), [classes]);
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)/index');
+  };
 
   const handlePromote = () => {
-    const names = promotableClasses.map((c) => c.name).join('、');
+    const names = promotableClasses.map((item) => item.name).join('、');
     Alert.alert(
-      '确认升级',
-      `以下班级将整体升至下一年级：\n${names}\n\n所有学生信息将跟随迁移，此操作不可撤销。`,
+      '确认升年级',
+      `以下班级将整体升入下一年级：\n${names}\n\n所有学生信息会随班级同步迁移。`,
       [
         { text: '取消', style: 'cancel' },
-        { text: '确认升级', style: 'default', onPress: () => Alert.alert('操作成功', '班级已成功升级至下一年级') },
-      ],
+        {
+          text: '确认升年级',
+          onPress: () => Alert.alert('操作成功', '班级已完成静态升迁预演。'),
+        },
+      ]
     );
   };
 
   const handleArchive = () => {
-    const names = graduatingClasses.map((c) => c.name).join('、');
+    const names = graduatingClasses.map((item) => item.name).join('、');
     Alert.alert(
       '确认毕业归档',
-      `以下班级将执行毕业归档：\n${names}\n\n归档后班级将移至"已归档"列表，此操作不可撤销。`,
+      `以下班级将执行毕业归档：\n${names}\n\n归档后班级会移入历史区，仅保留查询能力。`,
       [
         { text: '取消', style: 'cancel' },
-        { text: '确认归档', style: 'destructive', onPress: () => Alert.alert('操作成功', '班级已成功归档') },
-      ],
+        {
+          text: '确认归档',
+          style: 'destructive',
+          onPress: () => Alert.alert('操作成功', '毕业班已完成静态归档预演。'),
+        },
+      ]
     );
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* 顶部导航 */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text }]}>年级升迁</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* 说明卡片 */}
-        <View style={[styles.infoCard, { backgroundColor: colors.palette.blue.bg }]}>
-          <Ionicons name="information-circle" size={20} color={colors.palette.blue.text} />
-          <Text style={[styles.infoText, { color: colors.palette.blue.text }]}>
-            年级升迁会将班级整体升至下一年级，所有学生信息跟随迁移。六年级班级将执行毕业归档。
-          </Text>
-        </View>
-
-        {/* 班级升迁预览 */}
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionDot, { backgroundColor: colors.primary }]} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>班级升迁预览</Text>
+      <View style={styles.topSection}>
+        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
+          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+          <View style={styles.heroTopBar}>
+            <TouchableOpacity
+              style={styles.heroBackButton}
+              onPress={handleBack}
+              activeOpacity={0.78}
+            >
+              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.heroPageTitle}>年级升迁</Text>
+            <View style={styles.heroTopSpacer} />
+          </View>
+          <Text style={styles.heroEyebrow}>年度升迁预演</Text>
+          <Text style={styles.heroTitle}>本学年共有 {classes.length} 个班级参与流转</Text>
+          <Text style={styles.heroSubtitle}>先把升年级与毕业归档的路径讲清楚，后续接接口更容易落动作。</Text>
+          <View style={styles.heroStatsRow}>
+            {[
+              { label: '待升年级', value: promotableClasses.length.toString() },
+              { label: '毕业归档', value: graduatingClasses.length.toString() },
+              { label: '涉及学生', value: totalStudents.toString() },
+            ].map((item, index) => (
+              <View
+                key={item.label}
+                style={[
+                  styles.heroStatItem,
+                  index < 2 && { borderRightWidth: 0.5, borderRightColor: 'rgba(255,255,255,0.14)' },
+                ]}
+              >
+                <Text style={styles.heroStatValue}>{item.value}</Text>
+                <Text style={styles.heroStatLabel}>{item.label}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
+        <View style={[styles.guideCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.sectionRow}>
+            <View>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>处理规则</Text>
+              <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>让老师一眼看懂“升班”和“归档”的区别</Text>
+            </View>
+          </View>
+          <View style={styles.guideList}>
+            {[
+              { title: '普通升迁', desc: '一至五年级班级整体升入下一年级，学生信息随班级迁移。', icon: 'trending-up-outline' as const, colorKey: 'green' as const },
+              { title: '毕业归档', desc: '六年级毕业班移入历史归档区，保留只读记录与追溯能力。', icon: 'archive-outline' as const, colorKey: 'orange' as const },
+            ].map((item) => (
+              <View key={item.title} style={[styles.guideItem, { backgroundColor: colors.surfaceSecondary }]}> 
+                <View style={[styles.guideIcon, { backgroundColor: colors.palette[item.colorKey].bg }]}> 
+                  <Ionicons name={item.icon} size={16} color={colors.palette[item.colorKey].text} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.guideTitle, { color: colors.text }]}>{item.title}</Text>
+                  <Text style={[styles.guideDesc, { color: colors.textTertiary }]}>{item.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {(promotableClasses.length > 0 || graduatingClasses.length > 0) && (
+          <View style={styles.actionRow}>
+            {promotableClasses.length > 0 && (
+              <TouchableOpacity
+                style={[styles.primaryAction, { backgroundColor: colors.primary }]}
+                activeOpacity={0.82}
+                onPress={handlePromote}
+              >
+                <Ionicons name="trending-up" size={18} color="#FFF" />
+                <Text style={styles.primaryActionText}>一键升年级</Text>
+              </TouchableOpacity>
+            )}
+            {graduatingClasses.length > 0 && (
+              <TouchableOpacity
+                style={[styles.secondaryAction, { backgroundColor: colors.palette.red.bg }]}
+                activeOpacity={0.82}
+                onPress={handleArchive}
+              >
+                <Ionicons name="archive" size={18} color={colors.palette.red.text} />
+                <Text style={[styles.secondaryActionText, { color: colors.palette.red.text }]}>毕业归档</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        <View style={styles.sectionRow}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>升迁预览</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>当前班级会流向哪个目标班级</Text>
+          </View>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.listSection}>
           {classes.map((cls) => {
-            const colorKey = getGradeColorKey(cls.gradeNumber);
-            const gc = colors.palette[colorKey];
-            const targetColorKey = cls.isGraduating ? 'red' : getGradeColorKey(cls.gradeNumber + 1);
-            const tgc = colors.palette[targetColorKey];
+            const fromPalette = colors.palette[getGradeColorKey(cls.gradeNumber)];
+            const toPalette = cls.isGraduating ? colors.palette.red : colors.palette[getGradeColorKey(Math.min(cls.gradeNumber + 1, 6))];
 
             return (
-              <View key={cls.id} style={[styles.promotionCard, { backgroundColor: colors.surface }]}>
-                {/* 当前班级 */}
-                <View style={styles.classInfo}>
-                  <View style={[styles.gradeAvatar, { backgroundColor: gc.bg }]}>
-                    <Text style={[styles.gradeAvatarText, { color: gc.text }]}>
-                      {gradeChars[cls.gradeNumber - 1]}
+              <View key={cls.id} style={[styles.flowCard, { backgroundColor: colors.surface }]}> 
+                <View style={styles.flowSide}>
+                  <View style={[styles.gradeAvatar, { backgroundColor: fromPalette.bg }]}> 
+                    <Text style={[styles.gradeAvatarText, { color: fromPalette.text }]}>{gradeChars[cls.gradeNumber - 1]}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.className, { color: colors.text }]}>{cls.name}</Text>
+                    <Text style={[styles.classMeta, { color: colors.textTertiary }]}>{cls.studentCount} 名学生 · 当前班级</Text>
+                  </View>
+                </View>
+
+                <View style={styles.arrowWrap}>
+                  <Ionicons name="arrow-forward" size={18} color={colors.primary} />
+                </View>
+
+                <View style={styles.flowSide}>
+                  <View style={[styles.gradeAvatar, { backgroundColor: toPalette.bg }]}> 
+                    {cls.isGraduating ? (
+                      <Ionicons name="archive" size={16} color={toPalette.text} />
+                    ) : (
+                      <Text style={[styles.gradeAvatarText, { color: toPalette.text }]}>{gradeChars[Math.min(cls.gradeNumber, 5)]}</Text>
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.className, { color: cls.isGraduating ? colors.palette.red.text : colors.text }]}>
+                      {cls.isGraduating ? '毕业归档' : cls.targetName}
+                    </Text>
+                    <Text style={[styles.classMeta, { color: colors.textTertiary }]}> 
+                      {cls.isGraduating ? '保留历史记录与只读查询' : '升入下一年级并保留班号'}
                     </Text>
                   </View>
-                  <View>
-                    <Text style={[styles.className, { color: colors.text }]}>{cls.name}</Text>
-                    <Text style={[styles.studentCount, { color: colors.textTertiary }]}>{cls.studentCount}名学生</Text>
-                  </View>
                 </View>
-
-                {/* 箭头 */}
-                <View style={styles.arrowBox}>
-                  <Ionicons name="arrow-forward" size={20} color={colors.primary} />
-                </View>
-
-                {/* 目标 */}
-                {cls.isGraduating ? (
-                  <View style={styles.classInfo}>
-                    <View style={[styles.gradeAvatar, { backgroundColor: colors.palette.red.bg }]}>
-                      <Ionicons name="archive" size={18} color={colors.palette.red.text} />
-                    </View>
-                    <View>
-                      <Text style={[styles.className, { color: colors.palette.red.text }]}>毕业归档</Text>
-                    </View>
-                  </View>
-                ) : (
-                  <View style={styles.classInfo}>
-                    <View style={[styles.gradeAvatar, { backgroundColor: tgc.bg }]}>
-                      <Text style={[styles.gradeAvatarText, { color: tgc.text }]}>
-                        {gradeChars[cls.gradeNumber]}
-                      </Text>
-                    </View>
-                    <View>
-                      <Text style={[styles.className, { color: colors.text }]}>{cls.targetName}</Text>
-                    </View>
-                  </View>
-                )}
               </View>
             );
           })}
         </View>
 
-        {/* 操作按钮 */}
-        <View style={styles.actionSection}>
-          {promotableClasses.length > 0 && (
-            <TouchableOpacity
-              style={[styles.promoteBtn, { backgroundColor: colors.primary }]}
-              activeOpacity={0.85}
-              onPress={handlePromote}
-            >
-              <Ionicons name="trending-up" size={20} color="#FFF" />
-              <Text style={styles.promoteBtnText}>一键升级</Text>
-            </TouchableOpacity>
-          )}
-
-          {graduatingClasses.length > 0 && (
-            <TouchableOpacity
-              style={[styles.archiveBtn, { borderColor: colors.palette.red.text }]}
-              activeOpacity={0.85}
-              onPress={handleArchive}
-            >
-              <Ionicons name="archive" size={20} color={colors.palette.red.text} />
-              <Text style={[styles.archiveBtnText, { color: colors.palette.red.text }]}>毕业归档</Text>
-            </TouchableOpacity>
-          )}
+        <View style={styles.sectionRow}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>已归档班级</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>保留毕业班的历史快照与人数信息</Text>
+          </View>
         </View>
 
-        {/* 已归档班级 */}
-        {archived.length > 0 && (
-          <>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <View style={[styles.sectionDot, { backgroundColor: colors.textTertiary }]} />
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>已归档班级</Text>
+        <View style={styles.listSection}>
+          {archived.map((cls) => (
+            <View key={cls.id} style={[styles.archivedCard, { backgroundColor: colors.surface }]}> 
+              <View style={styles.archivedLeft}>
+                <View style={[styles.archivedIcon, { backgroundColor: colors.surfaceSecondary }]}> 
+                  <Ionicons name="archive-outline" size={18} color={colors.textTertiary} />
+                </View>
+                <View>
+                  <Text style={[styles.archivedName, { color: colors.text }]}>{cls.name}</Text>
+                  <Text style={[styles.archivedMeta, { color: colors.textTertiary }]}>{cls.studentCount} 名学生 · 归档于 {cls.archivedDate}</Text>
+                </View>
+              </View>
+              <View style={[styles.archivedBadge, { backgroundColor: colors.surfaceSecondary }]}> 
+                <Text style={[styles.archivedBadgeText, { color: colors.textTertiary }]}>已归档</Text>
               </View>
             </View>
-
-            <View style={styles.listSection}>
-              {archived.map((cls) => (
-                <View key={cls.id} style={[styles.archivedCard, { backgroundColor: colors.surface }]}>
-                  <View style={styles.archivedLeft}>
-                    <View style={[styles.archivedAvatar, { backgroundColor: colors.surfaceSecondary }]}>
-                      <Ionicons name="archive-outline" size={18} color={colors.textTertiary} />
-                    </View>
-                    <View>
-                      <Text style={[styles.archivedName, { color: colors.textSecondary }]}>{cls.name}</Text>
-                      <Text style={[styles.archivedMeta, { color: colors.textTertiary }]}>{cls.studentCount}名学生</Text>
-                    </View>
-                  </View>
-                  <View style={styles.archivedRight}>
-                    <View style={[styles.archivedBadge, { backgroundColor: colors.surfaceSecondary }]}>
-                      <Text style={[styles.archivedBadgeText, { color: colors.textTertiary }]}>已归档</Text>
-                    </View>
-                    <Text style={[styles.archivedDate, { color: colors.textTertiary }]}>{cls.archivedDate}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        <View style={{ height: 40 }} />
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -221,179 +260,113 @@ export default function PromotionScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  // Nav bar
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-  },
-  navTitle: { fontSize: 17, fontWeight: '700' },
-
-  // Info card
-  infoCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    marginHorizontal: 20,
-    marginTop: 16,
-    padding: 14,
-    borderRadius: 14,
-  },
-  infoText: {
-    fontSize: 13,
-    lineHeight: 20,
-    flex: 1,
-    fontWeight: '500',
-  },
-
-  // Section header (dot-title pattern)
-  sectionHeader: {
+  topSection: { paddingHorizontal: 20, zIndex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 0, paddingBottom: 28 },
+  heroCard: {
+    marginHorizontal: -20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingTop: 10,
+    paddingBottom: 4,
+    overflow: 'hidden',
+    marginBottom: 12,
   },
-  sectionTitleRow: {
+  heroTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  sectionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  // Promotion cards
-  listSection: { paddingHorizontal: 20, gap: 12 },
-  promotionCard: {
-    flexDirection: 'row',
+  heroBackButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
-  classInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  heroTopSpacer: { width: 34, height: 34 },
+  heroPageTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  heroDecorLarge: {
+    position: 'absolute',
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    top: -32,
+    right: -12,
   },
-  gradeAvatar: {
-    width: 40,
-    height: 40,
+  heroDecorSmall: {
+    position: 'absolute',
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    bottom: -20,
+    right: 26,
+  },
+  heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
+  heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
+  heroSubtitle: { color: 'rgba(255,255,255,0.86)', fontSize: 11, lineHeight: 16, marginTop: 4 },
+  heroStatsRow: { flexDirection: 'row', marginTop: 10, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)', paddingVertical: 4 },
+  heroStatItem: { flex: 1, alignItems: 'center', paddingVertical: 5 },
+  heroStatValue: { color: '#FFF', fontSize: 16, fontWeight: '800' },
+  heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, marginTop: 2 },
+  guideCard: {
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gradeAvatarText: {
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  className: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  studentCount: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  arrowBox: {
-    paddingHorizontal: 12,
-  },
-
-  // Action buttons
-  actionSection: {
-    paddingHorizontal: 20,
-    marginTop: 20,
-    gap: 12,
-  },
-  promoteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 50,
-    borderRadius: 14,
-  },
-  promoteBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFF',
-  },
-  archiveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    height: 50,
-    borderRadius: 14,
-    borderWidth: 1.5,
-  },
-  archiveBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  // Archived section
-  archivedCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     padding: 16,
-    borderRadius: 16,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 1,
   },
-  archivedLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  archivedAvatar: {
-    width: 40,
-    height: 40,
+  sectionRow: { marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: '700' },
+  sectionHint: { fontSize: 12, marginTop: 4 },
+  guideList: { gap: 10 },
+  guideItem: { flexDirection: 'row', gap: 12, borderRadius: 16, padding: 14 },
+  guideIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  guideTitle: { fontSize: 14, fontWeight: '700' },
+  guideDesc: { fontSize: 12, lineHeight: 18, marginTop: 4 },
+  actionRow: { gap: 10, marginBottom: 18 },
+  primaryAction: { height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  primaryActionText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  secondaryAction: { height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  secondaryActionText: { fontSize: 15, fontWeight: '700' },
+  listSection: { gap: 12, marginBottom: 18 },
+  flowCard: {
     borderRadius: 20,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  flowSide: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  gradeAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  gradeAvatarText: { fontSize: 17, fontWeight: '800' },
+  className: { fontSize: 15, fontWeight: '700' },
+  classMeta: { fontSize: 12, marginTop: 4 },
+  arrowWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
+  archivedCard: {
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
   },
-  archivedName: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  archivedMeta: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  archivedRight: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  archivedBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  archivedBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  archivedDate: {
-    fontSize: 11,
-  },
+  archivedLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  archivedIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  archivedName: { fontSize: 15, fontWeight: '700' },
+  archivedMeta: { fontSize: 12, marginTop: 4 },
+  archivedBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  archivedBadgeText: { fontSize: 11, fontWeight: '700' },
 });

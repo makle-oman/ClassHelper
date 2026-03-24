@@ -1,81 +1,48 @@
-import { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
+﻿import { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
-
-const { width } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const colors = useTheme();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [phoneFocused, setPhoneFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [focusedField, setFocusedField] = useState<'phone' | 'password' | ''>('');
 
   const handleLogin = () => {
-    // TODO: 调用登录接口，目前直接跳转到主页
     router.replace('/(tabs)');
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* 顶部装饰 */}
-        <View style={[styles.topDecoration, { backgroundColor: colors.primary }]}>
-          <View style={[styles.decorCircle1, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-          <View style={[styles.decorCircle2, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
-          <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <Ionicons name="school" size={36} color="#FFF" />
-            </View>
-            <Text style={styles.logoTitle}>ClassHelper</Text>
-            <Text style={styles.logoSubtitle}>教师助手 · 让教学管理更轻松</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
+      <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.surface }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={[styles.heroSection, { backgroundColor: colors.primary }]}>
+          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+          <View style={styles.brandBadge}>
+            <Ionicons name="school" size={16} color="#FFF" />
+            <Text style={styles.brandBadgeText}>ClassHelper</Text>
           </View>
+          <Text style={styles.heroTitle}>欢迎回来</Text>
+          <Text style={styles.heroSubtitle}>登录后即可进入教师工作台，继续处理今天的课程与班级事务。</Text>
         </View>
 
-        {/* 登录表单 */}
-        <View style={[styles.formContainer, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.formTitle, { color: colors.text }]}>欢迎回来</Text>
-          <Text style={[styles.formSubtitle, { color: colors.textSecondary }]}>
-            登录您的教师账号
-          </Text>
-
-          {/* 手机号 */}
-          <View style={styles.inputWrapper}>
+        <View style={[styles.formCard, { backgroundColor: colors.surface }]}> 
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>手机号</Text>
             <View
               style={[
-                styles.inputContainer,
+                styles.inputShell,
                 {
                   backgroundColor: colors.surfaceSecondary,
-                  borderColor: phoneFocused ? colors.primary : colors.border,
-                  borderWidth: phoneFocused ? 1.5 : 1,
+                  borderColor: focusedField === 'phone' ? colors.primary : colors.border,
                 },
               ]}
             >
-              <Ionicons
-                name="phone-portrait-outline"
-                size={20}
-                color={phoneFocused ? colors.primary : colors.textTertiary}
-              />
+              <Ionicons name="phone-portrait-outline" size={18} color={focusedField === 'phone' ? colors.primary : colors.textTertiary} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
                 placeholder="请输入手机号"
@@ -84,29 +51,29 @@ export default function LoginScreen() {
                 maxLength={11}
                 value={phone}
                 onChangeText={setPhone}
-                onFocus={() => setPhoneFocused(true)}
-                onBlur={() => setPhoneFocused(false)}
+                onFocus={() => setFocusedField('phone')}
+                onBlur={() => setFocusedField('')}
               />
             </View>
           </View>
 
-          {/* 密码 */}
-          <View style={styles.inputWrapper}>
+          <View style={styles.fieldGroup}>
+            <View style={styles.passwordLabelRow}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>密码</Text>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => Alert.alert('提示', '静态阶段暂不处理找回密码流程。')}>
+                <Text style={[styles.forgotText, { color: colors.primary }]}>忘记密码？</Text>
+              </TouchableOpacity>
+            </View>
             <View
               style={[
-                styles.inputContainer,
+                styles.inputShell,
                 {
                   backgroundColor: colors.surfaceSecondary,
-                  borderColor: passwordFocused ? colors.primary : colors.border,
-                  borderWidth: passwordFocused ? 1.5 : 1,
+                  borderColor: focusedField === 'password' ? colors.primary : colors.border,
                 },
               ]}
             >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={passwordFocused ? colors.primary : colors.textTertiary}
-              />
+              <Ionicons name="lock-closed-outline" size={18} color={focusedField === 'password' ? colors.primary : colors.textTertiary} />
               <TextInput
                 style={[styles.input, { color: colors.text }]}
                 placeholder="请输入密码"
@@ -114,180 +81,101 @@ export default function LoginScreen() {
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
-                onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(false)}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField('')}
               />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons
-                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                  size={20}
-                  color={colors.textTertiary}
-                />
+              <TouchableOpacity activeOpacity={0.7} onPress={() => setShowPassword((prev) => !prev)}>
+                <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={18} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* 忘记密码 */}
-          <TouchableOpacity style={styles.forgotBtn}>
-            <Text style={[styles.forgotText, { color: colors.primary }]}>忘记密码？</Text>
+          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} activeOpacity={0.82} onPress={handleLogin}>
+            <Text style={styles.primaryButtonText}>登录</Text>
           </TouchableOpacity>
 
-          {/* 登录按钮 */}
-          <TouchableOpacity
-            style={[styles.loginButton, { backgroundColor: colors.primary }]}
-            onPress={handleLogin}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.loginButtonText}>登录</Text>
-          </TouchableOpacity>
-
-          {/* 注册 */}
-          <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              还没有账号？
-            </Text>
+          <View style={styles.footerRow}>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>还没有账号？</Text>
             <Link href="/(auth)/register" asChild>
-              <TouchableOpacity>
-                <Text style={[styles.linkText, { color: colors.primary }]}>立即注册</Text>
+              <TouchableOpacity activeOpacity={0.7}>
+                <Text style={[styles.footerLink, { color: colors.primary }]}>立即注册</Text>
               </TouchableOpacity>
             </Link>
           </View>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  topDecoration: {
-    height: 280,
-    justifyContent: 'flex-end',
-    paddingBottom: 50,
+  container: { flex: 1 },
+  heroSection: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
     overflow: 'hidden',
   },
-  decorCircle1: {
+  heroDecorLarge: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -50,
-    right: -30,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    top: -80,
+    right: -40,
   },
-  decorCircle2: {
+  heroDecorSmall: {
     position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    top: 60,
-    left: -40,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    bottom: -20,
+    left: -20,
   },
-  logoContainer: {
+  brandBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
   },
-  logoIcon: {
-    width: 68,
-    height: 68,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  logoTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 1,
-  },
-  logoSubtitle: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: 6,
-    letterSpacing: 0.5,
-  },
-  formContainer: {
-    flex: 1,
-    marginTop: -28,
+  brandBadgeText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
+  heroTitle: { color: '#FFF', fontSize: 28, fontWeight: '800', marginTop: 16 },
+  heroSubtitle: { color: 'rgba(255,255,255,0.84)', fontSize: 13, lineHeight: 20, marginTop: 8, paddingRight: 24 },
+  formCard: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingHorizontal: 28,
-    paddingTop: 36,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 26,
+    marginTop: -22,
   },
-  formTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  formSubtitle: {
-    fontSize: 14,
-    marginTop: 6,
-    marginBottom: 32,
-  },
-  inputWrapper: {
-    marginBottom: 16,
-  },
-  inputContainer: {
+  fieldGroup: { marginBottom: 14 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 9 },
+  passwordLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 },
+  forgotText: { fontSize: 12, fontWeight: '600' },
+  inputShell: {
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    gap: 12,
+    gap: 10,
+    paddingHorizontal: 14,
   },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    height: '100%',
-    outlineStyle: 'none',
-  } as any,
-  forgotBtn: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-    marginTop: 4,
-  },
-  forgotText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  loginButton: {
-    height: 52,
-    borderRadius: 14,
+  input: { flex: 1, fontSize: 14, height: '100%' },
+  primaryButton: {
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#4CC590',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    marginTop: 8,
   },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 28,
-    paddingBottom: 20,
-  },
-  footerText: {
-    fontSize: 14,
-  },
-  linkText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
+  primaryButtonText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  footerText: { fontSize: 13 },
+  footerLink: { fontSize: 13, fontWeight: '700', marginLeft: 4 },
 });

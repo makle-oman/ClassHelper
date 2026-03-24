@@ -115,12 +115,20 @@ export default function StudentDetailScreen() {
           onPress: () => {
             // TODO: 后续对接后端 API
             Alert.alert('已删除', `${student.name}已从班级中移除`, [
-              { text: '确定', onPress: () => router.back() },
+              { text: '确定', onPress: () => handleBack() },
             ]);
           },
         },
       ]
     );
+  };
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)/students');
   };
 
   const attendanceRate = student.attendance.totalDays > 0
@@ -179,35 +187,49 @@ export default function StudentDetailScreen() {
   };
 
   const analysis = analyzeStudent();
+  const recentAverage = student.recentScores.length > 0
+    ? Math.round((student.recentScores.reduce((sum, item) => sum + item.score, 0) / student.recentScores.length) * 10) / 10
+    : 0;
+  const highestScore = student.recentScores.length > 0 ? Math.max(...student.recentScores.map((item) => item.score)) : 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* 顶部导航 */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text }]}>{student.name}</Text>
-        <View style={{ flexDirection: 'row', gap: 16 }}>
-          <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => {
-            setEditForm({
-              name: student.name, gender: student.gender, birthDate: student.birthDate,
-              parentName: student.parentName, parentRelation: student.parentRelation, parentPhone: student.parentPhone,
-            });
-            setShowEditModal(true);
-          }}>
-            <Ionicons name="create-outline" size={18} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={handleDeleteStudent}>
-            <Ionicons name="trash-outline" size={18} color={colors.error} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <View style={styles.topSection}>
         {/* 学生头像卡片 */}
         <View style={[styles.headerCard, { backgroundColor: colors.primary }]}>
           <View style={[styles.headerDecorCircle, { backgroundColor: 'rgba(255,255,255,0.06)' }]} />
+          <View style={styles.headerTopBar}>
+            <TouchableOpacity
+              style={styles.headerIconButton}
+              onPress={handleBack}
+              activeOpacity={0.78}
+            >
+              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.headerActionGroup}>
+              <TouchableOpacity
+                style={styles.headerIconButton}
+                activeOpacity={0.78}
+                onPress={() => {
+                  setEditForm({
+                    name: student.name, gender: student.gender, birthDate: student.birthDate,
+                    parentName: student.parentName, parentRelation: student.parentRelation, parentPhone: student.parentPhone,
+                  });
+                  setShowEditModal(true);
+                }}
+              >
+                <Ionicons name="create-outline" size={16} color="#FFFFFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.headerIconButton, styles.headerDangerButton]}
+                activeOpacity={0.78}
+                onPress={handleDeleteStudent}
+              >
+                <Ionicons name="trash-outline" size={16} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
           <View style={styles.headerContent}>
             <View
               style={[
@@ -238,7 +260,25 @@ export default function StudentDetailScreen() {
           </View>
         </View>
 
-        {/* 基本信息 */}
+        <View style={styles.overviewRow}>
+          {[
+            { label: '近期均分', value: recentAverage.toString(), color: colors.primary },
+            { label: '最高分', value: highestScore.toString(), color: colors.success },
+            { label: '出勤率', value: `${attendanceRate}%`, color: colors.info },
+          ].map((item) => (
+            <View key={item.label} style={[styles.overviewCard, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.overviewValue, { color: item.color }]}>{item.value}</Text>
+              <Text style={[styles.overviewLabel, { color: colors.textTertiary }]}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.contentScroll}
+        contentContainerStyle={styles.contentScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <View style={[styles.sectionDot, { backgroundColor: colors.primary }]} />
@@ -545,25 +585,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
-  // Nav
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
+  topSection: {
+    zIndex: 1,
   },
-  navTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+  contentScroll: {
+    flex: 1,
+  },
+  contentScrollContent: {
+    paddingBottom: 40,
   },
 
   // Header card
   headerCard: {
-    paddingTop: 20,
-    paddingBottom: 24,
+    paddingTop: 14,
+    paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
@@ -577,30 +612,51 @@ const styles = StyleSheet.create({
     top: -30,
     right: -20,
   },
+  headerTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerActionGroup: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
+  headerDangerButton: {
+    backgroundColor: 'rgba(239,68,68,0.22)',
+  },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: 58,
+    height: 58,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2.5,
     borderColor: 'rgba(255,255,255,0.3)',
   },
   avatarText: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   headerInfo: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 14,
   },
   headerName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.5,
@@ -642,6 +698,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: 'rgba(255,255,255,0.85)',
+  },
+  overviewRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 20,
+    marginTop: -16,
+    marginBottom: 2,
+  },
+  overviewCard: {
+    flex: 1,
+    borderRadius: 18,
+    paddingVertical: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  overviewValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  overviewLabel: {
+    fontSize: 11,
+    marginTop: 4,
   },
 
   // Section

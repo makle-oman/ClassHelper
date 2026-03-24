@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,46 +11,45 @@ interface StudentAttendance {
   id: string;
   name: string;
   studentNo: string;
-  gender: '\u7537' | '\u5973';
+  gender: '男' | '女';
   status: AttendanceStatus;
 }
 
-const statusConfig: Record<AttendanceStatus, { label: string; color: string; icon: string }> = {
-  present: { label: '\u51FA\u52E4', color: '#22C55E', icon: 'checkmark-circle' },
-  late: { label: '\u8FDF\u5230', color: '#F97316', icon: 'time' },
-  early: { label: '\u65E9\u9000', color: '#F59E0B', icon: 'exit' },
-  leave: { label: '\u8BF7\u5047', color: '#3B82F6', icon: 'document-text' },
-  absent: { label: '\u7F3A\u5E2D', color: '#EF4444', icon: 'close-circle' },
+const statusConfig: Record<AttendanceStatus, { label: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  present: { label: '出勤', color: '#22C55E', icon: 'checkmark-circle' },
+  late: { label: '迟到', color: '#F97316', icon: 'time' },
+  early: { label: '早退', color: '#F59E0B', icon: 'exit' },
+  leave: { label: '请假', color: '#3B82F6', icon: 'document-text' },
+  absent: { label: '缺席', color: '#EF4444', icon: 'close-circle' },
 };
 
 const initialStudents: StudentAttendance[] = [
-  { id: '1', name: '\u5F20\u5C0F\u660E', studentNo: '20230101', gender: '\u7537', status: 'present' },
-  { id: '2', name: '\u674E\u5C0F\u7EA2', studentNo: '20230102', gender: '\u5973', status: 'present' },
-  { id: '3', name: '\u738B\u5927\u529B', studentNo: '20230103', gender: '\u7537', status: 'present' },
-  { id: '4', name: '\u8D75\u5C0F\u71D5', studentNo: '20230104', gender: '\u5973', status: 'present' },
-  { id: '5', name: '\u5218\u5929\u5B9D', studentNo: '20230105', gender: '\u7537', status: 'present' },
-  { id: '6', name: '\u9648\u7F8E\u4E3D', studentNo: '20230106', gender: '\u5973', status: 'present' },
-  { id: '7', name: '\u5B59\u6D69\u7136', studentNo: '20230107', gender: '\u7537', status: 'present' },
-  { id: '8', name: '\u5468\u5C0F\u5A77', studentNo: '20230108', gender: '\u5973', status: 'present' },
+  { id: '1', name: '张小明', studentNo: '20230101', gender: '男', status: 'present' },
+  { id: '2', name: '李小红', studentNo: '20230102', gender: '女', status: 'present' },
+  { id: '3', name: '王大力', studentNo: '20230103', gender: '男', status: 'present' },
+  { id: '4', name: '赵小燕', studentNo: '20230104', gender: '女', status: 'present' },
+  { id: '5', name: '刘天宝', studentNo: '20230105', gender: '男', status: 'present' },
+  { id: '6', name: '陈美丽', studentNo: '20230106', gender: '女', status: 'present' },
+  { id: '7', name: '孙浩然', studentNo: '20230107', gender: '男', status: 'present' },
+  { id: '8', name: '周小婷', studentNo: '20230108', gender: '女', status: 'present' },
 ];
 
 const mockMonthlyStats = [
-  { date: '03-22', weekday: '\u5468\u65E5', total: 43, present: 43, rate: 100 },
-  { date: '03-21', weekday: '\u5468\u516D', total: 43, present: 42, rate: 97.7 },
-  { date: '03-20', weekday: '\u5468\u4E94', total: 43, present: 41, rate: 95.3 },
-  { date: '03-19', weekday: '\u5468\u56DB', total: 43, present: 43, rate: 100 },
-  { date: '03-18', weekday: '\u5468\u4E09', total: 43, present: 40, rate: 93.0 },
-  { date: '03-17', weekday: '\u5468\u4E8C', total: 43, present: 42, rate: 97.7 },
-  { date: '03-16', weekday: '\u5468\u4E00', total: 43, present: 43, rate: 100 },
+  { date: '03-22', weekday: '周日', total: 43, present: 43, rate: 100 },
+  { date: '03-21', weekday: '周六', total: 43, present: 42, rate: 97.7 },
+  { date: '03-20', weekday: '周五', total: 43, present: 41, rate: 95.3 },
+  { date: '03-19', weekday: '周四', total: 43, present: 43, rate: 100 },
+  { date: '03-18', weekday: '周三', total: 43, present: 40, rate: 93.0 },
+  { date: '03-17', weekday: '周二', total: 43, present: 42, rate: 97.7 },
+  { date: '03-16', weekday: '周一', total: 43, present: 43, rate: 100 },
 ];
 
-const WEEKDAYS = ['\u5468\u65E5', '\u5468\u4E00', '\u5468\u4E8C', '\u5468\u4E09', '\u5468\u56DB', '\u5468\u4E94', '\u5468\u516D'];
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
-// 学生个人出勤率 Mock 数据
 interface StudentAttendanceStats {
   id: string;
   name: string;
-  gender: '\u7537' | '\u5973';
+  gender: '男' | '女';
   totalDays: number;
   presentDays: number;
   lateDays: number;
@@ -60,14 +59,14 @@ interface StudentAttendanceStats {
 }
 
 const mockStudentStats: StudentAttendanceStats[] = [
-  { id: '1', name: '\u5F20\u5C0F\u660E', gender: '\u7537', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
-  { id: '2', name: '\u674E\u5C0F\u7EA2', gender: '\u5973', totalDays: 22, presentDays: 21, lateDays: 1, absentDays: 0, leaveDays: 0, rate: 95.5 },
-  { id: '3', name: '\u738B\u5927\u529B', gender: '\u7537', totalDays: 22, presentDays: 20, lateDays: 0, absentDays: 1, leaveDays: 1, rate: 90.9 },
-  { id: '4', name: '\u8D75\u5C0F\u71D5', gender: '\u5973', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
-  { id: '5', name: '\u5218\u5929\u5B9D', gender: '\u7537', totalDays: 22, presentDays: 19, lateDays: 2, absentDays: 1, leaveDays: 0, rate: 86.4 },
-  { id: '6', name: '\u9648\u7F8E\u4E3D', gender: '\u5973', totalDays: 22, presentDays: 21, lateDays: 0, absentDays: 0, leaveDays: 1, rate: 95.5 },
-  { id: '7', name: '\u5B59\u6D69\u7136', gender: '\u7537', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
-  { id: '8', name: '\u5468\u5C0F\u5A77', gender: '\u5973', totalDays: 22, presentDays: 20, lateDays: 1, absentDays: 1, leaveDays: 0, rate: 90.9 },
+  { id: '1', name: '张小明', gender: '男', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
+  { id: '2', name: '李小红', gender: '女', totalDays: 22, presentDays: 21, lateDays: 1, absentDays: 0, leaveDays: 0, rate: 95.5 },
+  { id: '3', name: '王大力', gender: '男', totalDays: 22, presentDays: 20, lateDays: 0, absentDays: 1, leaveDays: 1, rate: 90.9 },
+  { id: '4', name: '赵小燕', gender: '女', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
+  { id: '5', name: '刘天宝', gender: '男', totalDays: 22, presentDays: 19, lateDays: 2, absentDays: 1, leaveDays: 0, rate: 86.4 },
+  { id: '6', name: '陈美丽', gender: '女', totalDays: 22, presentDays: 21, lateDays: 0, absentDays: 0, leaveDays: 1, rate: 95.5 },
+  { id: '7', name: '孙浩然', gender: '男', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
+  { id: '8', name: '周小婷', gender: '女', totalDays: 22, presentDays: 20, lateDays: 1, absentDays: 1, leaveDays: 0, rate: 90.9 },
 ];
 
 function formatDate(date: Date): string {
@@ -75,7 +74,7 @@ function formatDate(date: Date): string {
   const m = date.getMonth() + 1;
   const d = date.getDate();
   const w = WEEKDAYS[date.getDay()];
-  return `${y}\u5E74${m}\u6708${d}\u65E5 ${w}`;
+  return `${y}年${m}月${d}日 ${w}`;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -86,11 +85,19 @@ export default function AttendanceScreen() {
   const colors = useTheme();
   const [selectedTab, setSelectedTab] = useState<'record' | 'stats'>('record');
   const [currentDate, setDate] = useState(new Date());
-  const [selectedClass, setSelectedClass] = useState('\u4E09\u5E74\u7EA71\u73ED');
+  const [selectedClass, setSelectedClass] = useState('三年级1班');
   const [students, setStudents] = useState<StudentAttendance[]>(initialStudents);
   const [statsView, setStatsView] = useState<'daily' | 'student'>('daily');
 
   const today = new Date();
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)/index');
+  };
 
   const changeDate = (delta: number) => {
     const next = new Date(currentDate);
@@ -101,21 +108,20 @@ export default function AttendanceScreen() {
   const goToday = () => setDate(new Date());
 
   const setStatus = (studentId: string, status: AttendanceStatus) => {
-    setStudents((prev) =>
-      prev.map((s) => (s.id === studentId ? { ...s, status } : s))
-    );
+    setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, status } : s)));
   };
 
   const markAllPresent = () => {
-    setStudents((prev) => prev.map((s) => ({ ...s, status: 'present' as AttendanceStatus })));
+    setStudents((prev) => prev.map((s) => ({ ...s, status: 'present' })));
   };
 
   const presentCount = students.filter((s) => s.status === 'present').length;
   const abnormalCount = students.length - presentCount;
   const markedCount = students.length;
+  const currentRate = students.length > 0 ? ((presentCount / students.length) * 100).toFixed(1) : '0.0';
 
   const handleSave = () => {
-    Alert.alert('\u4FDD\u5B58\u6210\u529F', `\u5DF2\u4FDD\u5B58${formatDate(currentDate)}\u7684\u8003\u52E4\u8BB0\u5F55`);
+    Alert.alert('保存成功', `已保存 ${formatDate(currentDate)} 的考勤记录`);
   };
 
   const getRateColor = (rate: number) => {
@@ -127,28 +133,62 @@ export default function AttendanceScreen() {
   const monthlyLate = 3;
   const monthlyAbsent = 2;
   const monthlyRate = 97.2;
+  const topStudentRate = Math.max(...mockStudentStats.map((item) => item.rate));
+  const averageStudentRate = (
+    mockStudentStats.reduce((sum, item) => sum + item.rate, 0) / mockStudentStats.length
+  ).toFixed(1);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      {/* \u9876\u90E8\u5BFC\u822A */}
-      <View style={[styles.navBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text }]}>{'\u8003\u52E4\u6253\u5361'}</Text>
-        <View style={{ width: 24 }} />
+      <View style={[styles.heroCard, { backgroundColor: colors.primary }]}> 
+        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+        <View style={styles.heroTopBar}>
+          <TouchableOpacity style={styles.heroBackButton} onPress={handleBack} activeOpacity={0.78}>
+            <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.heroPageTitle}>考勤打卡</Text>
+          <View style={styles.heroTopSpacer} />
+        </View>
+        <Text style={styles.heroEyebrow}>{selectedTab === 'record' ? '当日考勤总览' : '考勤统计看板'}</Text>
+        <Text style={styles.heroTitle}>{selectedClass}</Text>
+        <Text style={styles.heroSubtitle}>
+          {selectedTab === 'record'
+            ? `${formatDate(currentDate)} · ${markedCount} 人已标记，异常 ${abnormalCount} 人`
+            : `${statsView === 'daily' ? '按日查看班级走势' : '按学生查看个人出勤率'}`}
+        </Text>
+        <View style={styles.heroStatsRow}>
+          {(selectedTab === 'record'
+            ? [
+                { label: '当前出勤率', value: `${currentRate}%` },
+                { label: '已出勤', value: presentCount.toString() },
+                { label: '异常人数', value: abnormalCount.toString() },
+              ]
+            : [
+                { label: statsView === 'daily' ? '本月出勤率' : '班级平均', value: `${statsView === 'daily' ? monthlyRate : averageStudentRate}%` },
+                { label: statsView === 'daily' ? '本月迟到' : '全勤人数', value: `${statsView === 'daily' ? monthlyLate : mockStudentStats.filter((item) => item.rate === 100).length}` },
+                { label: statsView === 'daily' ? '本月缺席' : '最高出勤率', value: `${statsView === 'daily' ? monthlyAbsent : topStudentRate}${statsView === 'daily' ? '' : '%'}` },
+              ]).map((item, index) => (
+            <View
+              key={`${item.label}-${index}`}
+              style={[
+                styles.heroStatItem,
+                index < 2 && { borderRightWidth: 0.5, borderRightColor: 'rgba(255,255,255,0.14)' },
+              ]}
+            >
+              <Text style={styles.heroStatValue}>{item.value}</Text>
+              <Text style={styles.heroStatLabel}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
-      {/* Tab \u5207\u6362 */}
-      <View style={[styles.tabBar, { backgroundColor: colors.surface }]}>
-        <View style={[styles.tabInner, { backgroundColor: colors.surfaceSecondary }]}>
+      <View style={[styles.tabBar, { backgroundColor: colors.surface }]}> 
+        <View style={[styles.tabInner, { backgroundColor: colors.surfaceSecondary }]}> 
           {(['record', 'stats'] as const).map((tab) => (
             <TouchableOpacity
               key={tab}
-              style={[
-                styles.tabItem,
-                selectedTab === tab && { backgroundColor: colors.surface },
-              ]}
+              style={[styles.tabItem, selectedTab === tab && { backgroundColor: colors.surface }]}
               onPress={() => setSelectedTab(tab)}
               activeOpacity={0.7}
             >
@@ -164,7 +204,7 @@ export default function AttendanceScreen() {
                   selectedTab === tab && { fontWeight: '700' },
                 ]}
               >
-                {tab === 'record' ? '\u8003\u52E4\u8BB0\u5F55' : '\u8003\u52E4\u7EDF\u8BA1'}
+                {tab === 'record' ? '考勤记录' : '考勤统计'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -174,8 +214,7 @@ export default function AttendanceScreen() {
       {selectedTab === 'record' ? (
         <View style={{ flex: 1 }}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
-            {/* \u65E5\u671F\u9009\u62E9\u5668 */}
-            <View style={[styles.dateSelector, { backgroundColor: colors.surface }]}>
+            <View style={[styles.dateSelector, { backgroundColor: colors.surface }]}> 
               <TouchableOpacity onPress={() => changeDate(-1)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -200,14 +239,13 @@ export default function AttendanceScreen() {
                     { color: isSameDay(currentDate, today) ? colors.textTertiary : colors.primary },
                   ]}
                 >
-                  {'\u4ECA\u5929'}
+                  今天
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* \u73ED\u7EA7\u9009\u62E9 */}
             <View style={styles.classSelector}>
-              {['\u4E09\u5E74\u7EA71\u73ED', '\u4E09\u5E74\u7EA72\u73ED'].map((c) => (
+              {['三年级1班', '三年级2班'].map((c) => (
                 <TouchableOpacity
                   key={c}
                   style={[
@@ -219,52 +257,30 @@ export default function AttendanceScreen() {
                   ]}
                   onPress={() => setSelectedClass(c)}
                 >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      { color: selectedClass === c ? colors.primary : colors.textSecondary },
-                    ]}
-                  >
-                    {c}
-                  </Text>
+                  <Text style={[styles.chipText, { color: selectedClass === c ? colors.primary : colors.textSecondary }]}>{c}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            {/* \u6279\u91CF\u64CD\u4F5C\u680F */}
             <View style={styles.batchBar}>
-              <TouchableOpacity
-                style={[styles.batchBtn, { backgroundColor: colors.success }]}
-                onPress={markAllPresent}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={[styles.batchBtn, { backgroundColor: colors.success }]} onPress={markAllPresent} activeOpacity={0.7}>
                 <Ionicons name="checkmark-circle" size={14} color="#FFF" />
-                <Text style={styles.batchBtnText}>{'\u5168\u90E8\u51FA\u52E4'}</Text>
+                <Text style={styles.batchBtnText}>全部出勤</Text>
               </TouchableOpacity>
-              <Text style={[styles.batchSummary, { color: colors.textSecondary }]}>
-                {'\u51FA\u52E4'} {presentCount} / {'\u5F02\u5E38'} {abnormalCount}
-              </Text>
+              <Text style={[styles.batchSummary, { color: colors.textSecondary }]}>出勤 {presentCount} / 异常 {abnormalCount}</Text>
             </View>
 
-            {/* \u5B66\u751F\u8003\u52E4\u5217\u8868 */}
             <View style={styles.listSection}>
               {students.map((student) => (
-                <View key={student.id} style={[styles.studentCard, { backgroundColor: colors.surface }]}>
+                <View key={student.id} style={[styles.studentCard, { backgroundColor: colors.surface }]}> 
                   <View style={styles.studentLeft}>
                     <View
                       style={[
                         styles.avatar,
-                        { backgroundColor: student.gender === '\u7537' ? colors.infoLight : '#FDF2F8' },
+                        { backgroundColor: student.gender === '男' ? colors.infoLight : '#FDF2F8' },
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.avatarText,
-                          { color: student.gender === '\u7537' ? colors.info : '#EC4899' },
-                        ]}
-                      >
-                        {student.name[0]}
-                      </Text>
+                      <Text style={[styles.avatarText, { color: student.gender === '男' ? colors.info : '#EC4899' }]}>{student.name[0]}</Text>
                     </View>
                     <View>
                       <Text style={[styles.studentName, { color: colors.text }]}>{student.name}</Text>
@@ -288,14 +304,7 @@ export default function AttendanceScreen() {
                           onPress={() => setStatus(student.id, key)}
                           activeOpacity={0.7}
                         >
-                          <Text
-                            style={[
-                              styles.statusPillText,
-                              { color: isActive ? '#FFF' : colors.textTertiary },
-                            ]}
-                          >
-                            {cfg.label}
-                          </Text>
+                          <Text style={[styles.statusPillText, { color: isActive ? '#FFF' : colors.textTertiary }]}>{cfg.label}</Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -305,26 +314,18 @@ export default function AttendanceScreen() {
             </View>
           </ScrollView>
 
-          {/* \u5E95\u90E8\u64CD\u4F5C\u680F */}
-          <View style={[styles.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-            <Text style={[styles.bottomInfo, { color: colors.textSecondary }]}>
-              {'\u5DF2\u6807\u8BB0'} {markedCount}/{students.length}
-            </Text>
-            <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.success }]}
-              onPress={handleSave}
-              activeOpacity={0.85}
-            >
+          <View style={[styles.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}> 
+            <Text style={[styles.bottomInfo, { color: colors.textSecondary }]}>已标记 {markedCount}/{students.length}</Text>
+            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.success }]} onPress={handleSave} activeOpacity={0.85}>
               <Ionicons name="save" size={16} color="#FFF" />
-              <Text style={styles.saveBtnText}>{'\u4FDD\u5B58\u8003\u52E4'}</Text>
+              <Text style={styles.saveBtnText}>保存考勤</Text>
             </TouchableOpacity>
           </View>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* \u73ED\u7EA7\u9009\u62E9 */}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
           <View style={styles.classSelector}>
-            {['\u4E09\u5E74\u7EA71\u73ED', '\u4E09\u5E74\u7EA72\u73ED'].map((c) => (
+            {['三年级1班', '三年级2班'].map((c) => (
               <TouchableOpacity
                 key={c}
                 style={[
@@ -336,27 +337,52 @@ export default function AttendanceScreen() {
                 ]}
                 onPress={() => setSelectedClass(c)}
               >
-                <Text
-                  style={[
-                    styles.chipText,
-                    { color: selectedClass === c ? colors.primary : colors.textSecondary },
-                  ]}
-                >
-                  {c}
-                </Text>
+                <Text style={[styles.chipText, { color: selectedClass === c ? colors.primary : colors.textSecondary }]}>{c}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* \u6982\u89C8\u7EDF\u8BA1 */}
+          <View style={[styles.statsSwitchWrap, { backgroundColor: colors.surface }]}> 
+            <View style={[styles.statsSwitchInner, { backgroundColor: colors.surfaceSecondary }]}> 
+              {([
+                { key: 'daily', label: '按日查看', icon: 'calendar-outline' },
+                { key: 'student', label: '按学生查看', icon: 'people-outline' },
+              ] as const).map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[styles.statsSwitchItem, statsView === item.key && { backgroundColor: colors.surface }]}
+                  onPress={() => setStatsView(item.key)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={item.icon} size={15} color={statsView === item.key ? colors.primary : colors.textTertiary} />
+                  <Text
+                    style={[
+                      styles.statsSwitchText,
+                      { color: statsView === item.key ? colors.primary : colors.textTertiary },
+                      statsView === item.key && { fontWeight: '700' },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           <View style={styles.overviewRow}>
-            {[
-              { label: '\u672C\u6708\u51FA\u52E4\u7387', value: `${monthlyRate}%`, icon: 'checkmark-circle' as const, colorKey: 'green' as const },
-              { label: '\u672C\u6708\u8FDF\u5230', value: monthlyLate.toString(), icon: 'time' as const, colorKey: 'orange' as const },
-              { label: '\u672C\u6708\u7F3A\u5E2D', value: monthlyAbsent.toString(), icon: 'close-circle' as const, colorKey: 'red' as const },
-            ].map((item) => (
-              <View key={item.label} style={[styles.overviewCard, { backgroundColor: colors.surface }]}>
-                <View style={[styles.overviewIconBox, { backgroundColor: colors.palette[item.colorKey].bg }]}>
+            {(statsView === 'daily'
+              ? [
+                  { label: '本月出勤率', value: `${monthlyRate}%`, icon: 'checkmark-circle' as const, colorKey: 'green' as const },
+                  { label: '本月迟到', value: monthlyLate.toString(), icon: 'time' as const, colorKey: 'orange' as const },
+                  { label: '本月缺席', value: monthlyAbsent.toString(), icon: 'close-circle' as const, colorKey: 'red' as const },
+                ]
+              : [
+                  { label: '班级平均出勤率', value: `${averageStudentRate}%`, icon: 'stats-chart' as const, colorKey: 'green' as const },
+                  { label: '全勤学生', value: mockStudentStats.filter((item) => item.rate === 100).length.toString(), icon: 'ribbon' as const, colorKey: 'blue' as const },
+                  { label: '最高出勤率', value: `${topStudentRate}%`, icon: 'trophy' as const, colorKey: 'orange' as const },
+                ]).map((item) => (
+              <View key={item.label} style={[styles.overviewCard, { backgroundColor: colors.surface }]}> 
+                <View style={[styles.overviewIconBox, { backgroundColor: colors.palette[item.colorKey].bg }]}> 
                   <Ionicons name={item.icon} size={16} color={colors.palette[item.colorKey].text} />
                 </View>
                 <Text style={[styles.overviewValue, { color: colors.text }]}>{item.value}</Text>
@@ -365,47 +391,91 @@ export default function AttendanceScreen() {
             ))}
           </View>
 
-          {/* \u6BCF\u65E5\u8003\u52E4\u5217\u8868 */}
-          <View style={styles.statsSection}>
-            <Text style={[styles.statsTitle, { color: colors.text }]}>{'\u672C\u6708\u6BCF\u65E5\u8003\u52E4'}</Text>
-            <View style={[styles.statsCard, { backgroundColor: colors.surface }]}>
-              {mockMonthlyStats.map((item, index) => {
-                const rateColor = getRateColor(item.rate);
-                return (
-                  <View
-                    key={item.date}
-                    style={[
-                      styles.statsRow,
-                      index < mockMonthlyStats.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.divider },
-                    ]}
-                  >
-                    <View style={styles.statsDateCol}>
-                      <Text style={[styles.statsDate, { color: colors.text }]}>{item.date}</Text>
-                      <Text style={[styles.statsWeekday, { color: colors.textTertiary }]}>{item.weekday}</Text>
-                    </View>
-                    <View style={styles.statsBarCol}>
-                      <View style={[styles.statsBarTrack, { backgroundColor: colors.surfaceSecondary }]}>
-                        <View
-                          style={[
-                            styles.statsBarFill,
-                            { width: `${item.rate}%`, backgroundColor: rateColor },
-                          ]}
-                        />
+          {statsView === 'daily' ? (
+            <View style={styles.statsSection}>
+              <Text style={[styles.statsTitle, { color: colors.text }]}>本月每日考勤</Text>
+              <View style={[styles.statsCard, { backgroundColor: colors.surface }]}> 
+                {mockMonthlyStats.map((item, index) => {
+                  const rateColor = getRateColor(item.rate);
+                  return (
+                    <View
+                      key={item.date}
+                      style={[
+                        styles.statsRow,
+                        index < mockMonthlyStats.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.divider },
+                      ]}
+                    >
+                      <View style={styles.statsDateCol}>
+                        <Text style={[styles.statsDate, { color: colors.text }]}>{item.date}</Text>
+                        <Text style={[styles.statsWeekday, { color: colors.textTertiary }]}>{item.weekday}</Text>
+                      </View>
+                      <View style={styles.statsBarCol}>
+                        <View style={[styles.statsBarTrack, { backgroundColor: colors.surfaceSecondary }]}> 
+                          <View style={[styles.statsBarFill, { width: `${item.rate}%`, backgroundColor: rateColor }]} />
+                        </View>
+                      </View>
+                      <View style={styles.statsCountCol}>
+                        <Text style={[styles.statsRate, { color: rateColor }]}>{item.rate}%</Text>
+                        <Text style={[styles.statsCount, { color: colors.textTertiary }]}>{item.present}/{item.total}</Text>
                       </View>
                     </View>
-                    <View style={styles.statsCountCol}>
-                      <Text style={[styles.statsRate, { color: rateColor }]}>{item.rate}%</Text>
-                      <Text style={[styles.statsCount, { color: colors.textTertiary }]}>
-                        {item.present}/{item.total}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
+                  );
+                })}
+              </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.statsSection}>
+              <Text style={[styles.statsTitle, { color: colors.text }]}>本月学生出勤率</Text>
+              <View style={[styles.studentStatsCard, { backgroundColor: colors.surface }]}> 
+                {mockStudentStats.map((item, index) => {
+                  const rateColor = getRateColor(item.rate);
+                  const accentColor = item.gender === '男' ? colors.info : '#EC4899';
+                  const accentBg = item.gender === '男' ? colors.infoLight : '#FDF2F8';
+                  return (
+                    <View
+                      key={item.id}
+                      style={[
+                        styles.studentStatsRow,
+                        index < mockStudentStats.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.divider },
+                      ]}
+                    >
+                      <View style={styles.studentStatsHeader}>
+                        <View style={styles.studentStatsIdentity}>
+                          <View style={[styles.studentStatsAvatar, { backgroundColor: accentBg }]}> 
+                            <Text style={[styles.studentStatsAvatarText, { color: accentColor }]}>{item.name[0]}</Text>
+                          </View>
+                          <View>
+                            <Text style={[styles.studentStatsName, { color: colors.text }]}>{item.name}</Text>
+                            <Text style={[styles.studentStatsMeta, { color: colors.textTertiary }]}>出勤 {item.presentDays} / 总天数 {item.totalDays}</Text>
+                          </View>
+                        </View>
+                        <View style={[styles.studentRateBadge, { backgroundColor: rateColor + '15' }]}> 
+                          <Text style={[styles.studentRateBadgeText, { color: rateColor }]}>{item.rate}%</Text>
+                        </View>
+                      </View>
 
-          <View style={{ height: 24 }} />
+                      <View style={[styles.studentStatsTrack, { backgroundColor: colors.surfaceSecondary }]}> 
+                        <View style={[styles.studentStatsFill, { width: `${item.rate}%`, backgroundColor: rateColor }]} />
+                      </View>
+
+                      <View style={styles.studentStatsMetaRow}>
+                        {[
+                          { label: '迟到', value: item.lateDays, color: colors.warning },
+                          { label: '请假', value: item.leaveDays, color: colors.info },
+                          { label: '缺席', value: item.absentDays, color: colors.error },
+                        ].map((stat) => (
+                          <View key={stat.label} style={[styles.studentStatsMiniCard, { backgroundColor: colors.surfaceSecondary }]}> 
+                            <Text style={[styles.studentStatsMiniValue, { color: stat.color }]}>{stat.value}</Text>
+                            <Text style={[styles.studentStatsMiniLabel, { color: colors.textTertiary }]}>{stat.label}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -414,36 +484,116 @@ export default function AttendanceScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  // Nav bar
-  navBar: {
+  heroCard: {
+    marginHorizontal: 0,
+    marginTop: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 2,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  heroTopBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  navTitle: {
-    fontSize: 17,
+  heroBackButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
+  heroPageTitle: {
+    fontSize: 15,
     fontWeight: '700',
+    color: '#FFFFFF',
   },
-
-  // Tab
-  tabBar: { paddingHorizontal: 20, paddingVertical: 10 },
+  heroTopSpacer: {
+    width: 34,
+  },
+  heroDecorLarge: {
+    position: 'absolute',
+    width: 124,
+    height: 124,
+    borderRadius: 62,
+    top: -28,
+    right: -10,
+  },
+  heroDecorSmall: {
+    position: 'absolute',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    bottom: -18,
+    left: -10,
+  },
+  heroEyebrow: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.68)',
+    letterSpacing: 0.3,
+  },
+  heroTitle: {
+    marginTop: 2,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  heroSubtitle: {
+    marginTop: 3,
+    fontSize: 11,
+    lineHeight: 16,
+    color: 'rgba(255,255,255,0.78)',
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+    paddingTop: 4,
+    paddingBottom: 2,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+  },
+  heroStatItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  heroStatValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  heroStatLabel: {
+    marginTop: 2,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.72)',
+  },
+  tabBar: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 },
   tabInner: { flexDirection: 'row', borderRadius: 12, padding: 3 },
-  tabItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 8, borderRadius: 10 },
+  tabItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 7, borderRadius: 10 },
   tabText: { fontSize: 13 },
-
-  // Date selector
+  statsSwitchWrap: { marginHorizontal: 20, marginTop: 10, borderRadius: 14, padding: 4 },
+  statsSwitchInner: { flexDirection: 'row', borderRadius: 12, padding: 3 },
+  statsSwitchItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 7, borderRadius: 10 },
+  statsSwitchText: { fontSize: 12 },
   dateSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    paddingVertical: 12,
+    paddingVertical: 10,
     marginHorizontal: 20,
-    marginTop: 10,
+    marginTop: 8,
     borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -452,7 +602,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   dateText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   todayBtn: {
@@ -466,17 +616,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-
-  // Class selector
   classSelector: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 8,
-    marginTop: 12,
+    marginTop: 10,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 6,
     borderRadius: 10,
     borderWidth: 1,
   },
@@ -484,15 +632,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-
-  // Batch bar
   batchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    marginTop: 14,
-    marginBottom: 6,
+    marginTop: 10,
+    marginBottom: 4,
   },
   batchBtn: {
     flexDirection: 'row',
@@ -511,12 +657,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
-
-  // Student list
-  listSection: { paddingHorizontal: 20, marginTop: 8, gap: 8 },
+  listSection: { paddingHorizontal: 20, marginTop: 6, gap: 8 },
   studentCard: {
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -526,18 +670,18 @@ const styles = StyleSheet.create({
   studentLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
+    gap: 9,
+    marginBottom: 8,
   },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   studentName: {
@@ -550,12 +694,12 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 5,
   },
   statusPill: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
   },
@@ -563,8 +707,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
-
-  // Bottom bar
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -594,16 +736,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-
-  // Overview cards
-  overviewRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginTop: 12 },
-  overviewCard: { flex: 1, padding: 14, borderRadius: 14, alignItems: 'center', gap: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1 },
+  overviewRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginTop: 10 },
+  overviewCard: { flex: 1, padding: 12, borderRadius: 14, alignItems: 'center', gap: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1 },
   overviewIconBox: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  overviewValue: { fontSize: 20, fontWeight: '800' },
+  overviewValue: { fontSize: 18, fontWeight: '800' },
   overviewLabel: { fontSize: 10 },
-
-  // Stats section
-  statsSection: { paddingHorizontal: 20, marginTop: 18 },
+  statsSection: { paddingHorizontal: 20, marginTop: 16 },
   statsTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
   statsCard: {
     borderRadius: 14,
@@ -655,5 +793,88 @@ const styles = StyleSheet.create({
   statsCount: {
     fontSize: 10,
     marginTop: 1,
+  },
+  studentStatsCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  studentStatsRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  studentStatsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  studentStatsIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  studentStatsAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  studentStatsAvatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  studentStatsName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  studentStatsMeta: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  studentRateBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  studentRateBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  studentStatsTrack: {
+    height: 8,
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginTop: 10,
+  },
+  studentStatsFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  studentStatsMetaRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  studentStatsMiniCard: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  studentStatsMiniValue: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  studentStatsMiniLabel: {
+    fontSize: 10,
+    marginTop: 2,
   },
 });
