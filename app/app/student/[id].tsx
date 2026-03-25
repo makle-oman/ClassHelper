@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   headerCard: {
     paddingTop: 14,
     paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     overflow: 'hidden',
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingVertical: 3,
     borderRadius: 6,
     alignSelf: 'flex-start',
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
   overviewRow: {
     flexDirection: 'row',
     gap: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     marginTop: -16,
     marginBottom: 2,
   },
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     marginBottom: 10,
   },
   sectionDot: {
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
 
   // Score cards
   scoreCards: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     gap: 10,
   },
   scoreCard: {
@@ -916,7 +916,7 @@ const styles = StyleSheet.create({
   analysisLevelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   analysisLevelLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   analysisLevelLabel: { fontSize: 13 },
-  analysisLevelBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 },
+  analysisLevelBadge: { paddingHorizontal: 14, paddingVertical: 3, borderRadius: 6 },
   analysisLevelText: { fontSize: 12, fontWeight: '700' },
   analysisAvgScore: { fontSize: 28, fontWeight: '800' },
   analysisDivider: { height: 0.5, marginVertical: 14 },
@@ -931,16 +931,16 @@ const styles = StyleSheet.create({
   commentSection: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   commentText: { fontSize: 13, lineHeight: 20, flex: 1 },
   modalContent: { width: '100%', maxWidth: 420, borderRadius: 20, overflow: 'hidden', maxHeight: '80%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingTop: 20, paddingBottom: 8 },
   modalTitle: { fontSize: 18, fontWeight: '700' },
-  modalBody: { paddingHorizontal: 20, paddingVertical: 12 },
+  modalBody: { paddingHorizontal: 14, paddingVertical: 12 },
   formGroup: { marginBottom: 16 },
   formLabel: { fontSize: 13, fontWeight: '500', marginBottom: 8 },
   formInput: { height: 44, borderRadius: 12, paddingHorizontal: 14, fontSize: 14, borderWidth: 1 } as any,
   chipRow: { flexDirection: 'row', gap: 8 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
   chipText: { fontSize: 13, fontWeight: '600' },
-  modalFooter: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8 },
+  modalFooter: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingBottom: 20, paddingTop: 8 },
   modalCancelBtn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   modalCancelText: { fontSize: 14, fontWeight: '600' },
   modalConfirmBtn: { flex: 1.5, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

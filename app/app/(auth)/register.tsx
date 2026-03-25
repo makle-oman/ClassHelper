@@ -1,9 +1,11 @@
 ﻿import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
+
+const ALL_SUBJECTS = ['语文', '数学', '英语', '体育', '音乐', '美术', '科学', '道德与法治'];
 
 export default function RegisterScreen() {
   const colors = useTheme();
@@ -13,6 +15,11 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState('');
+  const [subjects, setSubjects] = useState<string[]>([]);
+
+  const toggleSubject = (subject: string) => {
+    setSubjects((prev) => (prev.includes(subject) ? prev.filter((s) => s !== subject) : [...prev, subject]));
+  };
 
   const handleRegister = () => {
     if (!name.trim() || !phone.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -21,6 +28,10 @@ export default function RegisterScreen() {
     }
     if (password !== confirmPassword) {
       Alert.alert('提示', '两次输入的密码不一致');
+      return;
+    }
+    if (subjects.length === 0) {
+      Alert.alert('提示', '请至少选择一个授课科目');
       return;
     }
     router.replace('/(tabs)');
@@ -75,6 +86,7 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
       <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.surface }]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={[styles.heroSection, { backgroundColor: colors.primary }]}>
           <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
           <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
@@ -86,11 +98,38 @@ export default function RegisterScreen() {
           <Text style={styles.heroSubtitle}>注册后可创建班级、管理学生和安排课程</Text>
         </View>
 
-        <View style={[styles.formCard, { backgroundColor: colors.surface }]}> 
+        <View style={[styles.formCard, { backgroundColor: colors.surface }]}>
           {renderInput('person-outline', '姓名', '请输入姓名', name, setName, 'name')}
           {renderInput('phone-portrait-outline', '手机号', '请输入手机号', phone, setPhone, 'phone', { keyboardType: 'phone-pad', maxLength: 11 })}
           {renderInput('lock-closed-outline', '密码', '请设置密码', password, setPassword, 'password', { secure: true })}
           {renderInput('shield-checkmark-outline', '确认密码', '请再次输入密码', confirmPassword, setConfirmPassword, 'confirm', { secure: true })}
+
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>授课科目</Text>
+            <Text style={[styles.subjectHint, { color: colors.textTertiary }]}>可多选，注册后也可在个人资料中修改</Text>
+            <View style={styles.subjectWrap}>
+              {ALL_SUBJECTS.map((subject) => {
+                const selected = subjects.includes(subject);
+                return (
+                  <TouchableOpacity
+                    key={subject}
+                    style={[
+                      styles.subjectChip,
+                      {
+                        backgroundColor: selected ? colors.primary : colors.surfaceSecondary,
+                        borderColor: selected ? colors.primary : colors.border,
+                      },
+                    ]}
+                    activeOpacity={0.75}
+                    onPress={() => toggleSubject(subject)}
+                  >
+                    {selected && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                    <Text style={[styles.subjectChipText, { color: selected ? '#FFF' : colors.textSecondary }]}>{subject}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
           <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} activeOpacity={0.82} onPress={handleRegister}>
             <Text style={styles.primaryButtonText}>注册</Text>
@@ -105,6 +144,7 @@ export default function RegisterScreen() {
             </Link>
           </View>
         </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -157,6 +197,10 @@ const styles = StyleSheet.create({
   },
   fieldGroup: { marginBottom: 12 },
   fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8 },
+  subjectHint: { fontSize: 11, marginBottom: 10, marginTop: -4 },
+  subjectWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  subjectChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
+  subjectChipText: { fontSize: 13, fontWeight: '700' },
   inputShell: {
     height: 46,
     borderRadius: 14,

@@ -161,9 +161,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileSection: {
-    paddingTop: 16,
+    paddingTop: 20,
     paddingBottom: 28,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     overflow: 'hidden',
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   profileTag: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingVertical: 3,
     borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     gap: 10,
     marginTop: -14,
   },

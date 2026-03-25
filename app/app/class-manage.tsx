@@ -371,13 +371,13 @@ export default function ClassManageScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topSection: { paddingHorizontal: 20, zIndex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 0, paddingBottom: 24 },
+  topSection: { paddingHorizontal: 14, zIndex: 1 },
+  scrollContent: { paddingHorizontal: 14, paddingTop: 0, paddingBottom: 24 },
   heroCard: {
     marginHorizontal: -20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingTop: 10,
     paddingBottom: 4,
     overflow: 'hidden',
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   gradeBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   gradeBadgeText: { fontSize: 11, fontWeight: '700' },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  metaChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10 },
+  metaChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
   metaChipText: { fontSize: 12, fontWeight: '500' },
   cardFooter: { flexDirection: 'row', gap: 8, marginTop: 12, paddingTop: 10, borderTopWidth: 0.5 },
   footerButton: {
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingTop: 20,
     paddingBottom: 8,
   },
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   previewCard: { marginHorizontal: 20, borderRadius: 16, padding: 14 },
   previewLabel: { fontSize: 12, fontWeight: '700' },
   previewValue: { fontSize: 18, fontWeight: '800', marginTop: 6 },
-  modalBody: { paddingHorizontal: 20, paddingVertical: 16 },
+  modalBody: { paddingHorizontal: 14, paddingVertical: 16 },
   formGroup: { marginBottom: 16 },
   formLabel: { fontSize: 13, fontWeight: '600', marginBottom: 10 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 14,
   },
-  modalFooter: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingBottom: 20 },
+  modalFooter: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingBottom: 20 },
   modalCancelButton: {
     flex: 1,
     height: 46,

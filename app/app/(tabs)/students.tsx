@@ -171,30 +171,36 @@ export default function StudentsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
-        <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
-          <View style={[styles.summaryHero, { backgroundColor: colors.primary }]}>
-            <View style={[styles.summaryDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-            <View style={[styles.summaryDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
-            <Text style={styles.summaryEyebrow}>学生花名册</Text>
-            <Text style={styles.summaryClassName}>{selectedClass}</Text>
-            <Text style={styles.summaryHint}>点击学生可查看详情和家长联系方式</Text>
+        <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
+          <View style={[styles.summaryDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+          <View style={[styles.summaryDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+          <View style={styles.summaryTopRow}>
+            <View>
+              <Text style={styles.summaryEyebrow}>学生花名册</Text>
+              <Text style={styles.summaryClassName}>{selectedClass}</Text>
+              <Text style={styles.summaryHint}>点击学生可查看详情和家长联系方式</Text>
+            </View>
+            <View style={styles.summaryBadge}>
+              <Text style={styles.summaryBadgeLabel}>在册</Text>
+              <Text style={styles.summaryBadgeValue}>{classStudents.length} 人</Text>
+            </View>
           </View>
 
           <View style={styles.summaryStatsRow}>
             {[
-              { label: '班级人数', value: classStudents.length.toString(), color: colors.primary },
-              { label: '男生', value: maleCount.toString(), color: colors.male },
-              { label: '女生', value: femaleCount.toString(), color: colors.female },
+              { label: '班级人数', value: classStudents.length.toString(), color: '#FFF' },
+              { label: '男生', value: maleCount.toString(), color: '#B8F0D8' },
+              { label: '女生', value: femaleCount.toString(), color: '#FFD6E0' },
             ].map((item, index) => (
               <View
                 key={`${item.label}-${index}`}
                 style={[
                   styles.summaryStatItem,
-                  index < 2 && { borderRightWidth: 0.5, borderRightColor: colors.divider },
+                  index < 2 && { borderRightWidth: 0.5, borderRightColor: 'rgba(255,255,255,0.2)' },
                 ]}
               >
                 <Text style={[styles.summaryStatValue, { color: item.color }]}>{item.value}</Text>
-                <Text style={[styles.summaryStatLabel, { color: colors.textTertiary }]}>{item.label}</Text>
+                <Text style={styles.summaryStatLabel}>{item.label}</Text>
               </View>
             ))}
           </View>
@@ -491,7 +497,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     zIndex: 1,
   },
   fixedPanel: {
@@ -505,17 +511,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  summaryHero: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 14,
-    overflow: 'hidden',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
   summaryDecorLarge: {
     position: 'absolute',
@@ -539,32 +537,59 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.68)',
     letterSpacing: 0.3,
   },
+  summaryTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  summaryBadge: {
+    alignItems: 'flex-end',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  summaryBadgeLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+  },
+  summaryBadgeValue: {
+    marginTop: 1,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
   summaryClassName: {
-    marginTop: 4,
-    fontSize: 24,
+    marginTop: 2,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   summaryHint: {
-    marginTop: 4,
-    fontSize: 12,
+    marginTop: 2,
+    fontSize: 11,
     color: 'rgba(255,255,255,0.78)',
   },
   summaryStatsRow: {
     flexDirection: 'row',
+    marginTop: 8,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 14,
   },
   summaryStatItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   summaryStatValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
   },
   summaryStatLabel: {
     fontSize: 11,
     marginTop: 3,
+    color: 'rgba(255,255,255,0.7)',
   },
   toolbar: {
     paddingTop: 12,
@@ -631,7 +656,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     height: 36,
     borderRadius: 10,
     borderWidth: 1,
@@ -644,7 +669,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     height: 36,
     borderRadius: 10,
   },
@@ -686,14 +711,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
   },
   sectionBadgeText: {
     fontSize: 12,
     fontWeight: '700',
   },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingBottom: 24,
     flexGrow: 1,
   },
@@ -790,7 +815,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingTop: 20,
     paddingBottom: 8,
   },
@@ -799,7 +824,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   modalBody: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingVertical: 12,
   },
   formGroup: {
@@ -838,7 +863,7 @@ const styles = StyleSheet.create({
   modalFooter: {
     flexDirection: 'row',
     gap: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingBottom: 20,
     paddingTop: 8,
   },

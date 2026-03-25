@@ -7,7 +7,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as XLSX from 'xlsx';
 import * as FileSystem from 'expo-file-system';
 
-const TIME_COL_WIDTH = 46;
+const TIME_COL_WIDTH = 36;
 
 const weekdays = ['周一', '周二', '周三', '周四', '周五'];
 
@@ -213,7 +213,7 @@ function getWeekNumberInSemester(date: Date, SEMESTER_START: string, totalWeeks:
 export default function ScheduleScreen() {
   const colors = useTheme();
   const { width: windowWidth } = useWindowDimensions();
-  const [viewMode, setViewMode] = useState<'schedule' | 'calendar'>('schedule');
+  // viewMode removed - calendar integrated into schedule header
   const [currentWeek, setCurrentWeek] = useState(8);
   const totalWeeks = 18;
   const [selectedClassId, setSelectedClassId] = useState(initialClasses[0].id);
@@ -240,9 +240,10 @@ export default function ScheduleScreen() {
   const [importTargetClassId, setImportTargetClassId] = useState(selectedClassId);
   const cellWidth = useMemo(() => {
     const safeWidth = Math.max(windowWidth, 320);
-    return (safeWidth - TIME_COL_WIDTH) / 5;
+    // 每列左右各1px间距，5列共10px，再减节次列
+    return Math.floor((safeWidth - TIME_COL_WIDTH - 10) / 5);
   }, [windowWidth]);
-  const tableWidth = useMemo(() => TIME_COL_WIDTH + cellWidth * weekdays.length, [cellWidth]);
+  const tableWidth = useMemo(() => TIME_COL_WIDTH + (cellWidth + 2) * weekdays.length, [cellWidth]);
   const subjectButtonWidth = useMemo(() => {
     const safeWidth = Math.max(windowWidth, 320);
     return Math.max(68, (safeWidth - 40 - 30) / 4);
@@ -267,6 +268,20 @@ export default function ScheduleScreen() {
     });
     return result;
   }, [currentWeek]);
+
+  // 计算当前周每天的实际日期
+  const weekDates = useMemo(() => {
+    const semStart = new Date(`${SEMESTER_START}T00:00:00`);
+    const mondayOffset = (currentWeek - 1) * 7;
+    return weekdays.map((_, i) => {
+      const d = new Date(semStart);
+      d.setDate(d.getDate() + mondayOffset + i);
+      return d;
+    });
+  }, [currentWeek]);
+
+  const todayDate = new Date();
+  const todayDateStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
 
   // 编辑：设置某个格子的科目
   const setCellSubject = useCallback((day: string, periodKey: string, subject: string) => {
@@ -540,7 +555,6 @@ export default function ScheduleScreen() {
   const editingPeriod = editingCell ? periods.find((p) => p.key === editingCell.periodKey) : null;
 
   // 校历事件数据
-
   const calendarEvents: Record<string, { type: 'holiday' | 'exam' | 'event'; label: string }> = {
     '2026-02-17': { type: 'event', label: '开学日' },
     '2026-03-15': { type: 'exam', label: '期中考试' },
@@ -560,32 +574,28 @@ export default function ScheduleScreen() {
     '2026-06-30': { type: 'event', label: '结课日' },
   };
 
-  const [calMonth, setCalMonth] = useState(3);
-  const [calYear, setCalYear] = useState(2026);
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const semesterLabel = '2025-2026学年第二学期';
-  const calendarEventMeta = useMemo(
-    () => ({
-      holiday: { label: '假期', short: '假', color: colors.error, bg: colors.errorLight },
-      exam: { label: '考试', short: '考', color: colors.info, bg: colors.infoLight },
-      event: { label: '校事', short: '事', color: colors.success, bg: colors.successLight },
-    }),
-    [colors.error, colors.errorLight, colors.info, colors.infoLight, colors.success, colors.successLight],
-  );
-  const monthEvents = useMemo(
-    () => Object.entries(calendarEvents)
-      .filter(([date]) => date.startsWith(`${calYear}-${String(calMonth).padStart(2, '0')}`))
-      .reduce((acc, [date, event]) => {
-        const existing = acc.find((item) => item.label === event.label);
-        if (existing) {
-          existing.endDate = date;
-        } else {
-          acc.push({ ...event, startDate: date, endDate: date });
-        }
-        return acc;
-      }, [] as { type: 'holiday' | 'exam' | 'event'; label: string; startDate: string; endDate: string }[]),
-    [calMonth, calYear],
-  );
+  // 当前周的校历事件（去重合并连续天数）
+  const weekCalendarEvents = useMemo(() => {
+    const events: { type: 'holiday' | 'exam' | 'event'; label: string; dates: string[]; dayNames: string[] }[] = [];
+    const seen = new Map<string, number>();
+
+    weekDates.forEach((d, i) => {
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const ev = calendarEvents[dateStr];
+      if (!ev) return;
+
+      const key = `${ev.type}-${ev.label}`;
+      if (seen.has(key)) {
+        const idx = seen.get(key)!;
+        events[idx].dates.push(dateStr);
+        events[idx].dayNames.push(weekdays[i]);
+      } else {
+        seen.set(key, events.length);
+        events.push({ ...ev, dates: [dateStr], dayNames: [weekdays[i]] });
+      }
+    });
+    return events;
+  }, [weekDates, calendarEvents]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -615,30 +625,7 @@ export default function ScheduleScreen() {
           ))}
         </View>
       </View>
-      {/* 视图切换 */}
-      <View style={[calStyles.tabBar, { backgroundColor: colors.background }]}>
-        <View style={[calStyles.tabInner, { backgroundColor: colors.surfaceSecondary }]}>
-          {(['schedule', 'calendar'] as const).map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[calStyles.tabItem, viewMode === tab && { backgroundColor: colors.surface }]}
-              onPress={() => setViewMode(tab)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={tab === 'schedule' ? 'grid' : 'calendar'}
-                size={15}
-                color={viewMode === tab ? colors.primary : colors.textTertiary}
-              />
-              <Text style={[calStyles.tabText, { color: viewMode === tab ? colors.primary : colors.textTertiary }, viewMode === tab && { fontWeight: '700' }]}>
-                {tab === 'schedule' ? '课程表' : '校历'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
 
-      {viewMode === 'schedule' && (<>
       {/* 顶部栏 */}
       <View style={[styles.topBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         {/* 班级 + 编辑按钮 */}
@@ -735,46 +722,78 @@ export default function ScheduleScreen() {
         </View>
       </View>
 
+      {/* 本周校历事件 */}
+      {weekCalendarEvents.length > 0 && (
+        <View style={styles.calBanner}>
+          {weekCalendarEvents.map((ev, i) => {
+            const iconName = ev.type === 'holiday' ? 'sunny-outline' : ev.type === 'exam' ? 'document-text-outline' : 'flag-outline';
+            const bgColor = ev.type === 'holiday' ? colors.errorLight : ev.type === 'exam' ? colors.infoLight : colors.primaryLight;
+            const textColor = ev.type === 'holiday' ? colors.error : ev.type === 'exam' ? colors.info : colors.primary;
+            const dayRange = ev.dayNames.length === 1 ? ev.dayNames[0] : `${ev.dayNames[0]}-${ev.dayNames[ev.dayNames.length - 1]}`;
+            return (
+              <View key={i} style={[styles.calBannerItem, { backgroundColor: bgColor }]}>
+                <Ionicons name={iconName as any} size={14} color={textColor} />
+                <Text style={[styles.calBannerText, { color: textColor }]}>
+                  {ev.label}
+                </Text>
+                <Text style={[styles.calBannerDays, { color: textColor }]}>
+                  {dayRange}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
       {/* 课程表 */}
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View>
-          {/* 表头 */}
-          <View style={[styles.tableHeaderRow, { width: tableWidth }]}>
-            <View style={[styles.timeHeaderCell, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={styles.tableContainer}>
+          {/* 表头 - 日历融合 */}
+          <View style={[styles.tableHeaderRow, { width: tableWidth, backgroundColor: colors.surface }]}>
+            <View style={[styles.timeHeaderCell, { backgroundColor: colors.surface }]}>
               <Text style={[styles.timeHeaderText, { color: colors.textTertiary }]}>节次</Text>
             </View>
             {weekdays.map((day, i) => {
               const isHoliday = !!weekHolidays[day];
-              const isToday = new Date().getDay() === i + 1;
+              const dateObj = weekDates[i];
+              const dateNum = dateObj.getDate();
+              const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateNum).padStart(2, '0')}`;
+              const isToday = dateStr === todayDateStr && isViewingCurrentWeek;
+              const calEvent = calendarEvents[dateStr];
+              const shortDay = day.replace('周', '');
               return (
                 <View
                   key={day}
-                  style={[
-                    styles.dayHeaderCell,
-                    { width: cellWidth },
-                    {
-                      backgroundColor: isHoliday ? colors.holiday.bg : isToday ? colors.primary + '10' : colors.surface,
-                      borderColor: isHoliday ? colors.holiday.border : colors.border,
-                    },
-                  ]}
+                  style={[styles.dayHeaderCell, { width: cellWidth }]}
                 >
-                  <Text
-                    style={[styles.dayHeaderText, {
-                      color: isHoliday ? colors.textTertiary : isToday ? colors.primary : colors.text,
-                      fontWeight: isToday ? '800' : '600',
-                    }]}
-                  >
-                    {day}
+                  <Text style={[styles.dayHeaderWeekday, { color: colors.textTertiary }]}>
+                    {isHoliday ? `${shortDay}·放假` : shortDay}
                   </Text>
-                  {isToday && <View style={[styles.todayIndicator, { backgroundColor: colors.primary }]} />}
-                  {isHoliday && <Text style={[styles.holidayLabel, { color: colors.error }]}>{weekHolidays[day]}</Text>}
+                  <View style={[
+                    styles.dayHeaderDateWrap,
+                    isToday && { backgroundColor: colors.primary, borderRadius: 14 },
+                  ]}>
+                    <Text
+                      style={[styles.dayHeaderDate, {
+                        color: isHoliday ? colors.textTertiary : isToday ? '#FFFFFF' : colors.text,
+                        fontWeight: isToday ? '800' : '600',
+                      }]}
+                    >
+                      {dateNum}
+                    </Text>
+                  </View>
+                  {calEvent && (
+                    <View style={[styles.headerEventDot, {
+                      backgroundColor: calEvent.type === 'holiday' ? colors.error : calEvent.type === 'exam' ? colors.info : colors.success,
+                    }]} />
+                  )}
                 </View>
               );
             })}
           </View>
 
           {/* 课程格子 */}
-          {periods.map((period, pi) => {
+          {periods.map((period) => {
             const isSpecial = period.type === 'special';
             const showLunchBreak = period.key === 'noon';
             const showAfternoonBreak = period.key === 'after';
@@ -782,7 +801,7 @@ export default function ScheduleScreen() {
             return (
               <View key={period.key}>
                 {(showLunchBreak || showAfternoonBreak) && (
-                  <View style={[styles.breakRow, { backgroundColor: colors.surfaceSecondary }]}>
+                  <View style={[styles.breakRow, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
                     <Text style={[styles.breakText, { color: colors.textTertiary }]}>
                       {showLunchBreak ? '午 休' : ''}
                     </Text>
@@ -792,38 +811,29 @@ export default function ScheduleScreen() {
                 <View style={[styles.tableRow, { width: tableWidth }]}>
                   <View
                     style={[styles.timeCell, {
-                      backgroundColor: isSpecial ? colors.surfaceSecondary : colors.surface,
-                      borderColor: colors.border,
+                      backgroundColor: colors.surface,
                     }]}
                   >
-                    <Text style={[styles.periodLabel, { color: isSpecial ? colors.textTertiary : colors.text, fontSize: isSpecial ? 8 : 9 }]}>
-                      {period.label}
+                    <Text style={[styles.periodLabel, {
+                      color: isSpecial ? colors.textTertiary : colors.text,
+                      fontSize: isSpecial ? 10 : 13,
+                      fontWeight: isSpecial ? '600' : '700',
+                    }]}>
+                      {isSpecial ? period.label : period.key}
                     </Text>
-                    <Text style={[styles.periodTime, { color: colors.textTertiary }]}>{period.time}</Text>
                   </View>
 
                   {weekdays.map((day) => {
                     const isHoliday = !!weekHolidays[day];
                     const course = schedule[day]?.[period.key];
-                    const isToday = new Date().getDay() === weekdays.indexOf(day) + 1;
 
                     if (isHoliday) {
                       return (
                         <View
                           key={day}
-                          style={[
-                            styles.courseCell,
-                            {
-                              width: cellWidth,
-                              backgroundColor: colors.holiday.bg,
-                              borderColor: colors.holiday.border,
-                            },
-                          ]}
+                          style={[styles.courseCell, { width: cellWidth }]}
                         >
-                          {pi === Math.floor(periods.length / 2) && <Ionicons name="sunny-outline" size={12} color={colors.holiday.text} />}
-                          {pi === Math.floor(periods.length / 2) + 1 && (
-                            <Text style={[styles.holidayCellText, { color: colors.holiday.text }]}>{weekHolidays[day]}</Text>
-                          )}
+                          <Text style={[styles.holidayCellText, { color: colors.textTertiary }]}>休</Text>
                         </View>
                       );
                     }
@@ -836,16 +846,12 @@ export default function ScheduleScreen() {
                           style={[
                             styles.courseCell,
                             { width: cellWidth },
-                            {
-                              backgroundColor: isToday ? colors.primary + '05' : colors.surface,
-                              borderColor: isEditing ? colors.primary + '40' : colors.border,
-                              borderStyle: isEditing ? 'dashed' as any : 'solid' as any,
-                            },
+                            isEditing && { borderColor: colors.primary + '30', borderStyle: 'dashed' as any },
                           ]}
                           activeOpacity={isEditing ? 0.6 : 1}
                           onPress={() => isEditing && handleCellPress(day, period)}
                         >
-                          {isEditing && <Ionicons name="add" size={14} color={colors.primary + '50'} />}
+                          {isEditing && <Ionicons name="add" size={14} color={colors.primary + '40'} />}
                         </TouchableOpacity>
                       );
                     }
@@ -861,12 +867,13 @@ export default function ScheduleScreen() {
                         key={day}
                         style={[
                           styles.courseCell,
+                          styles.courseCellFilled,
                           { width: cellWidth },
                           {
                             backgroundColor: isFiltered ? colors.surfaceSecondary : courseColor.bg,
-                            borderColor: isEditing ? courseColor.text + '40' : colors.border,
                             opacity: isFiltered ? 0.4 : 1,
                           },
+                          isEditing && { borderColor: courseColor.text + '30' },
                         ]}
                         activeOpacity={0.7}
                         onPress={() => handleCellPress(day, period, course)}
@@ -952,247 +959,6 @@ export default function ScheduleScreen() {
 
         <View style={{ height: 24 }} />
       </ScrollView>
-      </>)}
-
-      {viewMode === 'calendar' && (
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={calStyles.scrollContent}>
-        {/* 学期信息条 */}
-        <View style={[calStyles.calendarOverviewCard, { backgroundColor: colors.surface }]}>
-          <View style={calStyles.calendarOverviewHeader}>
-            <View style={calStyles.calendarOverviewTitleWrap}>
-              <Text style={[calStyles.calendarOverviewEyebrow, { color: colors.primary }]}>校历概览</Text>
-              <Text style={[calStyles.calendarOverviewTitle, { color: colors.text }]}>{semesterLabel}</Text>
-              <Text style={[calStyles.calendarOverviewMeta, { color: colors.textTertiary }]}>
-                {SEMESTER_START.slice(5)} - {SEMESTER_END.slice(5)}
-              </Text>
-            </View>
-            <View style={[calStyles.calendarOverviewBadge, { backgroundColor: colors.primaryLight }]}>
-              <Ionicons name="sparkles-outline" size={13} color={colors.primary} />
-              <Text style={[calStyles.calendarOverviewBadgeText, { color: colors.primary }]}>
-                {monthEvents.length} 项事件
-              </Text>
-            </View>
-          </View>
-          <View style={calStyles.calendarOverviewMetrics}>
-            <View style={[calStyles.calendarMetricCard, { backgroundColor: colors.surfaceSecondary }]}>
-              <Text style={[calStyles.calendarMetricLabel, { color: colors.textTertiary }]}>当前月份</Text>
-              <Text style={[calStyles.calendarMetricValue, { color: colors.text }]}>{calMonth} 月</Text>
-            </View>
-            <View style={[calStyles.calendarMetricCard, { backgroundColor: colors.surfaceSecondary }]}>
-              <Text style={[calStyles.calendarMetricLabel, { color: colors.textTertiary }]}>本月安排</Text>
-              <Text style={[calStyles.calendarMetricValue, { color: colors.text }]}>
-                {monthEvents.length === 0 ? '无特殊安排' : `${monthEvents.length} 项安排`}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* 月份切换 */}
-        <View style={[calStyles.calendarCard, { backgroundColor: colors.surface }]}>
-          <View style={calStyles.monthHeader}>
-            <TouchableOpacity
-              style={[calStyles.monthNavBtn, { backgroundColor: colors.surfaceSecondary }]}
-              onPress={() => { if (calMonth === 1) { setCalMonth(12); setCalYear(calYear - 1); } else setCalMonth(calMonth - 1); }}
-            >
-              <Ionicons name="chevron-back" size={18} color={colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowMonthPicker(true)} activeOpacity={0.7}>
-              <View style={[calStyles.monthTitlePill, { backgroundColor: colors.primaryLight }]}>
-                <View style={calStyles.monthTitleRow}>
-                  <Text style={[calStyles.monthTitle, { color: colors.text }]}>{calYear}年 {calMonth}月</Text>
-                  <Ionicons name="caret-down" size={12} color={colors.textTertiary} />
-                </View>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[calStyles.monthNavBtn, { backgroundColor: colors.surfaceSecondary }]}
-              onPress={() => { if (calMonth === 12) { setCalMonth(1); setCalYear(calYear + 1); } else setCalMonth(calMonth + 1); }}
-            >
-              <Ionicons name="chevron-forward" size={18} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
-        {/* 星期标题 */}
-          <View style={[calStyles.weekRow, { backgroundColor: colors.surfaceSecondary }]}>
-          {['一', '二', '三', '四', '五', '六', '日'].map((d) => (
-            <Text key={d} style={[calStyles.weekLabel, { color: colors.textTertiary }]}>{d}</Text>
-          ))}
-          </View>
-
-        {/* 日期网格 */}
-          <View style={calStyles.daysGrid}>
-            {(() => {
-              const firstDay = new Date(calYear, calMonth - 1, 1);
-              const daysInMonth = new Date(calYear, calMonth, 0).getDate();
-              let startOffset = firstDay.getDay() - 1;
-              if (startOffset < 0) startOffset = 6;
-
-              const cells = [];
-              for (let i = 0; i < startOffset; i++) {
-                cells.push(
-                  <View key={`empty-${i}`} style={calStyles.dayCell}>
-                    <View style={[calStyles.dayCellInner, calStyles.dayCellPlaceholder, { backgroundColor: colors.surfaceSecondary }]} />
-                  </View>,
-                );
-              }
-
-              for (let day = 1; day <= daysInMonth; day++) {
-                const dateStr = `${calYear}-${String(calMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const event = calendarEvents[dateStr];
-                const tone = event ? calendarEventMeta[event.type] : null;
-                const now = new Date();
-                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                const isToday = dateStr === todayStr;
-                const inSemester = dateStr >= SEMESTER_START && dateStr <= SEMESTER_END;
-
-                cells.push(
-                  <TouchableOpacity
-                    key={day}
-                    style={calStyles.dayCell}
-                    activeOpacity={event ? 0.72 : 1}
-                    onPress={() => { if (event) Alert.alert(event.label, `${calYear}年${calMonth}月${day}日`); }}
-                  >
-                    <View
-                      style={[
-                        calStyles.dayCellInner,
-                        { backgroundColor: colors.surfaceSecondary, borderColor: colors.border },
-                        tone && !isToday && { borderColor: `${tone.color}33` },
-                        event?.type === 'holiday' && !isToday && { backgroundColor: colors.errorLight },
-                        isToday && { backgroundColor: colors.primary, borderColor: colors.primary },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          calStyles.dayText,
-                          { color: inSemester ? colors.text : colors.textTertiary },
-                          !inSemester && { opacity: 0.42 },
-                          tone && !isToday && { color: tone.color, opacity: 1 },
-                          isToday && { color: '#FFFFFF', opacity: 1 },
-                        ]}
-                      >
-                        {day}
-                      </Text>
-                      {tone ? (
-                        <View style={[calStyles.dayEventBadge, { backgroundColor: isToday ? 'rgba(255,255,255,0.18)' : tone.bg }]}>
-                          <Text style={[calStyles.dayEventBadgeText, { color: isToday ? '#FFFFFF' : tone.color }]}>{tone.short}</Text>
-                        </View>
-                      ) : (
-                        <View style={calStyles.dayEventSpacer} />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              }
-              return cells;
-            })()}
-          </View>
-        </View>
-
-        {/* 本月事件列表 */}
-        <View style={[calStyles.eventSectionCard, { backgroundColor: colors.surface }]}>
-          <View style={calStyles.eventSectionHeader}>
-            <View>
-              <Text style={[calStyles.eventSectionTitle, { color: colors.textSecondary }]}>本月事件</Text>
-              <Text style={[calStyles.eventSectionSubTitle, { color: colors.textTertiary }]}>{calYear}年 {calMonth}月</Text>
-            </View>
-            <View style={[calStyles.eventCountBadge, { backgroundColor: colors.surfaceSecondary }]}>
-              <Text style={[calStyles.eventCountBadgeText, { color: colors.textSecondary }]}>{monthEvents.length} 项</Text>
-            </View>
-          </View>
-
-          {monthEvents.length === 0 ? (
-            <View style={[calStyles.noEventsCard, { backgroundColor: colors.surfaceSecondary }]}>
-              <Ionicons name="calendar-outline" size={18} color={colors.textTertiary} />
-              <Text style={[calStyles.noEvents, { color: colors.textTertiary }]}>本月没有假期、考试等特殊安排</Text>
-            </View>
-          ) : (
-            monthEvents.map((event, index) => {
-              const tone = calendarEventMeta[event.type];
-              return (
-                <View key={`${event.label}-${index}`} style={[calStyles.eventItem, { backgroundColor: colors.surfaceSecondary }]}>
-                  <View style={[calStyles.eventTypeDot, { backgroundColor: tone.color }]} />
-                  <View style={calStyles.eventInfo}>
-                    <Text style={[calStyles.eventLabel, { color: colors.text }]}>{event.label}</Text>
-                    <Text style={[calStyles.eventDate, { color: colors.textTertiary }]}>
-                      {event.startDate.slice(5)}{event.startDate !== event.endDate ? ` - ${event.endDate.slice(5)}` : ''}
-                    </Text>
-                  </View>
-                  <View style={[calStyles.eventTypeBadge, { backgroundColor: tone.bg }]}>
-                    <Text style={[calStyles.eventTypeText, { color: tone.color }]}>{tone.label}</Text>
-                  </View>
-                </View>
-              );
-            })
-          )}
-        </View>
-
-        {/* 图例 */}
-        <View style={[calStyles.legendCard, { backgroundColor: colors.surfaceSecondary }]}>
-          {[
-            { color: colors.primary, label: '今天' },
-            { color: colors.error, label: '假期' },
-            { color: colors.info, label: '考试' },
-            { color: colors.success, label: '校事' },
-          ].map((item) => (
-            <View key={item.label} style={calStyles.legendItem}>
-              <View style={[calStyles.legendDot, { backgroundColor: item.color }]} />
-              <Text style={[calStyles.legendText, { color: colors.textTertiary }]}>{item.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-      )}
-
-      {/* 月份选择器 */}
-      <Modal visible={showMonthPicker} transparent animationType="fade" onRequestClose={() => setShowMonthPicker(false)}>
-        <TouchableOpacity style={calStyles.pickerOverlay} activeOpacity={1} onPress={() => setShowMonthPicker(false)}>
-          <View style={[calStyles.pickerContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
-            {/* 年份切换 */}
-            <View style={calStyles.pickerYearRow}>
-              <TouchableOpacity onPress={() => setCalYear(calYear - 1)}>
-                <Ionicons name="chevron-back" size={20} color={colors.text} />
-              </TouchableOpacity>
-              <Text style={[calStyles.pickerYearText, { color: colors.text }]}>{calYear}年</Text>
-              <TouchableOpacity onPress={() => setCalYear(calYear + 1)}>
-                <Ionicons name="chevron-forward" size={20} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            {/* 月份网格 */}
-            <View style={calStyles.pickerGrid}>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
-                const isCurrentMonth = m === calMonth;
-                const monthStr = `${calYear}-${String(m).padStart(2, '0')}`;
-                const semStartMonth = SEMESTER_START.slice(0, 7);
-                const semEndMonth = SEMESTER_END.slice(0, 7);
-                const inSemester = monthStr >= semStartMonth && monthStr <= semEndMonth;
-                return (
-                  <TouchableOpacity
-                    key={m}
-                    style={[
-                      calStyles.pickerMonth,
-                      isCurrentMonth && { backgroundColor: colors.primary },
-                      !isCurrentMonth && inSemester && { backgroundColor: colors.primaryLight },
-                    ]}
-                    onPress={() => { setCalMonth(m); setShowMonthPicker(false); }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      calStyles.pickerMonthText,
-                      { color: inSemester ? colors.text : colors.textTertiary },
-                      !inSemester && { opacity: 0.5 },
-                      isCurrentMonth && { color: '#FFF', opacity: 1, fontWeight: '700' },
-                    ]}>
-                      {m}月
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* === 科目选择面板（编辑模式）=== */}
       <Modal visible={subjectPickerVisible} transparent animationType="none" onRequestClose={closeSubjectPicker}>
@@ -1439,7 +1205,7 @@ export default function ScheduleScreen() {
                     </View>
                     {weekdays.map((day) => (
                     <View key={day} style={[styles.dayHeaderCell, { width: cellWidth, backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <Text style={[styles.dayHeaderText, { color: colors.text }]}>{day}</Text>
+                        <Text style={[styles.dayHeaderDate, { color: colors.text }]}>{day}</Text>
                       </View>
                     ))}
                   </View>
@@ -1590,7 +1356,7 @@ const styles = StyleSheet.create({
   },
   scheduleHeroMetricChip: {
     flex: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.14)',
@@ -1615,9 +1381,9 @@ const styles = StyleSheet.create({
   classTab: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
   classTabText: { fontSize: 12, fontWeight: '700' },
   topActions: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  importBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
+  importBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
   importBtnText: { fontSize: 12, fontWeight: '600' },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10 },
   editBtnText: { fontSize: 12, fontWeight: '600' },
   weekControlRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12 },
   weekSelector: {
@@ -1637,29 +1403,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,
   },
   todayLocateText: { fontSize: 11, fontWeight: '700' },
   // === Table ===
-  tableHeaderRow: { flexDirection: 'row' },
-  timeHeaderCell: { width: TIME_COL_WIDTH, height: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 0.5 },
-  timeHeaderText: { fontSize: 9 },
-  dayHeaderCell: { height: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 0.5 },
-  dayHeaderText: { fontSize: 11 },
-  todayIndicator: { width: 3, height: 3, borderRadius: 1.5, marginTop: 2 },
-  holidayLabel: { fontSize: 7, fontWeight: '600', marginTop: 1 },
-  breakRow: { height: 10, justifyContent: 'center', alignItems: 'center' },
-  breakText: { fontSize: 8, fontWeight: '500', letterSpacing: 3 },
-  tableRow: { flexDirection: 'row' },
-  timeCell: { width: TIME_COL_WIDTH, height: 38, justifyContent: 'center', alignItems: 'center', borderWidth: 0.5, gap: 1 },
-  periodLabel: { fontWeight: '600' },
-  periodTime: { fontSize: 7 },
-  courseCell: { height: 38, justifyContent: 'center', alignItems: 'center', borderWidth: 0.5, paddingHorizontal: 2 },
+  tableContainer: { },
+  tableHeaderRow: { flexDirection: 'row', marginBottom: 2 },
+  timeHeaderCell: { width: TIME_COL_WIDTH, height: 44, justifyContent: 'center', alignItems: 'center' },
+  timeHeaderText: { fontSize: 9, fontWeight: '500' },
+  dayHeaderCell: { justifyContent: 'center', alignItems: 'center', paddingVertical: 4, marginHorizontal: 1 },
+  dayHeaderWeekday: { fontSize: 10, fontWeight: '500' },
+  dayHeaderDateWrap: { width: 26, height: 26, justifyContent: 'center', alignItems: 'center', marginTop: 2 },
+  dayHeaderDate: { fontSize: 14 },
+  headerEventDot: { width: 4, height: 4, borderRadius: 2, marginTop: 1 },
+  breakRow: { height: 14, justifyContent: 'center', alignItems: 'center', marginVertical: 1 },
+  breakText: { fontSize: 8, fontWeight: '600', letterSpacing: 4, opacity: 0.5 },
+  tableRow: { flexDirection: 'row', marginBottom: 2 },
+  timeCell: { width: TIME_COL_WIDTH, height: 36, justifyContent: 'center', alignItems: 'center' },
+  periodLabel: { fontWeight: '700' },
+  courseCell: { height: 36, justifyContent: 'center', alignItems: 'center', marginHorizontal: 1, borderRadius: 8, borderWidth: 1, borderColor: 'transparent' },
+  courseCellFilled: { borderWidth: 0 },
   courseSubject: { fontSize: 11, fontWeight: '700' },
-  holidayCellText: { fontSize: 11, fontWeight: '600' },
+  holidayCellText: { fontSize: 11, fontWeight: '500' },
   // === Legend ===
   legend: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: 14 },
   legendHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
@@ -1670,15 +1438,20 @@ const styles = StyleSheet.create({
   legendDot: { width: 12, height: 12, borderRadius: 3, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
   legendText: { fontSize: 11 },
   legendMineDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#4CC590' },
-  mineDot: { position: 'absolute', top: 2, right: 2, width: 6, height: 6, borderRadius: 3, backgroundColor: '#4CC590', borderWidth: 1, borderColor: '#FFFFFF' },
+  mineDot: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CC590', borderWidth: 1, borderColor: '#FFFFFF' },
   editIndicator: { position: 'absolute', bottom: 2, left: 2 },
   // === Edit Hint ===
   editHint: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: 10 },
   editHintText: { fontSize: 12, flex: 1 },
+  // === Calendar Banner ===
+  calBanner: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 12, paddingVertical: 6 },
+  calBannerItem: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 5, borderRadius: 8 },
+  calBannerText: { fontSize: 12, fontWeight: '700' },
+  calBannerDays: { fontSize: 11, fontWeight: '500', opacity: 0.8 },
   // === Subject Picker Sheet ===
   sheetOverlay: { flex: 1, justifyContent: 'flex-end' },
   sheetBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
-  sheetContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 34, paddingHorizontal: 20, paddingTop: 2 },
+  sheetContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 34, paddingHorizontal: 14, paddingTop: 2 },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 16 },
   sheetTitle: { fontSize: 18, fontWeight: '800', textAlign: 'center' },
   sheetSubtitle: { fontSize: 13, textAlign: 'center', marginTop: 4, marginBottom: 0 },
@@ -1754,11 +1527,11 @@ const styles = StyleSheet.create({
   // === Detail Modal ===
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '80%', borderRadius: 16, overflow: 'hidden' },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 18 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 18 },
   modalSubject: { fontSize: 22, fontWeight: '800' },
-  modalMineBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  modalMineBadge: { paddingHorizontal: 14, paddingVertical: 4, borderRadius: 8 },
   modalMineText: { fontSize: 12, fontWeight: '600' },
-  modalBody: { paddingHorizontal: 20, paddingVertical: 16, gap: 14 },
+  modalBody: { paddingHorizontal: 14, paddingVertical: 16, gap: 14 },
   modalRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   modalLabel: { fontSize: 14 },
   modalCloseBtn: { marginHorizontal: 20, marginBottom: 20, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
@@ -1775,74 +1548,3 @@ const styles = StyleSheet.create({
   importHintText: { fontSize: 12, flex: 1 },
 });
 
-const calStyles = StyleSheet.create({
-  tabBar: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 6 },
-  tabInner: { flexDirection: 'row', borderRadius: 14, padding: 3 },
-  tabItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 8, borderRadius: 11 },
-  tabText: { fontSize: 13 },
-  scrollContent: { paddingBottom: 8 },
-  calendarOverviewCard: { marginHorizontal: 12, marginTop: 6, padding: 16, borderRadius: 22 },
-  calendarOverviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-  calendarOverviewTitleWrap: { flex: 1 },
-  calendarOverviewEyebrow: { fontSize: 11, fontWeight: '700', marginBottom: 6 },
-  calendarOverviewTitle: { fontSize: 19, fontWeight: '800' },
-  calendarOverviewMeta: { fontSize: 12, marginTop: 4 },
-  calendarOverviewBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999 },
-  calendarOverviewBadgeText: { fontSize: 11, fontWeight: '700' },
-  calendarOverviewMetrics: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  calendarMetricCard: { flex: 1, paddingHorizontal: 12, paddingVertical: 11, borderRadius: 16 },
-  calendarMetricLabel: { fontSize: 11, fontWeight: '600' },
-  calendarMetricValue: { fontSize: 16, fontWeight: '800', marginTop: 4 },
-  calendarCard: { marginHorizontal: 12, marginTop: 12, borderRadius: 22, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 14 },
-  monthHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 8 },
-  monthNavBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  monthTitlePill: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 },
-  monthTitle: { fontSize: 18, fontWeight: '700' },
-  weekRow: { flexDirection: 'row', paddingHorizontal: 8, paddingVertical: 10, borderRadius: 16 },
-  weekLabel: { flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '700' },
-  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 2, paddingTop: 10 },
-  dayCell: { width: '14.28%', paddingHorizontal: 4, paddingVertical: 4 },
-  dayCellInner: {
-    minHeight: 62,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 4,
-    paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dayCellPlaceholder: { borderWidth: 0, opacity: 0.55 },
-  dayText: { fontSize: 14, fontWeight: '700' },
-  dayEventBadge: { minWidth: 24, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999, alignItems: 'center' },
-  dayEventBadgeText: { fontSize: 10, fontWeight: '700' },
-  dayEventSpacer: { height: 18 },
-  eventSectionCard: { marginHorizontal: 12, marginTop: 12, padding: 16, borderRadius: 22 },
-  eventSectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  eventSectionTitle: { fontSize: 14, fontWeight: '700' },
-  eventSectionSubTitle: { fontSize: 12, marginTop: 3 },
-  eventCountBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-  eventCountBadgeText: { fontSize: 11, fontWeight: '700' },
-  noEventsCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 18, borderRadius: 16 },
-  noEvents: { fontSize: 13 },
-  eventItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 16, marginBottom: 8, gap: 12 },
-  eventTypeDot: { width: 8, height: 8, borderRadius: 4 },
-  eventInfo: { flex: 1 },
-  eventLabel: { fontSize: 14, fontWeight: '600' },
-  eventDate: { fontSize: 12, marginTop: 2 },
-  eventTypeBadge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 },
-  eventTypeText: { fontSize: 10, fontWeight: '600' },
-  legendCard: { marginHorizontal: 12, marginTop: 12, flexDirection: 'row', justifyContent: 'center', gap: 18, paddingVertical: 14, borderRadius: 18 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendDot: { width: 6, height: 6, borderRadius: 3 },
-  legendText: { fontSize: 11 },
-  // Month title clickable
-  monthTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  // Month picker
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  pickerContent: { width: '100%', maxWidth: 300, borderRadius: 20, padding: 20 },
-  pickerYearRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  pickerYearText: { fontSize: 18, fontWeight: '700' },
-  pickerGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  pickerMonth: { width: '25%', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  pickerMonthText: { fontSize: 14, fontWeight: '500' },
-});

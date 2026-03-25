@@ -220,9 +220,9 @@ const styles = StyleSheet.create({
   },
   // === Header ===
   headerSection: {
-    paddingTop: 8,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 10,
+    paddingHorizontal: 16,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     overflow: 'hidden',
@@ -290,10 +290,10 @@ const styles = StyleSheet.create({
   },
   statsBar: {
     flexDirection: 'row',
-    marginTop: 18,
+    marginTop: 10,
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 10,
   },
   statItem: {
     flex: 1,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   // === Section ===
   section: {
     marginTop: 18,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
   quickActionsCard: {
     borderRadius: 16,
     paddingVertical: 18,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,

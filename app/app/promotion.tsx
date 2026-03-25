@@ -260,13 +260,13 @@ export default function PromotionScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topSection: { paddingHorizontal: 20, zIndex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 0, paddingBottom: 28 },
+  topSection: { paddingHorizontal: 14, zIndex: 1 },
+  scrollContent: { paddingHorizontal: 14, paddingTop: 0, paddingBottom: 28 },
   heroCard: {
     marginHorizontal: -20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingTop: 10,
     paddingBottom: 4,
     overflow: 'hidden',
@@ -367,6 +367,6 @@ const styles = StyleSheet.create({
   archivedIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   archivedName: { fontSize: 15, fontWeight: '700' },
   archivedMeta: { fontSize: 12, marginTop: 4 },
-  archivedBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  archivedBadge: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 },
   archivedBadgeText: { fontSize: 11, fontWeight: '700' },
 });

@@ -1,17 +1,15 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
+import { House, Calendar, Users, ChartBar, User, type LucideIcon } from 'lucide-react-native';
 
-type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
-
-const tabs: { name: string; title: string; icon: IoniconsName; iconOutline: IoniconsName }[] = [
-  { name: 'index', title: '首页', icon: 'home', iconOutline: 'home-outline' },
-  { name: 'schedule', title: '课程表', icon: 'calendar', iconOutline: 'calendar-outline' },
-  { name: 'students', title: '学生', icon: 'people', iconOutline: 'people-outline' },
-  { name: 'scores', title: '成绩', icon: 'document-text', iconOutline: 'document-text-outline' },
-  { name: 'profile', title: '我的', icon: 'person', iconOutline: 'person-outline' },
+const tabs: { name: string; title: string; icon: LucideIcon }[] = [
+  { name: 'index', title: '首页', icon: House },
+  { name: 'schedule', title: '课程表', icon: Calendar },
+  { name: 'students', title: '学生', icon: Users },
+  { name: 'scores', title: '成绩', icon: ChartBar },
+  { name: 'profile', title: '我的', icon: User },
 ];
 
 export default function TabsLayout() {
@@ -48,13 +46,10 @@ export default function TabsLayout() {
           name={tab.name}
           options={{
             title: tab.title,
-            tabBarIcon: ({ focused, color }) => (
-              <Ionicons
-                name={focused ? tab.icon : tab.iconOutline}
-                size={20}
-                color={color}
-              />
-            ),
+            tabBarIcon: ({ color }) => {
+              const Icon = tab.icon;
+              return <Icon size={20} color={color} strokeWidth={1.8} />;
+            },
           }}
         />
       ))}

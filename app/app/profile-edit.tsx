@@ -41,32 +41,58 @@ export default function ProfileEditScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={[styles.navBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}> 
-        <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.surfaceSecondary }]} activeOpacity={0.7} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={20} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text }]}>编辑资料</Text>
-        <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.primaryLight }]} activeOpacity={0.75} onPress={handleSave}>
-          <Text style={[styles.saveButtonText, { color: colors.primary }]}>保存</Text>
-        </TouchableOpacity>
+      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
+        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
+        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+
+        <View style={styles.navBar}>
+          <TouchableOpacity style={styles.navButton} onPress={() => router.back()} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={20} color="#FFF" />
+          </TouchableOpacity>
+          <View style={styles.navCenter}>
+            <Text style={styles.navTitle}>编辑资料</Text>
+            <Text style={styles.navSubtitle}>头像 · 信息 · 科目</Text>
+          </View>
+          <TouchableOpacity style={styles.saveBtn} activeOpacity={0.75} onPress={handleSave}>
+            <Text style={styles.saveBtnText}>保存</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.heroCard}>
+          <View style={styles.heroMain}>
+            <View>
+              <View style={styles.heroEyebrowWrap}>
+                <Ionicons name="person-outline" size={12} color="rgba(255,255,255,0.9)" />
+                <Text style={styles.heroEyebrow}>个人资料</Text>
+              </View>
+              <Text style={styles.heroTitle}>维护您的基本信息</Text>
+              <Text style={styles.heroMeta}>头像、姓名、授课科目等</Text>
+            </View>
+            <TouchableOpacity style={styles.avatarWrap} activeOpacity={0.8} onPress={handlePickAvatar}>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>{avatarLetter}</Text>
+              </View>
+              <View style={styles.cameraBadge}>
+                <Ionicons name="camera" size={12} color={colors.primary} />
+              </View>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.heroStatsRow}>
+            {[
+              { label: '姓名', value: name || '未填写' },
+              { label: '科目', value: `${subjects.length} 门` },
+              { label: '手机', value: phone ? `${phone.slice(0, 3)}****` : '未填写' },
+            ].map((item) => (
+              <View key={item.label} style={styles.heroStatChip}>
+                <Text style={styles.heroStatLabel}>{item.label}</Text>
+                <Text style={styles.heroStatValue}>{item.value}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}> 
-          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
-          <TouchableOpacity style={styles.avatarWrap} activeOpacity={0.8} onPress={handlePickAvatar}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>{avatarLetter}</Text>
-            </View>
-            <View style={styles.cameraBadge}>
-              <Ionicons name="camera" size={14} color={colors.primary} />
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.heroTitle}>维护个人资料</Text>
-          <Text style={styles.heroSubtitle}>让头像、基本信息和授课科目层级更清楚，也方便后续接个人资料接口。</Text>
-        </View>
-
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>基本信息</Text>
           <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>更新姓名和手机号</Text>
@@ -152,22 +178,72 @@ export default function ProfileEditScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 28 },
-  navBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
-  navButton: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  navTitle: { fontSize: 17, fontWeight: '700' },
-  saveButton: { minWidth: 52, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
-  saveButtonText: { fontSize: 13, fontWeight: '700' },
-  heroCard: { borderRadius: 24, padding: 20, overflow: 'hidden', marginBottom: 16, alignItems: 'center' },
-  heroDecorLarge: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -92, right: -36 },
-  heroDecorSmall: { position: 'absolute', width: 90, height: 90, borderRadius: 45, bottom: -22, right: 42 },
-  avatarWrap: { position: 'relative', marginTop: 4 },
-  avatarCircle: { width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.22)' },
-  avatarText: { fontSize: 34, fontWeight: '800', color: '#FFF' },
-  cameraBadge: { position: 'absolute', right: 0, bottom: 0, width: 30, height: 30, borderRadius: 15, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
-  heroTitle: { color: '#FFF', fontSize: 24, fontWeight: '800', marginTop: 16 },
-  heroSubtitle: { color: 'rgba(255,255,255,0.86)', fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: 'center' },
-  sectionRow: { marginBottom: 12 },
+  scrollContent: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 28 },
+  // === Top Section (matches schedule hero) ===
+  topSection: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  heroDecorLarge: { position: 'absolute', width: 138, height: 138, borderRadius: 69, top: -42, right: -12 },
+  heroDecorSmall: { position: 'absolute', width: 76, height: 76, borderRadius: 38, bottom: -20, left: -14 },
+  navBar: { flexDirection: 'row', alignItems: 'center' },
+  navButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  navCenter: { flex: 1, marginLeft: 10 },
+  navTitle: { fontSize: 16, fontWeight: '800', color: '#FFF' },
+  navSubtitle: { marginTop: 1, fontSize: 11, color: 'rgba(255,255,255,0.78)' },
+  saveBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  saveBtnText: { fontSize: 13, fontWeight: '700', color: '#FFF' },
+  heroCard: { paddingTop: 8 },
+  heroMain: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+  heroEyebrowWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
+  heroEyebrow: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
+  heroTitle: { marginTop: 8, fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
+  heroMeta: { marginTop: 3, fontSize: 12, lineHeight: 15, color: 'rgba(255,255,255,0.78)' },
+  avatarWrap: { position: 'relative' },
+  avatarCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.22)' },
+  avatarText: { fontSize: 22, fontWeight: '800', color: '#FFF' },
+  cameraBadge: { position: 'absolute', right: -2, bottom: -2, width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
+  heroStatsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  heroStatChip: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  heroStatLabel: { color: 'rgba(255,255,255,0.76)', fontSize: 11, fontWeight: '600' },
+  heroStatValue: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+  // === Content ===
+  sectionRow: { marginBottom: 8, marginTop: 4 },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
   sectionHint: { fontSize: 12, marginTop: 4 },
   card: { borderRadius: 20, padding: 16, marginBottom: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },

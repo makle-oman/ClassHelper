@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
 
   // Nav
   topSection: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingTop: 4,
     paddingBottom: 6,
     borderBottomLeftRadius: 22,
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 999,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingVertical: 5,
     backgroundColor: 'rgba(255,255,255,0.12)',
     gap: 4,
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   studentCard: {
     borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingVertical: 9,
     flexDirection: 'row',
     alignItems: 'center',
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 1,

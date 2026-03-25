@@ -94,7 +94,7 @@ export default function SettingsScreen() {
         <View style={styles.heroCard}>
           <View style={styles.heroTopRow}>
             <View style={styles.heroEyebrowWrap}>
-              <Ionicons name="sparkles-outline" size={12} color="rgba(255,255,255,0.88)" />
+              <Ionicons name="sparkles-outline" size={12} color="rgba(255,255,255,0.9)" />
               <Text style={styles.heroEyebrow}>偏好中心</Text>
             </View>
             <View style={styles.heroBadge}>
@@ -102,8 +102,8 @@ export default function SettingsScreen() {
               <Text style={styles.heroBadgeValue}>{themeModeLabels[themeMode]}</Text>
             </View>
           </View>
-          <Text style={styles.heroTitle}>管理课程提醒、外观主题和反馈建议</Text>
-          <Text style={styles.heroSubtitle}>在这里调整课程提醒、外观模式和提交使用建议。</Text>
+          <Text style={styles.heroTitle}>课程提醒 · 外观主题 · 反馈建议</Text>
+          <Text style={styles.heroSubtitle}>调整课程提醒、外观模式和提交使用建议</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '提醒', value: settings.enabled ? '开启' : '关闭' },
@@ -122,15 +122,7 @@ export default function SettingsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.pageContent}>
         <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleWrap}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>课程提醒</Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>为”我的课程”设置上课前提醒</Text>
-          </View>
-          <View style={[styles.sectionBadge, { backgroundColor: settings.enabled ? colors.palette.green.bg : colors.surfaceSecondary }]}>
-            <Text style={[styles.sectionBadgeText, { color: settings.enabled ? colors.palette.green.text : colors.textSecondary }]}>
-              {settings.enabled ? '已开启' : '已关闭'}
-            </Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>课程提醒</Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.surface }]}> 
           <View style={styles.settingRow}>
@@ -196,13 +188,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleWrap}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>显示与个性化</Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>切换界面外观</Text>
-          </View>
-          <View style={[styles.sectionBadge, { backgroundColor: colors.palette.purple.bg }]}>
-            <Text style={[styles.sectionBadgeText, { color: colors.palette.purple.text }]}>{themeModeLabels[themeMode]}</Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>显示与个性化</Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.surface }]}> 
           <TouchableOpacity style={styles.settingRow} activeOpacity={0.75} onPress={() => setShowThemeModal(true)}>
@@ -227,13 +213,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleWrap}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>帮助与反馈</Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>遇到问题或有好的建议？告诉我们</Text>
-          </View>
-          <View style={[styles.sectionBadge, { backgroundColor: colors.palette.cyan.bg }]}>
-            <Text style={[styles.sectionBadgeText, { color: colors.palette.cyan.text }]}>v1.0.0</Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>帮助与反馈</Text>
         </View>
         <View style={[styles.card, { backgroundColor: colors.surface }]}> 
           <TouchableOpacity style={styles.settingRow} activeOpacity={0.75} onPress={() => setShowFeedbackModal(true)}>
@@ -407,11 +387,11 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topSection: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingTop: 6,
-    paddingBottom: 12,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingBottom: 10,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
     overflow: 'hidden',
   },
   navBar: { flexDirection: 'row', alignItems: 'center' },
@@ -427,22 +407,22 @@ const styles = StyleSheet.create({
   navGhost: { width: 36, height: 36 },
   navTitle: { fontSize: 16, fontWeight: '800', color: '#FFF' },
   navSubtitle: { marginTop: 1, fontSize: 11, color: 'rgba(255,255,255,0.78)' },
-  heroCard: { paddingTop: 10 },
+  heroCard: { paddingTop: 6 },
   heroDecorLarge: {
     position: 'absolute',
-    width: 156,
-    height: 156,
-    borderRadius: 78,
-    top: -62,
-    right: -18,
+    width: 138,
+    height: 138,
+    borderRadius: 69,
+    top: -42,
+    right: -12,
   },
   heroDecorSmall: {
     position: 'absolute',
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    bottom: -24,
-    right: 24,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    bottom: -20,
+    left: -14,
   },
   heroTopRow: {
     flexDirection: 'row',
@@ -455,50 +435,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
-  heroEyebrow: { color: 'rgba(255,255,255,0.86)', fontSize: 10, fontWeight: '700' },
+  heroEyebrow: { color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '700' },
   heroBadge: {
     alignItems: 'flex-end',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
-  heroBadgeLabel: { color: 'rgba(255,255,255,0.72)', fontSize: 10, fontWeight: '700' },
-  heroBadgeValue: { marginTop: 2, color: '#FFF', fontSize: 13, fontWeight: '800' },
-  heroTitle: { marginTop: 10, color: '#FFF', fontSize: 20, fontWeight: '800' },
-  heroSubtitle: { marginTop: 6, color: 'rgba(255,255,255,0.84)', fontSize: 12, lineHeight: 18 },
-  heroStatsRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  heroBadgeLabel: { color: 'rgba(255,255,255,0.72)', fontSize: 9, fontWeight: '700' },
+  heroBadgeValue: { marginTop: 1, color: '#FFF', fontSize: 12, fontWeight: '800' },
+  heroTitle: { marginTop: 5, color: '#FFF', fontSize: 16, fontWeight: '800' },
+  heroSubtitle: { marginTop: 2, color: 'rgba(255,255,255,0.78)', fontSize: 11, lineHeight: 14 },
+  heroStatsRow: { flexDirection: 'row', gap: 6, marginTop: 8 },
   heroStatChip: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 3,
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 5,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.14)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
   },
-  heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, fontWeight: '600', textAlign: 'center' },
-  heroStatValue: { color: '#FFF', fontSize: 13, fontWeight: '800', textAlign: 'center' },
+  heroStatLabel: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
+  heroStatValue: { color: '#FFF', fontSize: 11, fontWeight: '800' },
   scrollContent: { paddingBottom: 28 },
   pageContent: { paddingHorizontal: 12, paddingTop: 10 },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 12,
+    marginTop: 16,
     marginBottom: 8,
   },
-  sectionTitleWrap: { flex: 1 },
   sectionTitle: { fontSize: 16, fontWeight: '800' },
-  sectionSubtitle: { marginTop: 3, fontSize: 12, lineHeight: 17 },
-  sectionBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-  sectionBadgeText: { fontSize: 11, fontWeight: '700' },
   card: {
     borderRadius: 20,
     overflow: 'hidden',
@@ -529,7 +502,7 @@ const styles = StyleSheet.create({
   settingTitle: { fontSize: 15, fontWeight: '800' },
   settingDesc: { marginTop: 4, fontSize: 12, lineHeight: 18 },
   settingRight: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 10 },
-  valueBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  valueBadge: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 },
   valueBadgeText: { fontSize: 11, fontWeight: '700' },
   chevronWrap: {
     width: 28,
