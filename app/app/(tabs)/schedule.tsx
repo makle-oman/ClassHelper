@@ -979,9 +979,9 @@ export default function ScheduleScreen() {
               <Text style={[calStyles.calendarMetricValue, { color: colors.text }]}>{calMonth} 月</Text>
             </View>
             <View style={[calStyles.calendarMetricCard, { backgroundColor: colors.surfaceSecondary }]}>
-              <Text style={[calStyles.calendarMetricLabel, { color: colors.textTertiary }]}>本月节奏</Text>
+              <Text style={[calStyles.calendarMetricLabel, { color: colors.textTertiary }]}>本月安排</Text>
               <Text style={[calStyles.calendarMetricValue, { color: colors.text }]}>
-                {monthEvents.length === 0 ? '平稳' : `${monthEvents.length} 个节点`}
+                {monthEvents.length === 0 ? '无特殊安排' : `${monthEvents.length} 项安排`}
               </Text>
             </View>
           </View>
@@ -1103,7 +1103,7 @@ export default function ScheduleScreen() {
           {monthEvents.length === 0 ? (
             <View style={[calStyles.noEventsCard, { backgroundColor: colors.surfaceSecondary }]}>
               <Ionicons name="calendar-outline" size={18} color={colors.textTertiary} />
-              <Text style={[calStyles.noEvents, { color: colors.textTertiary }]}>本月暂无特殊事件</Text>
+              <Text style={[calStyles.noEvents, { color: colors.textTertiary }]}>本月没有假期、考试等特殊安排</Text>
             </View>
           ) : (
             monthEvents.map((event, index) => {
@@ -1217,7 +1217,7 @@ export default function ScheduleScreen() {
               {editingCell ? `${editingCell.day} · ${editingPeriod?.label}` : '选择科目'}
             </Text>
             <Text style={[styles.sheetSubtitle, { color: colors.textTertiary }]}>
-              {editingCellCourse ? '选择新科目后将直接替换当前课程' : '点选一个科目，立即写入当前格子'}
+              {editingCellCourse ? '选择新科目即可替换当前课程' : '选择一个科目填入当前格子'}
             </Text>
 
             <View
@@ -1238,7 +1238,7 @@ export default function ScheduleScreen() {
                   {editingCellCourse ? `当前课程：${editingCellCourse.subject}` : '当前格子为空'}
                 </Text>
                 <Text style={[styles.sheetSummaryMeta, { color: colors.textTertiary }]}>
-                  {editingCellCourse ? '从下方选择要替换成的新科目' : '从下方选择一个科目快速新增'}
+                  {editingCellCourse ? '从下方选择要换成的科目' : '从下方选择一个科目'}
                 </Text>
               </View>
             </View>

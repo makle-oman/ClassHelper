@@ -82,8 +82,8 @@ export default function RegisterScreen() {
             <Ionicons name="person-add" size={16} color="#FFF" />
             <Text style={styles.brandBadgeText}>创建教师账号</Text>
           </View>
-          <Text style={styles.heroTitle}>快速注册</Text>
-          <Text style={styles.heroSubtitle}>填写基础信息后即可进入首页，后续再补充真实注册与校验流程。</Text>
+          <Text style={styles.heroTitle}>教师注册</Text>
+          <Text style={styles.heroSubtitle}>注册后可创建班级、管理学生和安排课程</Text>
         </View>
 
         <View style={[styles.formCard, { backgroundColor: colors.surface }]}> 

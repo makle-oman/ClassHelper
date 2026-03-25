@@ -94,7 +94,7 @@ export default function NoticesScreen() {
           </View>
           <Text style={styles.heroEyebrow}>通知总览</Text>
           <Text style={styles.heroTitle}>{selectedFilter === 'all' ? '本周通知中心' : `${filterOptions.find((item) => item.key === selectedFilter)?.label}通知`}</Text>
-          <Text style={styles.heroSubtitle}>把筛选、阅读进度和发布入口收进同一层级，顶部更轻一点。</Text>
+          <Text style={styles.heroSubtitle}>管理各类通知，查看家长阅读进度</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '本周通知', value: weeklyCount.toString() },
@@ -144,7 +144,7 @@ export default function NoticesScreen() {
         <View style={styles.sectionHeaderRow}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>通知列表</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>展示类型、发布时间、班级范围和阅读进度</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>查看通知详情、类型和家长阅读情况</Text>
           </View>
           <TouchableOpacity
             style={[styles.publishButton, { backgroundColor: colors.primaryLight }]}
@@ -228,7 +228,7 @@ export default function NoticesScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>发布通知</Text>
-                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>统一弹窗底部按钮与表单节奏</Text>
+                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>编辑通知内容并发送给家长</Text>
               </View>
               <TouchableOpacity onPress={() => setShowCreateModal(false)}>
                 <Ionicons name="close" size={22} color={colors.textTertiary} />

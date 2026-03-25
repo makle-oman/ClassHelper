@@ -138,7 +138,7 @@ export default function ClassManageScreen() {
           </View>
           <Text style={styles.heroEyebrow}>班级管理总览</Text>
           <Text style={styles.heroTitle}>已管理 {classes.length} 个班级</Text>
-          <Text style={styles.heroSubtitle}>快速查看班级规模，衔接学期、升迁与花名册入口。</Text>
+          <Text style={styles.heroSubtitle}>查看班级规模，管理学期、升迁与花名册。</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '学生总数', value: totalStudents.toString() },
@@ -163,7 +163,7 @@ export default function ClassManageScreen() {
           <View style={styles.sectionRow}>
             <View>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>管理入口</Text>
-              <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>学期、升迁和班级管理保持同一层级</Text>
+              <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>快速进入相关管理功能</Text>
             </View>
           </View>
           <View style={styles.quickGrid}>
@@ -190,7 +190,7 @@ export default function ClassManageScreen() {
         <View style={styles.sectionRow}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>班级列表</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>支持查看、编辑与删除班级基础信息</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>查看、编辑或删除班级</Text>
           </View>
           <TouchableOpacity
             style={[styles.inlineAddButton, { backgroundColor: colors.primaryLight }]}
@@ -210,7 +210,7 @@ export default function ClassManageScreen() {
               <Ionicons name="school-outline" size={32} color={colors.textTertiary} />
             </View>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>还没有创建班级</Text>
-            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>先添加班级，再去配置学生、学期和课程表，会更容易形成完整闭环。</Text>
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>先添加班级，再配置学生和课程表。</Text>
           </View>
         ) : (
           <View style={styles.listSection}>
@@ -288,7 +288,7 @@ export default function ClassManageScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>{editingClass ? '编辑班级' : '创建班级'}</Text>
-                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>创建后可继续补充学生和课程安排</Text>
+                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>创建后可继续添加学生和安排课程</Text>
               </View>
               <TouchableOpacity onPress={closeModal}>
                 <Ionicons name="close" size={22} color={colors.textTertiary} />

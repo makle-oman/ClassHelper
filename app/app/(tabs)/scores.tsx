@@ -119,13 +119,13 @@ export default function ScoresScreen() {
   const handleImportScores = () => {
     Alert.alert(
       'Excel 导入成绩',
-      '请选择包含成绩数据的 Excel 文件（.xlsx）\n\n模板格式：学号、姓名、分数\n\n提示：可在电脑端访问系统下载标准模板',
+      '选择包含成绩数据的 Excel 文件（.xlsx）\n\n表头格式：学号、姓名、分数\n\n也可以在电脑端下载标准模板',
       [
         { text: '取消', style: 'cancel' },
         {
           text: '下载模板',
           onPress: () => {
-            Alert.alert('模板下载', '请在电脑浏览器中打开系统后台，进入「成绩管理」页面下载 Excel 导入模板');
+            Alert.alert('模板下载', '在电脑浏览器打开系统后台，进入「成绩管理」即可下载模板');
           },
         },
         {
@@ -194,7 +194,7 @@ export default function ScoresScreen() {
           </View>
         </View>
         <Text style={styles.scoreHeroDescription}>
-          当前优先处理待录入考试，再进入详情录分与班级成绩分析。
+          还有 {pendingCount} 场考试未录完成绩，点击进入即可继续录分。
         </Text>
         <View style={styles.scoreHeroStatsRow}>
           {heroMetrics.map((item) => (
@@ -264,9 +264,9 @@ export default function ScoresScreen() {
             <View style={[styles.scopeCard, { backgroundColor: colors.surface }]}>
               <View style={styles.scopeHeader}>
                 <View style={styles.scopeTitleWrap}>
-                  <Text style={[styles.scopeTitle, { color: colors.text }]}>当前处理范围</Text>
+                  <Text style={[styles.scopeTitle, { color: colors.text }]}>最近的考试</Text>
                   <Text style={[styles.scopeSubtitle, { color: colors.textTertiary }]}>
-                    先把待录入考试补齐，再继续看班级分析与成绩趋势。
+                    把成绩录完就能看班级分析和各科对比了
                   </Text>
                 </View>
                 <View style={[styles.scopeBadge, { backgroundColor: colors.primaryLight }]}>
@@ -292,7 +292,7 @@ export default function ScoresScreen() {
             <View style={styles.sectionHeader}>
               <View>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>考试进度</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>按场次查看录入状态与统计结果</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>点击可进入录分或查看详情</Text>
               </View>
               <View style={[styles.sectionBadge, { backgroundColor: colors.surfaceSecondary }]}>
                 <Text style={[styles.sectionBadgeText, { color: colors.textSecondary }]}>{exams.length} 场</Text>
@@ -389,9 +389,9 @@ export default function ScoresScreen() {
             <View style={[styles.analysisOverviewCard, { backgroundColor: colors.surface }]}>
               <View style={styles.scopeHeader}>
                 <View style={styles.scopeTitleWrap}>
-                  <Text style={[styles.scopeTitle, { color: colors.text }]}>当前分析视角</Text>
+                  <Text style={[styles.scopeTitle, { color: colors.text }]}>成绩分析</Text>
                   <Text style={[styles.scopeSubtitle, { color: colors.textTertiary }]}>
-                    图表、趋势和科目对比统一围绕已完成的考试数据。
+                    基于已完成的考试数据，查看分数分布和各科成绩走势。
                   </Text>
                 </View>
                 <View style={[styles.scopeBadge, { backgroundColor: colors.palette.blue.bg }]}>
@@ -567,7 +567,7 @@ export default function ScoresScreen() {
               <View style={styles.modalHeroTextWrap}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>创建考试</Text>
                 <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-                  先补齐考试名称、日期和范围，创建后就能直接进入录分。
+                  填好考试名称和日期，创建后就能直接录分。
                 </Text>
               </View>
               <TouchableOpacity
@@ -589,7 +589,7 @@ export default function ScoresScreen() {
                 <View style={styles.formSectionHeader}>
                   <View style={styles.formSectionTitleWrap}>
                     <Text style={[styles.formSectionTitle, { color: colors.text }]}>基础信息</Text>
-                    <Text style={[styles.formSectionHint, { color: colors.textTertiary }]}>先设定考试名称与日期</Text>
+                    <Text style={[styles.formSectionHint, { color: colors.textTertiary }]}>设定考试名称和日期</Text>
                   </View>
                   <View style={[styles.formSectionBadge, { backgroundColor: colors.surface }]}>
                     <Text style={[styles.formSectionBadgeText, { color: colors.primary }]}>必填</Text>
@@ -628,7 +628,7 @@ export default function ScoresScreen() {
                 <View style={styles.formSectionHeader}>
                   <View style={styles.formSectionTitleWrap}>
                     <Text style={[styles.formSectionTitle, { color: colors.text }]}>范围设置</Text>
-                    <Text style={[styles.formSectionHint, { color: colors.textTertiary }]}>统一选择科目、班级和满分值</Text>
+                    <Text style={[styles.formSectionHint, { color: colors.textTertiary }]}>选择科目、班级和满分值</Text>
                   </View>
                   <View style={[styles.formSectionBadge, { backgroundColor: colors.surface }]}>
                     <Text style={[styles.formSectionBadgeText, { color: colors.textSecondary }]}>可调整</Text>
@@ -697,7 +697,7 @@ export default function ScoresScreen() {
                       />
                       <View style={[styles.scoreHintCard, { backgroundColor: colors.surface }]}>
                         <Ionicons name="people-outline" size={14} color={colors.primary} />
-                        <Text style={[styles.scoreHintText, { color: colors.textSecondary }]}>默认覆盖班级全员录分</Text>
+                        <Text style={[styles.scoreHintText, { color: colors.textSecondary }]}>创建后默认全班录分</Text>
                       </View>
                     </View>
                   </View>

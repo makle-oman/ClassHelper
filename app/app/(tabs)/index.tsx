@@ -181,9 +181,9 @@ export default function HomeScreen() {
 
           <View style={[styles.todoListCard, { backgroundColor: colors.surface }]}>
             {[
-              { text: '三年级2班 数学作业待批改', time: '2小时前', icon: 'document-text' as IoniconsName, colorKey: 'orange' as const, urgent: false, route: '/homework' },
-              { text: '张小明家长提交了请假申请', time: '30分钟前', icon: 'hand-left' as IoniconsName, colorKey: 'red' as const, urgent: true, route: '/leave-approval' },
-              { text: '下周一教研活动，请提前准备', time: '今天', icon: 'calendar' as IoniconsName, colorKey: 'blue' as const, urgent: false, route: '/notices' },
+              { text: '三年级2班 数学作业还有5人未交', time: '2小时前', icon: 'document-text' as IoniconsName, colorKey: 'orange' as const, urgent: false, route: '/homework' },
+              { text: '张小明请假申请待审批（家长已提交）', time: '30分钟前', icon: 'hand-left' as IoniconsName, colorKey: 'red' as const, urgent: true, route: '/leave-approval' },
+              { text: '下周一有教研活动，记得准备发言材料', time: '今天', icon: 'calendar' as IoniconsName, colorKey: 'blue' as const, urgent: false, route: '/notices' },
             ].map((item, i, arr) => (
               <TouchableOpacity
                 key={i}

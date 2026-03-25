@@ -149,13 +149,13 @@ export default function StudentsScreen() {
   const handleImport = () => {
     Alert.alert(
       'Excel 导入',
-      '请选择包含学生信息的 Excel 文件（.xlsx）\n\n模板格式：姓名、学号、性别、班级、家长姓名、家长电话\n\n提示：可在电脑端访问系统下载标准模板',
+      '选择包含学生信息的 Excel 文件（.xlsx）\n\n表头格式：姓名、学号、性别、班级、家长姓名、家长电话\n\n也可以在电脑端下载标准模板',
       [
         { text: '取消', style: 'cancel' },
         {
           text: '下载模板',
           onPress: () => {
-            Alert.alert('模板下载', '请在电脑浏览器中打开系统后台，进入「学生管理」页面下载 Excel 导入模板');
+            Alert.alert('模板下载', '在电脑浏览器打开系统后台，进入「学生管理」即可下载模板');
           },
         },
         {
@@ -177,7 +177,7 @@ export default function StudentsScreen() {
             <View style={[styles.summaryDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
             <Text style={styles.summaryEyebrow}>学生花名册</Text>
             <Text style={styles.summaryClassName}>{selectedClass}</Text>
-            <Text style={styles.summaryHint}>快速查看班级学生、家长信息和导入状态</Text>
+            <Text style={styles.summaryHint}>点击学生可查看详情和家长联系方式</Text>
           </View>
 
           <View style={styles.summaryStatsRow}>
@@ -258,14 +258,14 @@ export default function StudentsScreen() {
               <Text style={[styles.statsText, { color: colors.textSecondary }]}>
                 当前展示 <Text style={{ color: colors.primary, fontWeight: '700' }}>{visibleCount}</Text> 名学生
               </Text>
-              <Text style={[styles.searchFooterText, { color: colors.textTertiary }]}>支持按姓名或学号快速检索</Text>
+              <Text style={[styles.searchFooterText, { color: colors.textTertiary }]}>输入姓名或学号即可快速找到学生</Text>
             </View>
           </View>
 
           <View style={styles.sectionHeader}>
             <View>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>班级花名册</Text>
-              <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>学生基础信息与家长联系方式</Text>
+              <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>含家长联系方式</Text>
             </View>
             <View style={[styles.sectionBadge, { backgroundColor: colors.primaryLight }]}>
               <Text style={[styles.sectionBadgeText, { color: colors.primary }]}>{visibleCount}</Text>
@@ -286,7 +286,7 @@ export default function StudentsScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="people-outline" size={56} color={colors.textTertiary} />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {searchText ? '没有找到匹配的学生' : '当前班级暂无学生，点击“新增”或“导入”添加'}
+              {searchText ? '没有找到匹配的学生' : '暂无学生，点击”新增”或”导入”添加'}
             </Text>
           </View>
         }

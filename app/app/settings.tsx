@@ -59,7 +59,7 @@ export default function SettingsScreen() {
       return;
     }
 
-    Alert.alert('提交成功', '感谢你的反馈，我们会尽快查看。');
+    Alert.alert('提交成功', '感谢您的反馈，我们会认真查看。');
     setFeedbackText('');
     setShowFeedbackModal(false);
   };
@@ -102,8 +102,8 @@ export default function SettingsScreen() {
               <Text style={styles.heroBadgeValue}>{themeModeLabels[themeMode]}</Text>
             </View>
           </View>
-          <Text style={styles.heroTitle}>常用设置集中到一个入口</Text>
-          <Text style={styles.heroSubtitle}>课程提醒、外观模式和帮助反馈统一成同一套卡片层级，查看更快，操作也更顺手。</Text>
+          <Text style={styles.heroTitle}>管理课程提醒、外观主题和反馈建议</Text>
+          <Text style={styles.heroSubtitle}>在这里调整课程提醒、外观模式和提交使用建议。</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '提醒', value: settings.enabled ? '开启' : '关闭' },
@@ -124,7 +124,7 @@ export default function SettingsScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleWrap}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>课程提醒</Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>针对“我的课程”自动调度提醒</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>为”我的课程”设置上课前提醒</Text>
           </View>
           <View style={[styles.sectionBadge, { backgroundColor: settings.enabled ? colors.palette.green.bg : colors.surfaceSecondary }]}>
             <Text style={[styles.sectionBadgeText, { color: settings.enabled ? colors.palette.green.text : colors.textSecondary }]}>
@@ -140,7 +140,7 @@ export default function SettingsScreen() {
               </View>
               <View style={styles.settingBody}>
                 <Text style={[styles.settingTitle, { color: colors.text }]}>课前提醒</Text>
-                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>课程开始前发送本地通知，帮助老师提前进入状态</Text>
+                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>课程开始前发送通知，帮助您提前做好准备</Text>
               </View>
             </View>
             <Switch
@@ -198,7 +198,7 @@ export default function SettingsScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleWrap}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>显示与个性化</Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>统一主题入口和说明文案</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>切换界面外观</Text>
           </View>
           <View style={[styles.sectionBadge, { backgroundColor: colors.palette.purple.bg }]}>
             <Text style={[styles.sectionBadgeText, { color: colors.palette.purple.text }]}>{themeModeLabels[themeMode]}</Text>
@@ -229,7 +229,7 @@ export default function SettingsScreen() {
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleWrap}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>帮助与反馈</Text>
-            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>让意见反馈和版本信息更容易发现</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>遇到问题或有好的建议？告诉我们</Text>
           </View>
           <View style={[styles.sectionBadge, { backgroundColor: colors.palette.cyan.bg }]}>
             <Text style={[styles.sectionBadgeText, { color: colors.palette.cyan.text }]}>v1.0.0</Text>
@@ -243,7 +243,7 @@ export default function SettingsScreen() {
               </View>
               <View style={styles.settingBody}>
                 <Text style={[styles.settingTitle, { color: colors.text }]}>意见反馈</Text>
-                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>记录体验问题、需求建议和细节优化想法</Text>
+                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>遇到问题或有改进想法？随时记录下来</Text>
               </View>
             </View>
             <View style={[styles.chevronWrap, { backgroundColor: colors.surfaceSecondary }]}>
@@ -260,7 +260,7 @@ export default function SettingsScreen() {
               </View>
               <View style={styles.settingBody}>
                 <Text style={[styles.settingTitle, { color: colors.text }]}>关于应用</Text>
-                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>查看版本说明与基础产品介绍</Text>
+                <Text style={[styles.settingDesc, { color: colors.textTertiary }]}>查看版本信息</Text>
               </View>
             </View>
             <View style={styles.settingRight}>
@@ -369,7 +369,7 @@ export default function SettingsScreen() {
               </View>
               <View style={styles.modalHeroTextWrap}>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>意见反馈</Text>
-                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>欢迎把你看到的 UI 细节、交互建议或功能想法记录下来。</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>欢迎记录您在使用中遇到的问题或改进建议。</Text>
               </View>
               <TouchableOpacity style={[styles.modalCloseButton, { backgroundColor: colors.surfaceSecondary }]} onPress={() => setShowFeedbackModal(false)}>
                 <Ionicons name="close" size={18} color={colors.textSecondary} />
@@ -379,7 +379,7 @@ export default function SettingsScreen() {
             <View style={[styles.feedbackInputWrap, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
               <TextInput
                 style={[styles.feedbackInput, { color: colors.text }]}
-                placeholder="请描述你遇到的问题或建议..."
+                placeholder="请描述您遇到的问题或建议..."
                 placeholderTextColor={colors.textTertiary}
                 multiline
                 numberOfLines={6}

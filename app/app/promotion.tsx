@@ -105,7 +105,7 @@ export default function PromotionScreen() {
           </View>
           <Text style={styles.heroEyebrow}>年度升迁预演</Text>
           <Text style={styles.heroTitle}>本学年共有 {classes.length} 个班级参与流转</Text>
-          <Text style={styles.heroSubtitle}>先把升年级与毕业归档的路径讲清楚，后续接接口更容易落动作。</Text>
+          <Text style={styles.heroSubtitle}>预览各班级的升迁和毕业归档情况</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '待升年级', value: promotableClasses.length.toString() },
@@ -130,7 +130,7 @@ export default function PromotionScreen() {
           <View style={styles.sectionRow}>
             <View>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>处理规则</Text>
-              <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>让老师一眼看懂“升班”和“归档”的区别</Text>
+              <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>了解升班和归档的区别</Text>
             </View>
           </View>
           <View style={styles.guideList}>
@@ -179,7 +179,7 @@ export default function PromotionScreen() {
         <View style={styles.sectionRow}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>升迁预览</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>当前班级会流向哪个目标班级</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>查看各班级将升入的目标年级</Text>
           </View>
         </View>
       </View>
@@ -231,7 +231,7 @@ export default function PromotionScreen() {
         <View style={styles.sectionRow}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>已归档班级</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>保留毕业班的历史快照与人数信息</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>往届毕业班的历史记录</Text>
           </View>
         </View>
 

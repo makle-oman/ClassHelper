@@ -186,7 +186,7 @@ export default function SemesterScreen() {
           <Text style={styles.heroSubtitle}>
             {activeSemester
               ? `${formatDate(activeSemester.startDate)} - ${formatDate(activeSemester.endDate)} · 当前第 ${activeSemester.currentWeek} 周`
-              : '建议先创建并激活当前学期，课程表、成绩和考勤会更容易建立静态闭环。'}
+              : '建议先创建并激活当前学期，方便关联课程表、成绩和考勤。'}
           </Text>
           <View style={styles.heroStatsRow}>
             {[
@@ -213,7 +213,7 @@ export default function SemesterScreen() {
             <View style={styles.sectionRow}>
               <View>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>当前学期进度</Text>
-                <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>突出活跃学期，方便后续静态页面联动</Text>
+                <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>当前正在进行的学期信息</Text>
               </View>
               <View style={[styles.activeBadge, { backgroundColor: colors.primaryLight }]}> 
                 <Text style={[styles.activeBadgeText, { color: colors.primary }]}>进行中</Text>
@@ -242,7 +242,7 @@ export default function SemesterScreen() {
         <View style={styles.sectionRow}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>历史学期</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>可设为当前，也可归档为只读</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>可重新启用，也可归档为只读</Text>
           </View>
         </View>
       </View>
@@ -287,14 +287,14 @@ export default function SemesterScreen() {
         ) : (
           <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}> 
             <Text style={[styles.emptyTitle, { color: colors.text }]}>暂无历史学期</Text>
-            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>创建新学期后，这里会沉淀可切换的历史学期记录。</Text>
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>创建新学期后，往期学期会显示在这里。</Text>
           </View>
         )}
 
         <View style={styles.sectionRow}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>已归档学期</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>归档后默认只读，适合作为历史资料页</Text>
+            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>归档后仅可查看，不可修改</Text>
           </View>
         </View>
 
@@ -325,7 +325,7 @@ export default function SemesterScreen() {
         ) : (
           <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}> 
             <Text style={[styles.emptyTitle, { color: colors.text }]}>暂无归档学期</Text>
-            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>学期结束后归档，可保留课程表、成绩和考勤的历史快照。</Text>
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>学期结束后归档，课程表、成绩和考勤记录仍可查看。</Text>
           </View>
         )}
       </ScrollView>
@@ -336,7 +336,7 @@ export default function SemesterScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>创建学期</Text>
-                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>静态阶段先把学期信息和状态管理清晰化</Text>
+                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>填写学期信息，开始新学期的教学管理</Text>
               </View>
               <TouchableOpacity onPress={closeCreateModal}>
                 <Ionicons name="close" size={22} color={colors.textTertiary} />

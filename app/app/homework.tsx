@@ -120,7 +120,7 @@ export default function HomeworkScreen() {
           </View>
           <Text style={styles.heroEyebrow}>作业看板</Text>
           <Text style={styles.heroTitle}>{selectedTab === 'list' ? '本周作业概览' : '完成情况追踪'}</Text>
-          <Text style={styles.heroSubtitle}>把作业列表、完成情况和发布操作收进统一层级，顶部更轻一点。</Text>
+          <Text style={styles.heroSubtitle}>查看各班作业布置情况和学生完成进度</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '进行中', value: activeCount.toString() },
@@ -167,7 +167,7 @@ export default function HomeworkScreen() {
             <View style={styles.sectionHeaderRow}>
               <View>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>作业列表</Text>
-                <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>突出截止时间、状态和提交进度</Text>
+                <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>按截止时间和完成度查看作业</Text>
               </View>
             </View>
             <View style={styles.listSection}>
@@ -223,7 +223,7 @@ export default function HomeworkScreen() {
           <>
             <View style={[styles.selectorCard, { backgroundColor: colors.surface }]}> 
               <Text style={[styles.sectionTitle, { color: colors.text }]}>查看口径</Text>
-              <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>先选择某一份作业，再看学生完成状态</Text>
+              <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>选择一份作业，查看每位学生的完成情况</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectorRow}>
                 {mockHomework.map((hw) => {
                   const selected = hw.id === selectedHomeworkId;
@@ -305,7 +305,7 @@ export default function HomeworkScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>布置作业</Text>
-                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>先把静态表单节奏和底部按钮规范统一起来</Text>
+                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>填写作业信息后发布给学生</Text>
               </View>
               <TouchableOpacity onPress={() => setShowCreateModal(false)}>
                 <Ionicons name="close" size={22} color={colors.textTertiary} />

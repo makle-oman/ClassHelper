@@ -150,12 +150,12 @@ export default function AttendanceScreen() {
           <Text style={styles.heroPageTitle}>考勤打卡</Text>
           <View style={styles.heroTopSpacer} />
         </View>
-        <Text style={styles.heroEyebrow}>{selectedTab === 'record' ? '当日考勤总览' : '考勤统计看板'}</Text>
+        <Text style={styles.heroEyebrow}>{selectedTab === 'record' ? '今日考勤' : '考勤统计'}</Text>
         <Text style={styles.heroTitle}>{selectedClass}</Text>
         <Text style={styles.heroSubtitle}>
           {selectedTab === 'record'
-            ? `${formatDate(currentDate)} · ${markedCount} 人已标记，异常 ${abnormalCount} 人`
-            : `${statsView === 'daily' ? '按日查看班级走势' : '按学生查看个人出勤率'}`}
+            ? `${formatDate(currentDate)} · 已标记 ${markedCount} 人，${abnormalCount} 人异常`
+            : `${statsView === 'daily' ? '查看每日出勤情况' : '查看每位学生的出勤率'}`}
         </Text>
         <View style={styles.heroStatsRow}>
           {(selectedTab === 'record'

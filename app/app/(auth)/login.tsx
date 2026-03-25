@@ -27,7 +27,7 @@ export default function LoginScreen() {
             <Text style={styles.brandBadgeText}>ClassHelper</Text>
           </View>
           <Text style={styles.heroTitle}>欢迎回来</Text>
-          <Text style={styles.heroSubtitle}>登录后即可进入教师工作台，继续处理今天的课程与班级事务。</Text>
+          <Text style={styles.heroSubtitle}>登录后即可查看班级动态和今日课程安排</Text>
         </View>
 
         <View style={[styles.formCard, { backgroundColor: colors.surface }]}> 
@@ -60,7 +60,7 @@ export default function LoginScreen() {
           <View style={styles.fieldGroup}>
             <View style={styles.passwordLabelRow}>
               <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>密码</Text>
-              <TouchableOpacity activeOpacity={0.7} onPress={() => Alert.alert('提示', '静态阶段暂不处理找回密码流程。')}>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => Alert.alert('提示', '找回密码功能暂未开放，请联系学校管理员重置密码。')}>
                 <Text style={[styles.forgotText, { color: colors.primary }]}>忘记密码？</Text>
               </TouchableOpacity>
             </View>

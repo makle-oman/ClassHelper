@@ -16,13 +16,13 @@ interface MenuItem {
 
 const menuGroups: MenuItem[][] = [
   [
-    { icon: 'school', label: '班级管理', subtitle: '管理班级信息', colorKey: 'blue' },
-    { icon: 'book', label: '作业管理', subtitle: '布置与批改作业', colorKey: 'green', badge: '3' },
-    { icon: 'megaphone', label: '通知公告', subtitle: '发布通知给家长', colorKey: 'orange' },
-    { icon: 'hand-left', label: '请假审批', subtitle: '处理学生请假', colorKey: 'red', badge: '1' },
+    { icon: 'school', label: '班级管理', subtitle: '查看和编辑班级', colorKey: 'blue' },
+    { icon: 'book', label: '作业管理', subtitle: '布置作业、查看完成情况', colorKey: 'green', badge: '3' },
+    { icon: 'megaphone', label: '通知公告', subtitle: '给家长发通知', colorKey: 'orange' },
+    { icon: 'hand-left', label: '请假审批', subtitle: '审批学生请假申请', colorKey: 'red', badge: '1' },
   ],
   [
-    { icon: 'settings', label: '设置', subtitle: '账号与偏好设置', colorKey: 'blue' },
+    { icon: 'settings', label: '设置', subtitle: '提醒、外观和反馈', colorKey: 'blue' },
   ],
 ];
 

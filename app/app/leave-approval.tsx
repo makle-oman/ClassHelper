@@ -202,7 +202,7 @@ export default function LeaveApprovalScreen() {
           </View>
           <Text style={styles.heroEyebrow}>审批中心</Text>
           <Text style={styles.heroTitle}>{selectedTab === 'pending' ? '待审批请假申请' : '已处理请假记录'}</Text>
-          <Text style={styles.heroSubtitle}>把审批状态、申请原因和处理动作收进同一层级，顶部更轻一点。</Text>
+          <Text style={styles.heroSubtitle}>及时查看并处理家长提交的请假申请</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '本周申请', value: weeklyTotal.toString() },
@@ -267,7 +267,7 @@ export default function LeaveApprovalScreen() {
           <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}> 
             <Ionicons name="document-text-outline" size={32} color={colors.textTertiary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>{selectedTab === 'pending' ? '暂无待审批申请' : '暂无已处理记录'}</Text>
-            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{selectedTab === 'pending' ? '新的请假申请会优先出现在这里，适合后续接入实时审批。' : '审批完成后会沉淀到这里，方便后续做归档查询。'}</Text>
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{selectedTab === 'pending' ? '家长提交的新申请会实时显示在这里' : '已处理的申请会保存在这里，方便后续查询'}</Text>
           </View>
         )}
       </ScrollView>
