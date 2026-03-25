@@ -141,8 +141,8 @@ export default function AttendanceScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={[styles.heroCard, { backgroundColor: colors.primary }]}> 
-        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
+        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
         <View style={styles.heroTopBar}>
           <TouchableOpacity style={styles.heroBackButton} onPress={handleBack} activeOpacity={0.78}>
             <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
@@ -489,9 +489,9 @@ const styles = StyleSheet.create({
     marginTop: 0,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 2,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -523,19 +523,19 @@ const styles = StyleSheet.create({
   },
   heroDecorLarge: {
     position: 'absolute',
-    width: 124,
-    height: 124,
-    borderRadius: 62,
-    top: -28,
-    right: -10,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    top: -80,
+    right: -50,
   },
   heroDecorSmall: {
     position: 'absolute',
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    bottom: -18,
-    left: -10,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    bottom: -20,
+    left: -30,
   },
   heroEyebrow: {
     fontSize: 10,

@@ -600,8 +600,8 @@ export default function ScheduleScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={[styles.scheduleHeroCard, { backgroundColor: colors.primary }]}>
-        <View style={[styles.scheduleHeroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[styles.scheduleHeroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+        <View style={[styles.scheduleHeroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
+        <View style={[styles.scheduleHeroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
         <View style={styles.scheduleHeroHeader}>
           <View style={styles.scheduleHeroMain}>
             <View style={styles.scheduleHeroEyebrowWrap}>
@@ -1279,19 +1279,19 @@ const styles = StyleSheet.create({
   },
   scheduleHeroDecorLarge: {
     position: 'absolute',
-    width: 138,
-    height: 138,
-    borderRadius: 69,
-    top: -42,
-    right: -12,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    top: -80,
+    right: -50,
   },
   scheduleHeroDecorSmall: {
     position: 'absolute',
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     bottom: -20,
-    left: -14,
+    left: -30,
   },
   scheduleHeroHeader: {
     flexDirection: 'row',

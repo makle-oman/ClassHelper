@@ -187,8 +187,8 @@ export default function LeaveApprovalScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
         <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
+          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
           <View style={styles.heroTopBar}>
             <TouchableOpacity
               style={styles.heroBackButton}
@@ -280,12 +280,12 @@ const styles = StyleSheet.create({
   topSection: { paddingHorizontal: 14, zIndex: 1 },
   scrollContent: { paddingHorizontal: 14, paddingTop: 0, paddingBottom: 24 },
   heroCard: {
-    marginHorizontal: -20,
+    marginHorizontal: -10,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 4,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
     overflow: 'hidden',
     marginBottom: 12,
   },
@@ -300,8 +300,8 @@ const styles = StyleSheet.create({
   },
   heroTopSpacer: { width: 34, height: 34 },
   heroPageTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  heroDecorLarge: { position: 'absolute', width: 128, height: 128, borderRadius: 64, top: -32, right: -12 },
-  heroDecorSmall: { position: 'absolute', width: 76, height: 76, borderRadius: 38, bottom: -20, right: 26 },
+  heroDecorLarge: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -80, right: -50 },
+  heroDecorSmall: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -20, left: -30 },
   heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
   heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
   heroSubtitle: { color: 'rgba(255,255,255,0.86)', fontSize: 11, lineHeight: 16, marginTop: 4 },

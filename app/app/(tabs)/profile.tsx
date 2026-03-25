@@ -34,7 +34,8 @@ export default function ProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* 用户信息卡片 */}
         <View style={[styles.profileSection, { backgroundColor: colors.primary }]}>
-          <View style={[styles.profileDecorCircle, { backgroundColor: 'rgba(255,255,255,0.06)' }]} />
+          <View style={[styles.profileDecorCircle, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
+          <View style={[styles.profileDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
           <View style={styles.profileContent}>
             <View style={styles.avatarWrapper}>
               <View style={styles.avatar}>
@@ -170,11 +171,19 @@ const styles = StyleSheet.create({
   },
   profileDecorCircle: {
     position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    top: -40,
-    right: -30,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    top: -80,
+    right: -50,
+  },
+  profileDecorSmall: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    bottom: -20,
+    left: -30,
   },
   profileContent: {
     flexDirection: 'row',
@@ -215,7 +224,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   profileName: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.5,

@@ -172,8 +172,8 @@ export default function StudentsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
         <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.summaryDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-          <View style={[styles.summaryDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+          <View style={[styles.summaryDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
+          <View style={[styles.summaryDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
           <View style={styles.summaryTopRow}>
             <View>
               <Text style={styles.summaryEyebrow}>学生花名册</Text>
@@ -517,19 +517,19 @@ const styles = StyleSheet.create({
   },
   summaryDecorLarge: {
     position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    top: -35,
-    right: -20,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    top: -80,
+    right: -50,
   },
   summaryDecorSmall: {
     position: 'absolute',
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    bottom: -24,
-    left: -10,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    bottom: -20,
+    left: -30,
   },
   summaryEyebrow: {
     fontSize: 12,
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
   },
   summaryClassName: {
     marginTop: 2,
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '800',
     color: '#FFFFFF',
   },

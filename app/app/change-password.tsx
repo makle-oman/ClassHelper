@@ -61,8 +61,8 @@ export default function ChangePasswordScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
-        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
+        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
 
         <View style={styles.navBar}>
           <TouchableOpacity style={styles.navButton} onPress={() => router.back()} activeOpacity={0.7}>
@@ -128,14 +128,14 @@ const styles = StyleSheet.create({
   // === Top Section (unified green hero) ===
   topSection: {
     paddingHorizontal: 16,
-    paddingTop: 6,
+    paddingTop: 12,
     paddingBottom: 10,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     overflow: 'hidden',
   },
-  heroDecorLarge: { position: 'absolute', width: 138, height: 138, borderRadius: 69, top: -42, right: -12 },
-  heroDecorSmall: { position: 'absolute', width: 76, height: 76, borderRadius: 38, bottom: -20, left: -14 },
+  heroDecorLarge: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -80, right: -50 },
+  heroDecorSmall: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -20, left: -30 },
   navBar: { flexDirection: 'row', alignItems: 'center' },
   navButton: {
     width: 36,

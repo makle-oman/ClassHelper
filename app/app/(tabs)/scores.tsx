@@ -62,11 +62,16 @@ const subjectColors: Record<string, { bg: string; text: string; dot: string }> =
 export default function ScoresScreen() {
   const colors = useTheme();
   const [selectedTab, setSelectedTab] = useState<'list' | 'analysis'>('list');
+  const [selectedClass, setSelectedClass] = useState('三年级2班');
+  const [classDropdownOpen, setClassDropdownOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newExam, setNewExam] = useState({ name: '', subject: '语文', className: '三年级2班', fullScore: '100', date: '' });
   const [exams, setExams] = useState<Exam[]>(mockExams);
   const listScrollRef = useRef<ScrollView | null>(null);
   const analysisScrollRef = useRef<ScrollView | null>(null);
+
+  const allClasses = ['三年级1班', '三年级2班'];
+  const classExams = exams.filter((exam) => exam.className === selectedClass);
 
   // 日期选择器
   const [datePickerVisible, setDatePickerVisible] = useState(false);
@@ -139,18 +144,18 @@ export default function ScoresScreen() {
   };
 
   const getSubjectColor = (subject: string) => subjectColors[subject] || subjectColors['语文'];
-  const pendingCount = exams.filter((exam) => exam.enteredCount < exam.totalStudents).length;
-  const completedCount = exams.filter((exam) => exam.enteredCount >= exam.totalStudents).length;
-  const highlightedExam = exams.find((exam) => exam.enteredCount < exam.totalStudents) || exams[0];
-  const analysisExam = exams.find((exam) => exam.avg != null) || highlightedExam;
+  const pendingCount = classExams.filter((exam) => exam.enteredCount < exam.totalStudents).length;
+  const completedCount = classExams.filter((exam) => exam.enteredCount >= exam.totalStudents).length;
+  const highlightedExam = classExams.find((exam) => exam.enteredCount < exam.totalStudents) || classExams[0];
+  const analysisExam = classExams.find((exam) => exam.avg != null) || highlightedExam;
   const semesterLabel = '2025-2026学年第二学期';
   const heroMetrics = useMemo(
     () => [
-      { label: '考试总数', value: `${exams.length} 场` },
+      { label: '考试总数', value: `${classExams.length} 场` },
       { label: '待录入', value: `${pendingCount} 场` },
       { label: '已完成', value: `${completedCount} 场` },
     ],
-    [completedCount, exams.length, pendingCount],
+    [completedCount, classExams.length, pendingCount],
   );
 
   const scrollTabToTop = (tab: 'list' | 'analysis', animated = true) => {
@@ -177,15 +182,41 @@ export default function ScoresScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={[styles.scoreHeroCard, { backgroundColor: colors.primary }]}>
-        <View style={[styles.scoreHeroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[styles.scoreHeroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
+        <View style={[styles.scoreHeroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
+        <View style={[styles.scoreHeroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
         <View style={styles.scoreHeroHeader}>
           <View style={styles.scoreHeroMain}>
             <View style={styles.scoreHeroEyebrowWrap}>
               <Ionicons name="bar-chart-outline" size={12} color="rgba(255,255,255,0.9)" />
               <Text style={styles.scoreHeroEyebrow}>成绩总览</Text>
             </View>
-            <Text style={styles.scoreHeroTitle}>{highlightedExam.className}</Text>
+            <View style={{ zIndex: 10 }}>
+              <TouchableOpacity style={styles.scoreHeroClassBtn} activeOpacity={0.7} onPress={() => setClassDropdownOpen(!classDropdownOpen)}>
+                <Text style={styles.scoreHeroTitle}>{selectedClass}</Text>
+                <Ionicons name={classDropdownOpen ? 'chevron-up' : 'chevron-down'} size={16} color="rgba(255,255,255,0.7)" />
+              </TouchableOpacity>
+              {classDropdownOpen && (
+                <View style={[styles.classDropdown, { backgroundColor: colors.surface }]}>
+                  {allClasses.map((cls) => (
+                    <TouchableOpacity
+                      key={cls}
+                      style={[
+                        styles.classDropdownItem,
+                        { backgroundColor: selectedClass === cls ? colors.primaryLight : 'transparent' },
+                      ]}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setSelectedClass(cls);
+                        setClassDropdownOpen(false);
+                      }}
+                    >
+                      <Text style={[styles.classDropdownText, { color: selectedClass === cls ? colors.primary : colors.text }]}>{cls}</Text>
+                      {selectedClass === cls && <Ionicons name="checkmark" size={15} color={colors.primary} />}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
             <Text style={styles.scoreHeroMeta}>{semesterLabel}</Text>
           </View>
           <View style={styles.scoreHeroBadge}>
@@ -193,9 +224,7 @@ export default function ScoresScreen() {
             <Text style={styles.scoreHeroBadgeValue}>{pendingCount} 场</Text>
           </View>
         </View>
-        <Text style={styles.scoreHeroDescription}>
-          还有 {pendingCount} 场考试未录完成绩，点击进入即可继续录分。
-        </Text>
+
         <View style={styles.scoreHeroStatsRow}>
           {heroMetrics.map((item) => (
             <View key={item.label} style={styles.scoreHeroMetricChip}>
@@ -295,12 +324,12 @@ export default function ScoresScreen() {
                 <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>点击可进入录分或查看详情</Text>
               </View>
               <View style={[styles.sectionBadge, { backgroundColor: colors.surfaceSecondary }]}>
-                <Text style={[styles.sectionBadgeText, { color: colors.textSecondary }]}>{exams.length} 场</Text>
+                <Text style={[styles.sectionBadgeText, { color: colors.textSecondary }]}>{classExams.length} 场</Text>
               </View>
             </View>
 
             <View style={styles.listSection}>
-            {exams.map((exam) => {
+            {classExams.map((exam) => {
               const sc = getSubjectColor(exam.subject);
               const isComplete = exam.enteredCount >= exam.totalStudents;
               const progress = exam.totalStudents > 0 ? exam.enteredCount / exam.totalStudents : 0;
@@ -793,19 +822,19 @@ const styles = StyleSheet.create({
   },
   scoreHeroDecorLarge: {
     position: 'absolute',
-    width: 138,
-    height: 138,
-    borderRadius: 69,
-    top: -42,
-    right: -12,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    top: -80,
+    right: -50,
   },
   scoreHeroDecorSmall: {
     position: 'absolute',
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     bottom: -20,
-    left: -14,
+    left: -30,
   },
   scoreHeroHeader: {
     flexDirection: 'row',
@@ -825,8 +854,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
   scoreHeroEyebrow: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.9)', letterSpacing: 0.2 },
-  scoreHeroTitle: { marginTop: 8, fontSize: 22, fontWeight: '800', color: '#FFFFFF' },
-  scoreHeroMeta: { marginTop: 3, fontSize: 12, color: 'rgba(255,255,255,0.78)' },
+  scoreHeroTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF' },
+  scoreHeroClassBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  scoreHeroMeta: { marginTop: 2, fontSize: 12, color: 'rgba(255,255,255,0.78)' },
   scoreHeroBadge: {
     alignItems: 'flex-end',
     paddingHorizontal: 12,
@@ -836,7 +866,6 @@ const styles = StyleSheet.create({
   },
   scoreHeroBadgeLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.72)' },
   scoreHeroBadgeValue: { marginTop: 2, fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
-  scoreHeroDescription: { marginTop: 9, fontSize: 12, lineHeight: 17, color: 'rgba(255,255,255,0.8)' },
   scoreHeroStatsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   scoreHeroMetricChip: {
     flex: 1,
@@ -1102,4 +1131,31 @@ const styles = StyleSheet.create({
   dpCancelText: { fontSize: 14, fontWeight: '600' },
   dpConfirmBtn: { flex: 1.5, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dpConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  // Class dropdown
+  classDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    marginTop: 6,
+    minWidth: 160,
+    borderRadius: 14,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 99,
+  },
+  classDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 10,
+    marginHorizontal: 4,
+    marginVertical: 2,
+  },
+  classDropdownText: { fontSize: 14, fontWeight: '700' },
 });
