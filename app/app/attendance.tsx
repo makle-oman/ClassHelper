@@ -152,11 +152,6 @@ export default function AttendanceScreen() {
         </View>
         <Text style={styles.heroEyebrow}>{selectedTab === 'record' ? '今日考勤' : '考勤统计'}</Text>
         <Text style={styles.heroTitle}>{selectedClass}</Text>
-        <Text style={styles.heroSubtitle}>
-          {selectedTab === 'record'
-            ? `${formatDate(currentDate)} · 已标记 ${markedCount} 人，${abnormalCount} 人异常`
-            : `${statsView === 'daily' ? '查看每日出勤情况' : '查看每位学生的出勤率'}`}
-        </Text>
         <View style={styles.heroStatsRow}>
           {(selectedTab === 'record'
             ? [
@@ -549,15 +544,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  heroSubtitle: {
-    marginTop: 3,
-    fontSize: 11,
-    lineHeight: 16,
-    color: 'rgba(255,255,255,0.78)',
-  },
   heroStatsRow: {
     flexDirection: 'row',
-    marginTop: 10,
+    marginTop: 8,
     paddingTop: 4,
     paddingBottom: 2,
     borderTopWidth: 0.5,

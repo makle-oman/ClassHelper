@@ -855,8 +855,8 @@ const styles = StyleSheet.create({
   },
   scoreHeroEyebrow: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.9)', letterSpacing: 0.2 },
   scoreHeroTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF' },
-  scoreHeroClassBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
-  scoreHeroMeta: { marginTop: 2, fontSize: 12, color: 'rgba(255,255,255,0.78)' },
+  scoreHeroClassBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  scoreHeroMeta: { marginTop: 1, fontSize: 11, color: 'rgba(255,255,255,0.78)' },
   scoreHeroBadge: {
     alignItems: 'flex-end',
     paddingHorizontal: 12,

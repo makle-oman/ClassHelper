@@ -120,7 +120,6 @@ export default function HomeworkScreen() {
           </View>
           <Text style={styles.heroEyebrow}>作业看板</Text>
           <Text style={styles.heroTitle}>{selectedTab === 'list' ? '本周作业概览' : '完成情况追踪'}</Text>
-          <Text style={styles.heroSubtitle}>查看各班作业布置情况和学生完成进度</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '进行中', value: activeCount.toString() },
@@ -417,7 +416,7 @@ const styles = StyleSheet.create({
   topSection: { paddingHorizontal: 14, zIndex: 1 },
   scrollContent: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 96 },
   heroCard: {
-    marginHorizontal: -10,
+    marginHorizontal: -14,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     paddingHorizontal: 16,
@@ -446,8 +445,7 @@ const styles = StyleSheet.create({
   heroDecorSmall: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -20, left: -30 },
   heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
   heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
-  heroSubtitle: { color: 'rgba(255,255,255,0.86)', fontSize: 11, lineHeight: 16, marginTop: 4 },
-  heroStatsRow: { flexDirection: 'row', marginTop: 10, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)', paddingVertical: 4 },
+  heroStatsRow: { flexDirection: 'row', marginTop: 8, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)', paddingVertical: 4 },
   heroStatItem: { flex: 1, alignItems: 'center', paddingVertical: 5 },
   heroStatValue: { color: '#FFF', fontSize: 16, fontWeight: '800' },
   heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, marginTop: 2 },

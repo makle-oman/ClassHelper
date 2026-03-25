@@ -138,7 +138,6 @@ export default function ClassManageScreen() {
           </View>
           <Text style={styles.heroEyebrow}>班级管理总览</Text>
           <Text style={styles.heroTitle}>已管理 {classes.length} 个班级</Text>
-          <Text style={styles.heroSubtitle}>查看班级规模，管理学期、升迁与花名册。</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '学生总数', value: totalStudents.toString() },
@@ -374,7 +373,7 @@ const styles = StyleSheet.create({
   topSection: { paddingHorizontal: 14, zIndex: 1 },
   scrollContent: { paddingHorizontal: 14, paddingTop: 0, paddingBottom: 24 },
   heroCard: {
-    marginHorizontal: -10,
+    marginHorizontal: -14,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     paddingHorizontal: 16,
@@ -424,10 +423,9 @@ const styles = StyleSheet.create({
   },
   heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
   heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
-  heroSubtitle: { color: 'rgba(255,255,255,0.86)', fontSize: 11, lineHeight: 16, marginTop: 4 },
   heroStatsRow: {
     flexDirection: 'row',
-    marginTop: 10,
+    marginTop: 8,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.08)',
     paddingVertical: 4,

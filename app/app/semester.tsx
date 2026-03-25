@@ -183,11 +183,6 @@ export default function SemesterScreen() {
           </View>
           <Text style={styles.heroEyebrow}>学期状态看板</Text>
           <Text style={styles.heroTitle}>{activeSemester ? activeSemester.name : '尚未设置当前学期'}</Text>
-          <Text style={styles.heroSubtitle}>
-            {activeSemester
-              ? `${formatDate(activeSemester.startDate)} - ${formatDate(activeSemester.endDate)} · 当前第 ${activeSemester.currentWeek} 周`
-              : '建议先创建并激活当前学期，方便关联课程表、成绩和考勤。'}
-          </Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '学期总数', value: totalSemesterCount.toString() },
@@ -509,7 +504,7 @@ const styles = StyleSheet.create({
   topSection: { paddingHorizontal: 14, zIndex: 1 },
   scrollContent: { paddingHorizontal: 14, paddingTop: 0, paddingBottom: 24 },
   heroCard: {
-    marginHorizontal: -10,
+    marginHorizontal: -14,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     paddingHorizontal: 16,
@@ -559,10 +554,9 @@ const styles = StyleSheet.create({
   },
   heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
   heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
-  heroSubtitle: { color: 'rgba(255,255,255,0.86)', fontSize: 11, lineHeight: 16, marginTop: 4 },
   heroStatsRow: {
     flexDirection: 'row',
-    marginTop: 10,
+    marginTop: 8,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.08)',
     paddingVertical: 4,

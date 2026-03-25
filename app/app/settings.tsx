@@ -103,7 +103,6 @@ export default function SettingsScreen() {
             </View>
           </View>
           <Text style={styles.heroTitle}>课程提醒 · 外观主题 · 反馈建议</Text>
-          <Text style={styles.heroSubtitle}>调整课程提醒、外观模式和提交使用建议</Text>
           <View style={styles.heroStatsRow}>
             {[
               { label: '提醒', value: settings.enabled ? '开启' : '关闭' },
@@ -449,8 +448,7 @@ const styles = StyleSheet.create({
   },
   heroBadgeLabel: { color: 'rgba(255,255,255,0.72)', fontSize: 9, fontWeight: '700' },
   heroBadgeValue: { marginTop: 1, color: '#FFF', fontSize: 12, fontWeight: '800' },
-  heroTitle: { marginTop: 5, color: '#FFF', fontSize: 16, fontWeight: '800' },
-  heroSubtitle: { marginTop: 2, color: 'rgba(255,255,255,0.78)', fontSize: 11, lineHeight: 14 },
+  heroTitle: { marginTop: 4, color: '#FFF', fontSize: 16, fontWeight: '800' },
   heroStatsRow: { flexDirection: 'row', gap: 6, marginTop: 8 },
   heroStatChip: {
     flex: 1,
