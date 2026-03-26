@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
+import { classApi, studentApi } from '../../src/services/api';
 
 interface Student {
   id: string;
@@ -27,33 +28,68 @@ interface Student {
   parentPhone: string;
 }
 
-const mockStudents: Student[] = [
-  { id: '1', name: '张小明', studentNo: '2024001', gender: '男', className: '三年级1班', parentName: '张伟', parentPhone: '138****1234' },
-  { id: '2', name: '李小红', studentNo: '2024002', gender: '女', className: '三年级1班', parentName: '李强', parentPhone: '139****5678' },
-  { id: '3', name: '王小刚', studentNo: '2024003', gender: '男', className: '三年级1班', parentName: '王磊', parentPhone: '136****9012' },
-  { id: '4', name: '赵小丽', studentNo: '2024004', gender: '女', className: '三年级1班', parentName: '赵敏', parentPhone: '137****3456' },
-  { id: '5', name: '陈小华', studentNo: '2024005', gender: '男', className: '三年级2班', parentName: '陈刚', parentPhone: '135****7890' },
-  { id: '6', name: '刘小芳', studentNo: '2024006', gender: '女', className: '三年级2班', parentName: '刘洋', parentPhone: '133****2345' },
-  { id: '7', name: '孙小龙', studentNo: '2024007', gender: '男', className: '三年级2班', parentName: '孙涛', parentPhone: '131****6789' },
-  { id: '8', name: '周小雨', studentNo: '2024008', gender: '女', className: '三年级2班', parentName: '周明', parentPhone: '132****0123' },
-];
-
 export default function StudentsScreen() {
   const colors = useTheme();
   const [searchText, setSearchText] = useState('');
-  const [selectedClass, setSelectedClass] = useState('三年级2班');
-  const [students, setStudents] = useState<Student[]>(mockStudents);
+  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [classList, setClassList] = useState<{id: number; name: string}[]>([]);
+  const [classPickerOpen, setClassPickerOpen] = useState(false);
+  const [students, setStudents] = useState<Student[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newStudent, setNewStudent] = useState({
     name: '',
     studentNo: '',
     gender: '男' as '男' | '女',
-    className: '三年级2班',
+    className: '',
     parentName: '',
     parentPhone: '',
   });
 
-  const handleAddStudent = () => {
+  const loadClasses = useCallback(async () => {
+    try {
+      const data = await classApi.list();
+      setClassList(data.map((c: any) => ({ id: c.id, name: c.name })));
+      if (data.length > 0 && !selectedClassId) {
+        setSelectedClass(data[0].name);
+        setSelectedClassId(data[0].id);
+      }
+    } catch {}
+  }, [selectedClassId]);
+
+  const loadStudents = useCallback(async () => {
+    if (!selectedClassId) return;
+    try {
+      const data = await studentApi.list(selectedClassId);
+      setStudents(data.map((s: any) => ({
+        id: s.id.toString(),
+        name: s.name,
+        studentNo: s.student_no,
+        gender: s.gender,
+        className: selectedClass,
+        parentName: s.parent_name || '',
+        parentPhone: s.parent_phone || '',
+      })));
+    } catch {}
+  }, [selectedClassId, selectedClass]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadClasses();
+    }, [loadClasses])
+  );
+
+  React.useEffect(() => {
+    loadStudents();
+  }, [loadStudents]);
+
+  const handleClassSelect = (className: string) => {
+    setSelectedClass(className);
+    const cls = classList.find(c => c.name === className);
+    if (cls) setSelectedClassId(cls.id);
+  };
+
+  const handleAddStudent = async () => {
     if (!newStudent.name.trim()) {
       Alert.alert('提示', '请输入学生姓名');
       return;
@@ -62,35 +98,32 @@ export default function StudentsScreen() {
       Alert.alert('提示', '请输入学号');
       return;
     }
-    const created: Student = {
-      id: Date.now().toString(),
-      name: newStudent.name.trim(),
-      studentNo: newStudent.studentNo.trim(),
-      gender: newStudent.gender,
-      className: newStudent.className,
-      parentName: newStudent.parentName.trim(),
-      parentPhone: newStudent.parentPhone.trim(),
-    };
-    setStudents([...students, created]);
-    setNewStudent({
-      name: '',
-      studentNo: '',
-      gender: '男',
-      className: selectedClass,
-      parentName: '',
-      parentPhone: '',
-    });
-    setShowAddModal(false);
-    Alert.alert('添加成功', `已添加学生：${created.name}`);
+    if (!selectedClassId) {
+      Alert.alert('提示', '请先选择班级');
+      return;
+    }
+    try {
+      await studentApi.create({
+        class_id: selectedClassId,
+        name: newStudent.name.trim(),
+        student_no: newStudent.studentNo.trim(),
+        gender: newStudent.gender,
+        parent_name: newStudent.parentName.trim() || undefined,
+        parent_phone: newStudent.parentPhone.trim() || undefined,
+      });
+      setShowAddModal(false);
+      setNewStudent({ name: '', studentNo: '', gender: '男', className: selectedClass, parentName: '', parentPhone: '' });
+      await loadStudents();
+      Alert.alert('添加成功', `已添加学生`);
+    } catch {}
   };
 
-  const classStudents = students.filter((student) => student.className === selectedClass);
-  const filteredStudents = classStudents.filter(
+  const filteredStudents = students.filter(
     (student) => student.name.includes(searchText) || student.studentNo.includes(searchText),
   );
 
-  const maleCount = classStudents.filter((student) => student.gender === '男').length;
-  const femaleCount = classStudents.filter((student) => student.gender === '女').length;
+  const maleCount = students.filter((student) => student.gender === '男').length;
+  const femaleCount = students.filter((student) => student.gender === '女').length;
   const visibleCount = filteredStudents.length;
 
   const renderStudent = ({ item }: { item: Student }) => (
@@ -177,18 +210,21 @@ export default function StudentsScreen() {
           <View style={styles.summaryTopRow}>
             <View>
               <Text style={styles.summaryEyebrow}>学生花名册</Text>
-              <Text style={styles.summaryClassName}>{selectedClass}</Text>
+              <TouchableOpacity style={styles.classPickerBtn} activeOpacity={0.7} onPress={() => setClassPickerOpen(true)}>
+                <Text style={styles.summaryClassName}>{selectedClass}</Text>
+                <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.7)" />
+              </TouchableOpacity>
               <Text style={styles.summaryHint}>点击学生可查看详情和家长联系方式</Text>
             </View>
             <View style={styles.summaryBadge}>
               <Text style={styles.summaryBadgeLabel}>在册</Text>
-              <Text style={styles.summaryBadgeValue}>{classStudents.length} 人</Text>
+              <Text style={styles.summaryBadgeValue}>{students.length} 人</Text>
             </View>
           </View>
 
           <View style={styles.summaryStatsRow}>
             {[
-              { label: '班级人数', value: classStudents.length.toString(), color: '#FFF' },
+              { label: '班级人数', value: students.length.toString(), color: '#FFF' },
               { label: '男生', value: maleCount.toString(), color: '#B8F0D8' },
               { label: '女生', value: femaleCount.toString(), color: '#FFD6E0' },
             ].map((item, index) => (
@@ -208,11 +244,15 @@ export default function StudentsScreen() {
 
         <View style={styles.fixedPanel}>
           <View style={styles.toolbar}>
-            <ScrollableClassTabs
-              colors={colors}
-              selected={selectedClass}
-              onSelect={setSelectedClass}
-            />
+            <TouchableOpacity
+              style={[styles.classPickerToolbarBtn, { backgroundColor: colors.surface, borderColor: colors.primary }]}
+              activeOpacity={0.7}
+              onPress={() => setClassPickerOpen(true)}
+            >
+              <Ionicons name="school-outline" size={15} color={colors.primary} />
+              <Text style={[styles.classPickerToolbarText, { color: colors.primary }]}>{selectedClass}</Text>
+              <Ionicons name="chevron-down" size={14} color={colors.primary} />
+            </TouchableOpacity>
           </View>
 
           <View style={[styles.searchCard, { backgroundColor: colors.surface }]}>
@@ -377,27 +417,27 @@ export default function StudentsScreen() {
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>班级</Text>
                 <View style={styles.chipRow}>
-                  {['三年级1班', '三年级2班'].map((className) => (
+                  {classList.map((c) => (
                     <TouchableOpacity
-                      key={className}
+                      key={c.id}
                       style={[
                         styles.chip,
                         {
-                          backgroundColor: newStudent.className === className ? colors.primaryLight : colors.surfaceSecondary,
-                          borderColor: newStudent.className === className ? colors.primary : colors.border,
+                          backgroundColor: newStudent.className === c.name ? colors.primaryLight : colors.surfaceSecondary,
+                          borderColor: newStudent.className === c.name ? colors.primary : colors.border,
                         },
                       ]}
-                      onPress={() => setNewStudent({ ...newStudent, className })}
+                      onPress={() => setNewStudent({ ...newStudent, className: c.name })}
                     >
                       <Text
                         style={[
                           styles.chipText,
                           {
-                            color: newStudent.className === className ? colors.primary : colors.textSecondary,
+                            color: newStudent.className === c.name ? colors.primary : colors.textSecondary,
                           },
                         ]}
                       >
-                        {className}
+                        {c.name}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -445,50 +485,43 @@ export default function StudentsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* 班级选择弹窗 */}
+      <Modal visible={classPickerOpen} transparent animationType="slide" onRequestClose={() => setClassPickerOpen(false)}>
+        <TouchableOpacity style={styles.classPkOverlay} activeOpacity={1} onPress={() => setClassPickerOpen(false)}>
+          <View style={[styles.classPkContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={[styles.classPkHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.classPkTitle, { color: colors.text }]}>选择班级</Text>
+            <View style={styles.classPkList}>
+              {classList.map((c) => {
+                const isActive = selectedClass === c.name;
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={[
+                      styles.classPkItem,
+                      {
+                        backgroundColor: isActive ? colors.primaryLight : colors.surfaceSecondary,
+                        borderColor: isActive ? colors.primary : colors.border,
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      handleClassSelect(c.name);
+                      setClassPickerOpen(false);
+                    }}
+                  >
+                    <Ionicons name="school-outline" size={18} color={isActive ? colors.primary : colors.textTertiary} />
+                    <Text style={[styles.classPkItemText, { color: isActive ? colors.primary : colors.text }]}>{c.name}</Text>
+                    {isActive && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
-  );
-}
-
-function ScrollableClassTabs({
-  colors,
-  selected,
-  onSelect,
-}: {
-  colors: any;
-  selected: string;
-  onSelect: (className: string) => void;
-}) {
-  const classes = ['三年级1班', '三年级2班'];
-
-  return (
-    <View style={[styles.classTabsCard, { backgroundColor: colors.surface }]}>
-      <View style={[styles.classTabs, { backgroundColor: colors.surfaceSecondary }]}>
-        {classes.map((className) => (
-          <TouchableOpacity
-            key={className}
-            style={[
-              styles.classTab,
-              {
-                backgroundColor: selected === className ? colors.surface : 'transparent',
-                borderColor: selected === className ? colors.primary : 'transparent',
-              },
-            ]}
-            onPress={() => onSelect(className)}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.classTabText,
-                { color: selected === className ? colors.primary : colors.textSecondary },
-                selected === className && { fontWeight: '700' },
-              ]}
-            >
-              {className}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
   );
 }
 
@@ -562,7 +595,7 @@ const styles = StyleSheet.create({
   },
   summaryClassName: {
     marginTop: 2,
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -594,33 +627,34 @@ const styles = StyleSheet.create({
   toolbar: {
     paddingTop: 12,
   },
-  classTabsCard: {
-    borderRadius: 16,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  classTabs: {
+  classPickerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  classPickerToolbarBtn: {
     flexDirection: 'row',
-    borderRadius: 12,
-    padding: 3,
-    gap: 6,
-  },
-  classTab: {
-    flex: 1,
-    paddingVertical: 9,
-    borderRadius: 10,
-    borderWidth: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
   },
-  classTabText: {
-    fontSize: 13,
-    fontWeight: '600',
+  classPickerToolbarText: { fontSize: 13, fontWeight: '700' },
+  // Class picker modal
+  classPkOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  classPkContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34, paddingHorizontal: 14 },
+  classPkHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 14 },
+  classPkTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  classPkList: { gap: 10 },
+  classPkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
   },
+  classPkItemText: { flex: 1, fontSize: 15, fontWeight: '700' },
   searchCard: {
     marginTop: 12,
     borderRadius: 16,

@@ -1,9 +1,10 @@
 ﻿import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
+import { authApi, saveAuth } from '../../src/services/api';
 
 export default function LoginScreen() {
   const colors = useTheme();
@@ -11,9 +12,23 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<'phone' | 'password' | ''>('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    router.replace('/(tabs)');
+  const handleLogin = async () => {
+    if (!phone.trim() || !password.trim()) {
+      Alert.alert('提示', '请输入手机号和密码');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { token, teacher } = await authApi.login(phone.trim(), password);
+      await saveAuth(token, teacher);
+      router.replace('/(tabs)');
+    } catch {
+      // request 函数已自动弹窗，这里只需恢复 loading
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,8 +105,8 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} activeOpacity={0.82} onPress={handleLogin}>
-            <Text style={styles.primaryButtonText}>登录</Text>
+          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]} activeOpacity={0.82} onPress={handleLogin} disabled={loading}>
+            {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.primaryButtonText}>登录</Text>}
           </TouchableOpacity>
 
           <View style={styles.footerRow}>

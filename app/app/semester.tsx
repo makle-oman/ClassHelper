@@ -1,9 +1,10 @@
-﻿import { useMemo, useState } from 'react';
+﻿import { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../src/theme';
+import { semesterApi } from '../src/services/api';
 
 type SemesterStatus = 'active' | 'ended' | 'archived';
 
@@ -17,15 +18,9 @@ interface Semester {
   status: SemesterStatus;
 }
 
-const mockSemesters: Semester[] = [
-  { id: '1', name: '2025-2026学年第二学期', startDate: '2026-02-17', endDate: '2026-06-30', weeksCount: 18, currentWeek: 8, status: 'active' },
-  { id: '2', name: '2025-2026学年第一学期', startDate: '2025-09-01', endDate: '2026-01-15', weeksCount: 20, status: 'ended' },
-  { id: '3', name: '2024-2025学年第二学期', startDate: '2025-02-17', endDate: '2025-06-30', weeksCount: 18, status: 'archived' },
-];
-
 export default function SemesterScreen() {
   const colors = useTheme();
-  const [semesters, setSemesters] = useState<Semester[]>(mockSemesters);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [setAsCurrent, setSetAsCurrent] = useState(false);
   const [newSemester, setNewSemester] = useState({
@@ -39,6 +34,27 @@ export default function SemesterScreen() {
   const [pickerYear, setPickerYear] = useState(2026);
   const [pickerMonth, setPickerMonth] = useState(1);
   const [pickerDay, setPickerDay] = useState(1);
+
+  const loadSemesters = useCallback(async () => {
+    try {
+      const data = await semesterApi.list();
+      setSemesters(data.map(s => ({
+        id: s.id.toString(),
+        name: s.name,
+        startDate: s.start_date,
+        endDate: s.end_date,
+        weeksCount: s.weeks_count,
+        currentWeek: s.current_week ?? undefined,
+        status: s.is_archived ? 'archived' as const : s.is_active ? 'active' as const : 'ended' as const,
+      })));
+    } catch {}
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSemesters();
+    }, [loadSemesters])
+  );
 
   const years = Array.from({ length: 10 }, (_, index) => 2024 + index);
   const months = Array.from({ length: 12 }, (_, index) => index + 1);
@@ -110,50 +126,40 @@ export default function SemesterScreen() {
         {
           text: '确认归档',
           style: 'destructive',
-          onPress: () => {
-            setSemesters((prev) => prev.map((item) => (item.id === semester.id ? { ...item, status: 'archived' } : item)));
+          onPress: async () => {
+            try {
+              await semesterApi.archive(parseInt(semester.id, 10));
+              await loadSemesters();
+            } catch {}
           },
         },
       ]
     );
   };
 
-  const handleSetActive = (semester: Semester) => {
-    setSemesters((prev) =>
-      prev.map((item) => {
-        if (item.id === semester.id) return { ...item, status: 'active', currentWeek: 1 };
-        if (item.status === 'active') return { ...item, status: 'ended', currentWeek: undefined };
-        return item;
-      })
-    );
+  const handleSetActive = async (semester: Semester) => {
+    try {
+      await semesterApi.setActive(parseInt(semester.id, 10));
+      await loadSemesters();
+    } catch {}
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!newSemester.name.trim() || !newSemester.startDate.trim() || !newSemester.endDate.trim() || !newSemester.weeksCount.trim()) {
       Alert.alert('提示', '请完整填写学期名称、起止日期和总周数。');
       return;
     }
-
-    const created: Semester = {
-      id: Date.now().toString(),
-      name: newSemester.name.trim(),
-      startDate: newSemester.startDate.trim(),
-      endDate: newSemester.endDate.trim(),
-      weeksCount: parseInt(newSemester.weeksCount, 10) || 18,
-      status: setAsCurrent ? 'active' : 'ended',
-      currentWeek: setAsCurrent ? 1 : undefined,
-    };
-
-    setSemesters((prev) => {
-      const normalized = setAsCurrent
-        ? prev.map((item) =>
-            item.status === 'active' ? { ...item, status: 'ended' as SemesterStatus, currentWeek: undefined } : item
-          )
-        : prev;
-      return [created, ...normalized];
-    });
-
-    closeCreateModal();
+    try {
+      await semesterApi.create({
+        name: newSemester.name.trim(),
+        start_date: newSemester.startDate.trim(),
+        end_date: newSemester.endDate.trim(),
+        weeks_count: parseInt(newSemester.weeksCount, 10) || 18,
+        set_as_current: setAsCurrent,
+      });
+      await loadSemesters();
+      closeCreateModal();
+    } catch {}
   };
 
   const selectedDatePreview = `${pickerYear}-${String(pickerMonth).padStart(2, '0')}-${String(Math.min(pickerDay, daysInMonth)).padStart(2, '0')}`;

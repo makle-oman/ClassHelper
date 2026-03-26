@@ -1,9 +1,10 @@
 ﻿import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
+import { authApi, saveAuth } from '../../src/services/api';
 
 const ALL_SUBJECTS = ['语文', '数学', '英语', '体育', '音乐', '美术', '科学', '道德与法治'];
 
@@ -16,12 +17,13 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState('');
   const [subjects, setSubjects] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const toggleSubject = (subject: string) => {
     setSubjects((prev) => (prev.includes(subject) ? prev.filter((s) => s !== subject) : [...prev, subject]));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name.trim() || !phone.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert('提示', '请完整填写注册信息');
       return;
@@ -34,7 +36,16 @@ export default function RegisterScreen() {
       Alert.alert('提示', '请至少选择一个授课科目');
       return;
     }
-    router.replace('/(tabs)');
+    setLoading(true);
+    try {
+      const { token, teacher } = await authApi.register(phone.trim(), password, name.trim());
+      await saveAuth(token, teacher);
+      router.replace('/(tabs)');
+    } catch {
+      // request 函数已自动弹窗
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderInput = (
@@ -131,8 +142,8 @@ export default function RegisterScreen() {
             </View>
           </View>
 
-          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} activeOpacity={0.82} onPress={handleRegister}>
-            <Text style={styles.primaryButtonText}>注册</Text>
+          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]} activeOpacity={0.82} onPress={handleRegister} disabled={loading}>
+            {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.primaryButtonText}>注册</Text>}
           </TouchableOpacity>
 
           <View style={styles.footerRow}>

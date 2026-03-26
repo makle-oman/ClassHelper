@@ -1,8 +1,10 @@
-﻿import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+﻿import { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
+import { getTeacher, classApi, clearAuth, type TeacherInfo } from '../../src/services/api';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -28,6 +30,15 @@ const menuGroups: MenuItem[][] = [
 
 export default function ProfileScreen() {
   const colors = useTheme();
+  const [teacher, setTeacher] = useState<TeacherInfo | null>(null);
+  const [classes, setClasses] = useState<any[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getTeacher().then(setTeacher);
+      classApi.list().then(setClasses).catch(() => {});
+    }, [])
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -39,25 +50,24 @@ export default function ProfileScreen() {
           <View style={styles.profileContent}>
             <View style={styles.avatarWrapper}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>王</Text>
+                <Text style={styles.avatarText}>{teacher?.name?.slice(0, 1) || '师'}</Text>
               </View>
               <View style={[styles.editAvatarBtn, { borderColor: colors.primary }]}>
                 <Ionicons name="camera" size={12} color="#FFF" />
               </View>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>王老师</Text>
+              <Text style={styles.profileName}>{teacher?.name || '老师'}</Text>
               <View style={styles.profileMetaRow}>
                 <Ionicons name="call-outline" size={13} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.profilePhone}>138****8888</Text>
+                <Text style={styles.profilePhone}>{teacher?.phone ? teacher.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : ''}</Text>
               </View>
               <View style={styles.profileTags}>
-                <View style={styles.profileTag}>
-                  <Text style={styles.profileTagText}>语文</Text>
-                </View>
-                <View style={styles.profileTag}>
-                  <Text style={styles.profileTagText}>数学</Text>
-                </View>
+                {(teacher?.subject ? [teacher.subject] : []).map((tag) => (
+                  <View key={tag} style={styles.profileTag}>
+                    <Text style={styles.profileTagText}>{tag}</Text>
+                  </View>
+                ))}
               </View>
             </View>
             <TouchableOpacity style={styles.editProfileBtn} onPress={() => router.push('/profile-edit')}>
@@ -69,8 +79,8 @@ export default function ProfileScreen() {
         {/* 数据统计 */}
         <View style={styles.statsRow}>
           {[
-            { label: '管理班级', value: '2', icon: 'school-outline' as IoniconsName },
-            { label: '学生总数', value: '86', icon: 'people-outline' as IoniconsName },
+            { label: '管理班级', value: classes.length.toString(), icon: 'school-outline' as IoniconsName },
+            { label: '学生总数', value: classes.reduce((sum: number, c: any) => sum + (c.student_count || 0), 0).toString(), icon: 'people-outline' as IoniconsName },
             { label: '本月考试', value: '3', icon: 'document-text-outline' as IoniconsName },
             { label: '教龄', value: '5年', icon: 'ribbon-outline' as IoniconsName },
           ].map((item) => (
@@ -139,7 +149,10 @@ export default function ProfileScreen() {
               {
                 text: '退出',
                 style: 'destructive',
-                onPress: () => router.replace('/(auth)/login' as any),
+                onPress: async () => {
+                  await clearAuth();
+                  router.replace('/(auth)/login' as any);
+                },
               },
             ]);
           }}

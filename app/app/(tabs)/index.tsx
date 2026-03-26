@@ -1,8 +1,10 @@
-﻿import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+﻿import { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
+import { getTeacher, classApi, type TeacherInfo } from '../../src/services/api';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -40,6 +42,15 @@ const courseColorMap: Record<string, string> = {
 
 export default function HomeScreen() {
   const colors = useTheme();
+  const [teacher, setTeacher] = useState<TeacherInfo | null>(null);
+  const [classes, setClasses] = useState<any[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getTeacher().then(setTeacher);
+      classApi.list().then(setClasses).catch(() => {});
+    }, [])
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -53,11 +64,11 @@ export default function HomeScreen() {
               <Text style={styles.greetingText}>
                 {new Date().getHours() < 12 ? '上午好 ☀️' : new Date().getHours() < 18 ? '下午好 🌤️' : '晚上好 🌙'}
               </Text>
-              <Text style={styles.teacherName}>王老师</Text>
+              <Text style={styles.teacherName}>{teacher?.name || '老师'}</Text>
             </View>
             <TouchableOpacity style={styles.avatarContainer}>
               <View style={styles.avatarInner}>
-                <Text style={styles.avatarText}>王</Text>
+                <Text style={styles.avatarText}>{teacher?.name?.slice(0, 1) || '师'}</Text>
               </View>
               <View style={styles.onlineDot} />
             </TouchableOpacity>
@@ -66,8 +77,8 @@ export default function HomeScreen() {
           {/* 数据概览 */}
           <View style={styles.statsBar}>
             {[
-              { label: '管理班级', value: '2' },
-              { label: '学生总数', value: '86' },
+              { label: '管理班级', value: classes.length.toString() },
+              { label: '学生总数', value: classes.reduce((sum: number, c: any) => sum + (c.student_count || 0), 0).toString() },
               { label: '今日课程', value: '4节' },
               { label: '出勤率', value: '98%' },
             ].map((item, i) => (

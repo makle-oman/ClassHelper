@@ -23,24 +23,44 @@ const mockHomework: Homework[] = [
   { id: '3', title: '抄写单词表 Unit3 并造句', subject: '英语', className: '三年级1班', deadline: '2026-03-20', totalStudents: 43, submitted: 35, late: 3, status: 'expired' },
 ];
 
+type Grade = '优' | '良' | '中' | '差' | null;
+
 interface SubmissionRecord {
   id: string;
   name: string;
   studentNo: string;
   status: 'submitted' | 'not_submitted' | 'late';
+  grade: Grade;
 }
 
-const mockSubmissions: Record<string, SubmissionRecord[]> = {
+const initialSubmissions: Record<string, SubmissionRecord[]> = {
   '1': [
-    { id: '1', name: '张小明', studentNo: '20230101', status: 'submitted' },
-    { id: '2', name: '李小红', studentNo: '20230102', status: 'submitted' },
-    { id: '3', name: '王大力', studentNo: '20230103', status: 'not_submitted' },
-    { id: '4', name: '赵小燕', studentNo: '20230104', status: 'late' },
-    { id: '5', name: '刘天宇', studentNo: '20230105', status: 'submitted' },
-    { id: '6', name: '陈美丽', studentNo: '20230106', status: 'not_submitted' },
-    { id: '7', name: '孙浩然', studentNo: '20230107', status: 'submitted' },
-    { id: '8', name: '周小雪', studentNo: '20230108', status: 'submitted' },
+    { id: '1', name: '张小明', studentNo: '20230101', status: 'submitted', grade: '优' },
+    { id: '2', name: '李小红', studentNo: '20230102', status: 'submitted', grade: '良' },
+    { id: '3', name: '王大力', studentNo: '20230103', status: 'not_submitted', grade: null },
+    { id: '4', name: '赵小燕', studentNo: '20230104', status: 'late', grade: null },
+    { id: '5', name: '刘天宇', studentNo: '20230105', status: 'submitted', grade: '中' },
+    { id: '6', name: '陈美丽', studentNo: '20230106', status: 'not_submitted', grade: null },
+    { id: '7', name: '孙浩然', studentNo: '20230107', status: 'submitted', grade: null },
+    { id: '8', name: '周小雪', studentNo: '20230108', status: 'submitted', grade: '优' },
   ],
+  '2': [
+    { id: '1', name: '刘佳怡', studentNo: '20230201', status: 'submitted', grade: '优' },
+    { id: '2', name: '陈思远', studentNo: '20230202', status: 'submitted', grade: '优' },
+    { id: '3', name: '王子涵', studentNo: '20230203', status: 'submitted', grade: '良' },
+    { id: '4', name: '张雨萱', studentNo: '20230204', status: 'submitted', grade: '良' },
+    { id: '5', name: '李明轩', studentNo: '20230205', status: 'submitted', grade: '中' },
+    { id: '6', name: '赵欣怡', studentNo: '20230206', status: 'submitted', grade: '优' },
+    { id: '7', name: '孙博文', studentNo: '20230207', status: 'submitted', grade: '良' },
+    { id: '8', name: '周雅琪', studentNo: '20230208', status: 'submitted', grade: '优' },
+  ],
+};
+
+const gradeConfig: Record<string, { bg: string; text: string; emoji: string }> = {
+  '优': { bg: '#DCFCE7', text: '#16A34A', emoji: '🌟' },
+  '良': { bg: '#DBEAFE', text: '#2563EB', emoji: '👍' },
+  '中': { bg: '#FEF3C7', text: '#D97706', emoji: '✏️' },
+  '差': { bg: '#FEE2E2', text: '#DC2626', emoji: '📝' },
 };
 
 const subjectColors: Record<string, { bg: string; text: string; dot: string }> = {
@@ -55,6 +75,18 @@ export default function HomeworkScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newHomework, setNewHomework] = useState({ content: '', subject: '语文', className: '三年级1班', deadline: '' });
   const [selectedHomeworkId, setSelectedHomeworkId] = useState(mockHomework[0].id);
+  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const [gradingStudentId, setGradingStudentId] = useState<string | null>(null);
+
+  const handleGrade = (studentId: string, grade: Grade) => {
+    setSubmissions((prev) => ({
+      ...prev,
+      [selectedHomeworkId]: (prev[selectedHomeworkId] || []).map((s) =>
+        s.id === studentId ? { ...s, grade } : s
+      ),
+    }));
+    setGradingStudentId(null);
+  };
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -89,10 +121,12 @@ export default function HomeworkScreen() {
   };
 
   const selectedHomework = mockHomework.find((item) => item.id === selectedHomeworkId) || mockHomework[0];
-  const submissions = mockSubmissions[selectedHomeworkId] || [];
-  const submittedCount = submissions.filter((item) => item.status === 'submitted').length;
-  const notSubmittedCount = submissions.filter((item) => item.status === 'not_submitted').length;
-  const lateCount = submissions.filter((item) => item.status === 'late').length;
+  const currentSubmissions = submissions[selectedHomeworkId] || [];
+  const submittedCount = currentSubmissions.filter((item: SubmissionRecord) => item.status === 'submitted').length;
+  const notSubmittedCount = currentSubmissions.filter((item: SubmissionRecord) => item.status === 'not_submitted').length;
+  const lateCount = currentSubmissions.filter((item: SubmissionRecord) => item.status === 'late').length;
+  const gradedCount = currentSubmissions.filter((item: SubmissionRecord) => item.grade != null).length;
+  const totalGradable = currentSubmissions.filter((item: SubmissionRecord) => item.status !== 'not_submitted').length;
 
   const activeCount = useMemo(() => mockHomework.filter((item) => item.status === 'active').length, []);
   const pendingReviewCount = useMemo(() => mockHomework.reduce((sum, item) => sum + (item.totalStudents - item.submitted), 0), []);
@@ -119,13 +153,20 @@ export default function HomeworkScreen() {
             <View style={styles.heroTopSpacer} />
           </View>
           <Text style={styles.heroEyebrow}>作业看板</Text>
-          <Text style={styles.heroTitle}>{selectedTab === 'list' ? '本周作业概览' : '完成情况追踪'}</Text>
+          <Text style={styles.heroTitle}>{selectedTab === 'list' ? '本周作业概览' : '批改与完成追踪'}</Text>
           <View style={styles.heroStatsRow}>
-            {[
-              { label: '进行中', value: activeCount.toString() },
-              { label: '待提交', value: pendingReviewCount.toString() },
-              { label: '平均完成', value: averageCompletion },
-            ].map((item, index) => (
+            {(selectedTab === 'list'
+              ? [
+                  { label: '进行中', value: activeCount.toString() },
+                  { label: '待提交', value: pendingReviewCount.toString() },
+                  { label: '平均完成', value: averageCompletion },
+                ]
+              : [
+                  { label: '已交', value: submittedCount.toString() },
+                  { label: '已批改', value: `${gradedCount}/${totalGradable}` },
+                  { label: '批改率', value: totalGradable > 0 ? `${Math.round((gradedCount / totalGradable) * 100)}%` : '0%' },
+                ]
+            ).map((item, index) => (
               <View
                 key={item.label}
                 style={[
@@ -251,9 +292,10 @@ export default function HomeworkScreen() {
                 { label: '已交', value: submittedCount.toString(), icon: 'checkmark-circle' as const, colorKey: 'green' as const },
                 { label: '未交', value: notSubmittedCount.toString(), icon: 'close-circle' as const, colorKey: 'red' as const },
                 { label: '迟交', value: lateCount.toString(), icon: 'time' as const, colorKey: 'orange' as const },
+                { label: '已批改', value: gradedCount.toString(), icon: 'pencil' as const, colorKey: 'blue' as const },
               ].map((item) => (
-                <View key={item.label} style={[styles.overviewCard, { backgroundColor: colors.surface }]}> 
-                  <View style={[styles.overviewIcon, { backgroundColor: colors.palette[item.colorKey].bg }]}> 
+                <View key={item.label} style={[styles.overviewCard, { backgroundColor: colors.surface }]}>
+                  <View style={[styles.overviewIcon, { backgroundColor: colors.palette[item.colorKey].bg }]}>
                     <Ionicons name={item.icon} size={16} color={colors.palette[item.colorKey].text} />
                   </View>
                   <Text style={[styles.overviewValue, { color: colors.text }]}>{item.value}</Text>
@@ -262,26 +304,96 @@ export default function HomeworkScreen() {
               ))}
             </View>
 
-            <View style={[styles.currentHomeworkCard, { backgroundColor: colors.surface }]}> 
-              <Text style={[styles.currentHomeworkTitle, { color: colors.text }]}>{selectedHomework.title}</Text>
-              <Text style={[styles.currentHomeworkMeta, { color: colors.textTertiary }]}>{selectedHomework.subject} · {selectedHomework.className} · 截止 {selectedHomework.deadline}</Text>
+            <View style={[styles.currentHomeworkCard, { backgroundColor: colors.surface }]}>
+              <View style={styles.currentHomeworkHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.currentHomeworkTitle, { color: colors.text }]}>{selectedHomework.title}</Text>
+                  <Text style={[styles.currentHomeworkMeta, { color: colors.textTertiary }]}>{selectedHomework.subject} · {selectedHomework.className} · 截止 {selectedHomework.deadline}</Text>
+                </View>
+                {totalGradable > 0 && (
+                  <View style={[styles.gradingBadge, { backgroundColor: gradedCount >= totalGradable ? colors.palette.green.bg : colors.palette.orange.bg }]}>
+                    <Text style={[styles.gradingBadgeText, { color: gradedCount >= totalGradable ? colors.palette.green.text : colors.palette.orange.text }]}>
+                      {gradedCount >= totalGradable ? '批改完成' : `待批 ${totalGradable - gradedCount}`}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {totalGradable > 0 && (
+                <View style={styles.gradingProgressBlock}>
+                  <View style={styles.gradingProgressHeader}>
+                    <Text style={[styles.gradingProgressLabel, { color: colors.textSecondary }]}>批改进度</Text>
+                    <Text style={[styles.gradingProgressValue, { color: colors.primary }]}>{gradedCount}/{totalGradable}</Text>
+                  </View>
+                  <View style={[styles.gradingProgressTrack, { backgroundColor: colors.surfaceSecondary }]}>
+                    <View style={[styles.gradingProgressFill, { backgroundColor: gradedCount >= totalGradable ? colors.success : colors.primary, width: `${Math.round((gradedCount / totalGradable) * 100)}%` }]} />
+                  </View>
+                </View>
+              )}
             </View>
 
             <View style={styles.listSection}>
-              {submissions.map((student) => {
+              {currentSubmissions.map((student: SubmissionRecord) => {
                 const status = getSubmissionStatusConfig(student.status);
+                const isGradingThis = gradingStudentId === student.id;
+                const canGrade = student.status !== 'not_submitted';
                 return (
-                  <View key={student.id} style={[styles.studentRow, { backgroundColor: colors.surface }]}> 
-                    <View style={[styles.studentAvatar, { backgroundColor: colors.palette.blue.bg }]}> 
-                      <Text style={[styles.studentAvatarText, { color: colors.palette.blue.text }]}>{student.name[0]}</Text>
+                  <View key={student.id} style={[styles.studentRow, { backgroundColor: colors.surface }, isGradingThis && { borderColor: colors.primary, borderWidth: 1.5 }]}>
+                    <View style={[styles.studentAvatar, { backgroundColor: student.grade ? gradeConfig[student.grade].bg : colors.palette.blue.bg }]}>
+                      <Text style={[styles.studentAvatarText, { color: student.grade ? gradeConfig[student.grade].text : colors.palette.blue.text }]}>
+                        {student.grade ? gradeConfig[student.grade].emoji : student.name[0]}
+                      </Text>
                     </View>
                     <View style={styles.studentInfo}>
                       <Text style={[styles.studentName, { color: colors.text }]}>{student.name}</Text>
-                      <Text style={[styles.studentNo, { color: colors.textTertiary }]}>{student.studentNo}</Text>
+                      <View style={styles.studentMetaRow}>
+                        <Text style={[styles.studentNo, { color: colors.textTertiary }]}>{student.studentNo}</Text>
+                        {student.grade && (
+                          <View style={[styles.gradeBadgeSmall, { backgroundColor: gradeConfig[student.grade].bg }]}>
+                            <Text style={[styles.gradeBadgeSmallText, { color: gradeConfig[student.grade].text }]}>{student.grade}</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                    <View style={[styles.submissionBadge, { backgroundColor: status.bg }]}> 
-                      <Text style={[styles.submissionBadgeText, { color: status.text }]}>{status.label}</Text>
-                    </View>
+                    {canGrade ? (
+                      isGradingThis ? (
+                        <View style={styles.gradeSelector}>
+                          {(['优', '良', '中', '差'] as Grade[]).map((g) => (
+                            <TouchableOpacity
+                              key={g!}
+                              style={[
+                                styles.gradeOption,
+                                {
+                                  backgroundColor: student.grade === g ? gradeConfig[g!].bg : colors.surfaceSecondary,
+                                  borderColor: student.grade === g ? gradeConfig[g!].text : 'transparent',
+                                },
+                              ]}
+                              activeOpacity={0.7}
+                              onPress={() => handleGrade(student.id, g)}
+                            >
+                              <Text style={[styles.gradeOptionText, { color: student.grade === g ? gradeConfig[g!].text : colors.textSecondary }]}>{g}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          style={[
+                            styles.submissionBadge,
+                            { backgroundColor: student.grade ? gradeConfig[student.grade].bg : status.bg },
+                          ]}
+                          activeOpacity={0.7}
+                          onPress={() => setGradingStudentId(student.id)}
+                        >
+                          <Text style={[styles.submissionBadgeText, { color: student.grade ? gradeConfig[student.grade].text : status.text }]}>
+                            {student.grade || status.label}
+                          </Text>
+                          <Ionicons name="chevron-down" size={12} color={student.grade ? gradeConfig[student.grade].text : status.text} />
+                        </TouchableOpacity>
+                      )
+                    ) : (
+                      <View style={[styles.submissionBadge, { backgroundColor: status.bg }]}>
+                        <Text style={[styles.submissionBadgeText, { color: status.text }]}>{status.label}</Text>
+                      </View>
+                    )}
                   </View>
                 );
               })}
@@ -495,7 +607,7 @@ const styles = StyleSheet.create({
   studentInfo: { flex: 1, marginLeft: 12 },
   studentName: { fontSize: 15, fontWeight: '700' },
   studentNo: { fontSize: 12, marginTop: 4 },
-  submissionBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
+  submissionBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
   submissionBadgeText: { fontSize: 11, fontWeight: '700' },
   fab: { position: 'absolute', right: 20, bottom: 20, width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', shadowColor: '#4CC590', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
@@ -516,4 +628,21 @@ const styles = StyleSheet.create({
   modalConfirmButton: { flex: 1.35, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   modalCancelText: { fontSize: 14, fontWeight: '600' },
   modalConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+
+  // Grading styles
+  currentHomeworkHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  gradingBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, marginTop: 2 },
+  gradingBadgeText: { fontSize: 11, fontWeight: '700' },
+  gradingProgressBlock: { marginTop: 12, paddingTop: 12, borderTopWidth: 0.5, borderTopColor: 'rgba(0,0,0,0.06)' },
+  gradingProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  gradingProgressLabel: { fontSize: 12, fontWeight: '600' },
+  gradingProgressValue: { fontSize: 12, fontWeight: '700' },
+  gradingProgressTrack: { height: 8, borderRadius: 999, overflow: 'hidden', marginTop: 8 },
+  gradingProgressFill: { height: '100%', borderRadius: 999 },
+  studentMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  gradeBadgeSmall: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  gradeBadgeSmallText: { fontSize: 10, fontWeight: '700' },
+  gradeSelector: { flexDirection: 'row', gap: 6 },
+  gradeOption: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1.5 },
+  gradeOptionText: { fontSize: 12, fontWeight: '700' },
 });

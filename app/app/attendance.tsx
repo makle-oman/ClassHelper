@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -86,6 +86,7 @@ export default function AttendanceScreen() {
   const [selectedTab, setSelectedTab] = useState<'record' | 'stats'>('record');
   const [currentDate, setDate] = useState(new Date());
   const [selectedClass, setSelectedClass] = useState('三年级1班');
+  const [classPickerOpen, setClassPickerOpen] = useState(false);
   const [students, setStudents] = useState<StudentAttendance[]>(initialStudents);
   const [statsView, setStatsView] = useState<'daily' | 'student'>('daily');
 
@@ -151,7 +152,10 @@ export default function AttendanceScreen() {
           <View style={styles.heroTopSpacer} />
         </View>
         <Text style={styles.heroEyebrow}>{selectedTab === 'record' ? '今日考勤' : '考勤统计'}</Text>
-        <Text style={styles.heroTitle}>{selectedClass}</Text>
+        <TouchableOpacity style={styles.classPickerBtn} activeOpacity={0.7} onPress={() => setClassPickerOpen(true)}>
+          <Text style={styles.heroTitle}>{selectedClass}</Text>
+          <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.7)" />
+        </TouchableOpacity>
         <View style={styles.heroStatsRow}>
           {(selectedTab === 'record'
             ? [
@@ -239,23 +243,15 @@ export default function AttendanceScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.classSelector}>
-              {['三年级1班', '三年级2班'].map((c) => (
-                <TouchableOpacity
-                  key={c}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: selectedClass === c ? colors.primaryLight : colors.surfaceSecondary,
-                      borderColor: selectedClass === c ? colors.primary : colors.border,
-                    },
-                  ]}
-                  onPress={() => setSelectedClass(c)}
-                >
-                  <Text style={[styles.chipText, { color: selectedClass === c ? colors.primary : colors.textSecondary }]}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <TouchableOpacity
+              style={[styles.classPickerToolbarBtn, { backgroundColor: colors.surface, borderColor: colors.primary }]}
+              activeOpacity={0.7}
+              onPress={() => setClassPickerOpen(true)}
+            >
+              <Ionicons name="school-outline" size={15} color={colors.primary} />
+              <Text style={[styles.classPickerToolbarText, { color: colors.primary }]}>{selectedClass}</Text>
+              <Ionicons name="chevron-down" size={14} color={colors.primary} />
+            </TouchableOpacity>
 
             <View style={styles.batchBar}>
               <TouchableOpacity style={[styles.batchBtn, { backgroundColor: colors.success }]} onPress={markAllPresent} activeOpacity={0.7}>
@@ -319,23 +315,15 @@ export default function AttendanceScreen() {
         </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-          <View style={styles.classSelector}>
-            {['三年级1班', '三年级2班'].map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: selectedClass === c ? colors.primaryLight : colors.surfaceSecondary,
-                    borderColor: selectedClass === c ? colors.primary : colors.border,
-                  },
-                ]}
-                onPress={() => setSelectedClass(c)}
-              >
-                <Text style={[styles.chipText, { color: selectedClass === c ? colors.primary : colors.textSecondary }]}>{c}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <TouchableOpacity
+              style={[styles.classPickerToolbarBtn, { backgroundColor: colors.surface, borderColor: colors.primary, marginHorizontal: 14, marginTop: 10 }]}
+              activeOpacity={0.7}
+              onPress={() => setClassPickerOpen(true)}
+            >
+              <Ionicons name="school-outline" size={15} color={colors.primary} />
+              <Text style={[styles.classPickerToolbarText, { color: colors.primary }]}>{selectedClass}</Text>
+              <Ionicons name="chevron-down" size={14} color={colors.primary} />
+            </TouchableOpacity>
 
           <View style={[styles.statsSwitchWrap, { backgroundColor: colors.surface }]}> 
             <View style={[styles.statsSwitchInner, { backgroundColor: colors.surfaceSecondary }]}> 
@@ -473,6 +461,42 @@ export default function AttendanceScreen() {
           )}
         </ScrollView>
       )}
+
+      {/* 班级选择弹窗 */}
+      <Modal visible={classPickerOpen} transparent animationType="slide" onRequestClose={() => setClassPickerOpen(false)}>
+        <TouchableOpacity style={styles.classPkOverlay} activeOpacity={1} onPress={() => setClassPickerOpen(false)}>
+          <View style={[styles.classPkContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={[styles.classPkHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.classPkTitle, { color: colors.text }]}>选择班级</Text>
+            <View style={styles.classPkList}>
+              {['三年级1班', '三年级2班'].map((cls) => {
+                const isActive = selectedClass === cls;
+                return (
+                  <TouchableOpacity
+                    key={cls}
+                    style={[
+                      styles.classPkItem,
+                      {
+                        backgroundColor: isActive ? colors.primaryLight : colors.surfaceSecondary,
+                        borderColor: isActive ? colors.primary : colors.border,
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setSelectedClass(cls);
+                      setClassPickerOpen(false);
+                    }}
+                  >
+                    <Ionicons name="school-outline" size={18} color={isActive ? colors.primary : colors.textTertiary} />
+                    <Text style={[styles.classPkItemText, { color: isActive ? colors.primary : colors.text }]}>{cls}</Text>
+                    {isActive && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -866,4 +890,33 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 2,
   },
+  // Class picker
+  classPickerBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  classPickerToolbarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  classPickerToolbarText: { fontSize: 13, fontWeight: '700' },
+  // Class picker modal
+  classPkOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  classPkContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34, paddingHorizontal: 14 },
+  classPkHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 14 },
+  classPkTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  classPkList: { gap: 10 },
+  classPkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  classPkItemText: { flex: 1, fontSize: 15, fontWeight: '700' },
 });

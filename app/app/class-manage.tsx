@@ -1,9 +1,10 @@
-﻿import { useMemo, useState } from 'react';
+﻿import { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../src/theme';
+import { classApi } from '../src/services/api';
 
 interface ClassInfo {
   id: string;
@@ -15,18 +16,14 @@ interface ClassInfo {
   subjects: string[];
 }
 
-const mockClasses: ClassInfo[] = [
-  { id: '1', grade: '三年级', gradeNumber: 3, classNumber: 1, name: '三年级1班', studentCount: 43, subjects: ['语文', '数学'] },
-  { id: '2', grade: '三年级', gradeNumber: 3, classNumber: 2, name: '三年级2班', studentCount: 43, subjects: ['语文', '数学'] },
-];
-
 const gradeNames = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'];
 const gradeColorKeys = ['blue', 'green', 'orange', 'red', 'purple', 'cyan'] as const;
 const getGradeColorKey = (gradeNum: number) => gradeColorKeys[(gradeNum - 1) % 6];
 
 export default function ClassManageScreen() {
   const colors = useTheme();
-  const [classes, setClasses] = useState<ClassInfo[]>(mockClasses);
+  const [classes, setClasses] = useState<ClassInfo[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassInfo | null>(null);
   const [selectedGrade, setSelectedGrade] = useState(3);
@@ -44,22 +41,37 @@ export default function ClassManageScreen() {
     router.replace('/(tabs)/index');
   };
 
-  const handleCreate = () => {
+  const loadClasses = useCallback(async () => {
+    try {
+      const data = await classApi.list();
+      setClasses(data.map(c => ({
+        id: c.id.toString(),
+        grade: c.grade,
+        gradeNumber: c.grade_number,
+        classNumber: c.class_number,
+        name: c.name,
+        studentCount: c.student_count,
+        subjects: [],
+      })));
+    } catch {}
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadClasses();
+    }, [loadClasses])
+  );
+
+  const handleCreate = async () => {
     if (!classNumber.trim()) return;
-
-    const grade = gradeNames[selectedGrade - 1];
-    const newClass: ClassInfo = {
-      id: Date.now().toString(),
-      grade,
-      gradeNumber: selectedGrade,
-      classNumber: parseInt(classNumber, 10),
-      name: `${grade}${classNumber}班`,
-      studentCount: 0,
-      subjects: [],
-    };
-
-    setClasses((prev) => [...prev, newClass]);
-    closeModal();
+    setLoading(true);
+    try {
+      await classApi.create(selectedGrade, parseInt(classNumber, 10));
+      await loadClasses();
+      closeModal();
+    } catch {} finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (cls: ClassInfo) => {

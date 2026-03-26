@@ -59,11 +59,36 @@ const subjectColors: Record<string, { bg: string; text: string; dot: string }> =
   '英语': { bg: '#EDE7F6', text: '#7E57C2', dot: '#7E57C2' },
 };
 
+const mockScoreDistributions: Record<string, { range: string; count: number; label: string; color: string }[]> = {
+  '1': [
+    { range: '90-100', count: 8, label: '优秀', color: '#22C55E' },
+    { range: '80-89', count: 15, label: '良好', color: '#3B82F6' },
+    { range: '70-79', count: 10, label: '中等', color: '#F59E0B' },
+    { range: '60-69', count: 7, label: '及格', color: '#EA580C' },
+    { range: '60以下', count: 3, label: '不及格', color: '#EF4444' },
+  ],
+  '2': [
+    { range: '90-100', count: 5, label: '优秀', color: '#22C55E' },
+    { range: '80-89', count: 12, label: '良好', color: '#3B82F6' },
+    { range: '70-79', count: 11, label: '中等', color: '#F59E0B' },
+    { range: '60-69', count: 9, label: '及格', color: '#EA580C' },
+    { range: '60以下', count: 6, label: '不及格', color: '#EF4444' },
+  ],
+  '3': [
+    { range: '90-100', count: 6, label: '优秀', color: '#22C55E' },
+    { range: '80-89', count: 14, label: '良好', color: '#3B82F6' },
+    { range: '70-79', count: 9, label: '中等', color: '#F59E0B' },
+    { range: '60-69', count: 8, label: '及格', color: '#EA580C' },
+    { range: '60以下', count: 3, label: '不及格', color: '#EF4444' },
+  ],
+};
+
 export default function ScoresScreen() {
   const colors = useTheme();
   const [selectedTab, setSelectedTab] = useState<'list' | 'analysis'>('list');
   const [selectedClass, setSelectedClass] = useState('三年级2班');
   const [classDropdownOpen, setClassDropdownOpen] = useState(false);
+  const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newExam, setNewExam] = useState({ name: '', subject: '语文', className: '三年级2班', fullScore: '100', date: '' });
   const [exams, setExams] = useState<Exam[]>(mockExams);
@@ -147,7 +172,9 @@ export default function ScoresScreen() {
   const pendingCount = classExams.filter((exam) => exam.enteredCount < exam.totalStudents).length;
   const completedCount = classExams.filter((exam) => exam.enteredCount >= exam.totalStudents).length;
   const highlightedExam = classExams.find((exam) => exam.enteredCount < exam.totalStudents) || classExams[0];
-  const analysisExam = classExams.find((exam) => exam.avg != null) || highlightedExam;
+  const analysisExam = selectedExamId
+    ? classExams.find((exam) => exam.id === selectedExamId) || classExams[0]
+    : classExams.find((exam) => exam.avg != null) || classExams[0];
   const semesterLabel = '2025-2026学年第二学期';
   const heroMetrics = useMemo(
     () => [
@@ -172,6 +199,10 @@ export default function ScoresScreen() {
   };
 
   useEffect(() => {
+    setSelectedExamId(null);
+  }, [selectedClass]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       scrollTabToTop(selectedTab, false);
     }, 0);
@@ -191,31 +222,10 @@ export default function ScoresScreen() {
               <Text style={styles.scoreHeroEyebrow}>成绩总览</Text>
             </View>
             <View style={{ zIndex: 10 }}>
-              <TouchableOpacity style={styles.scoreHeroClassBtn} activeOpacity={0.7} onPress={() => setClassDropdownOpen(!classDropdownOpen)}>
+              <TouchableOpacity style={styles.scoreHeroClassBtn} activeOpacity={0.7} onPress={() => setClassDropdownOpen(true)}>
                 <Text style={styles.scoreHeroTitle}>{selectedClass}</Text>
-                <Ionicons name={classDropdownOpen ? 'chevron-up' : 'chevron-down'} size={16} color="rgba(255,255,255,0.7)" />
+                <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.7)" />
               </TouchableOpacity>
-              {classDropdownOpen && (
-                <View style={[styles.classDropdown, { backgroundColor: colors.surface }]}>
-                  {allClasses.map((cls) => (
-                    <TouchableOpacity
-                      key={cls}
-                      style={[
-                        styles.classDropdownItem,
-                        { backgroundColor: selectedClass === cls ? colors.primaryLight : 'transparent' },
-                      ]}
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        setSelectedClass(cls);
-                        setClassDropdownOpen(false);
-                      }}
-                    >
-                      <Text style={[styles.classDropdownText, { color: selectedClass === cls ? colors.primary : colors.text }]}>{cls}</Text>
-                      {selectedClass === cls && <Ionicons name="checkmark" size={15} color={colors.primary} />}
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
             </View>
             <Text style={styles.scoreHeroMeta}>{semesterLabel}</Text>
           </View>
@@ -321,7 +331,7 @@ export default function ScoresScreen() {
             <View style={styles.sectionHeader}>
               <View>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>考试进度</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>点击可进入录分或查看详情</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>点击选择考试查看分析，长按进入录分</Text>
               </View>
               <View style={[styles.sectionBadge, { backgroundColor: colors.surfaceSecondary }]}>
                 <Text style={[styles.sectionBadgeText, { color: colors.textSecondary }]}>{classExams.length} 场</Text>
@@ -333,14 +343,25 @@ export default function ScoresScreen() {
               const sc = getSubjectColor(exam.subject);
               const isComplete = exam.enteredCount >= exam.totalStudents;
               const progress = exam.totalStudents > 0 ? exam.enteredCount / exam.totalStudents : 0;
+              const isSelected = selectedExamId === exam.id;
 
               return (
                 <TouchableOpacity
                   key={exam.id}
-                  style={[styles.examCard, { backgroundColor: colors.surface }]}
+                  style={[
+                    styles.examCard,
+                    { backgroundColor: colors.surface },
+                    isSelected && { borderColor: colors.primary },
+                  ]}
                   activeOpacity={0.7}
-                  onPress={() => router.push(`/exam/${exam.id}`)}
+                  onPress={() => setSelectedExamId(exam.id)}
+                  onLongPress={() => router.push(`/exam/${exam.id}`)}
                 >
+                  {isSelected && (
+                    <View style={[styles.selectedIndicator, { backgroundColor: colors.primary }]}>
+                      <Ionicons name="checkmark" size={12} color="#FFF" />
+                    </View>
+                  )}
                   {/* 左侧彩色条 */}
                   <View style={[styles.examColorBar, { backgroundColor: sc.dot }]} />
 
@@ -400,6 +421,15 @@ export default function ScoresScreen() {
                         ))}
                       </View>
                     )}
+
+                    <TouchableOpacity
+                      style={[styles.examDetailBtn, { backgroundColor: colors.surfaceSecondary }]}
+                      onPress={() => router.push(`/exam/${exam.id}`)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="open-outline" size={13} color={colors.textSecondary} />
+                      <Text style={[styles.examDetailBtnText, { color: colors.textSecondary }]}>查看详情 / 录入成绩</Text>
+                    </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
               );
@@ -415,169 +445,86 @@ export default function ScoresScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.pageContent}>
-            <View style={[styles.analysisOverviewCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.scopeHeader}>
-                <View style={styles.scopeTitleWrap}>
-                  <Text style={[styles.scopeTitle, { color: colors.text }]}>成绩分析</Text>
-                  <Text style={[styles.scopeSubtitle, { color: colors.textTertiary }]}>
-                    基于已完成的考试数据，查看分数分布和各科成绩走势。
-                  </Text>
-                </View>
-                <View style={[styles.scopeBadge, { backgroundColor: colors.palette.blue.bg }]}>
-                  <Text style={[styles.scopeBadgeText, { color: colors.palette.blue.text }]}>
-                    {analysisExam.className}
-                  </Text>
-                </View>
+            {analysisExam?.avg == null ? (
+              <View style={[styles.noDataCard, { backgroundColor: colors.surface }]}>
+                <Ionicons name="bar-chart-outline" size={40} color={colors.textTertiary} />
+                <Text style={[styles.noDataTitle, { color: colors.textSecondary }]}>暂无分析数据</Text>
+                <Text style={[styles.noDataHint, { color: colors.textTertiary }]}>
+                  {selectedExamId ? '该考试尚未完成录入，录入完成后可查看分析' : '请在考试列表中选择一场已完成的考试'}
+                </Text>
               </View>
-              <View style={styles.analysisHeroMeta}>
-                {[
-                  { label: '学期', value: semesterLabel, layout: 'wide' as const },
-                  { label: '考试', value: analysisExam.name, layout: 'half' as const },
-                  { label: '科目', value: analysisExam.subject, layout: 'half' as const },
-                ].map((item) => (
-                  <View
-                    key={item.label}
-                    style={[
-                      styles.analysisHeroChip,
-                      item.layout === 'wide' ? styles.analysisHeroChipWide : styles.analysisHeroChipHalf,
-                      { backgroundColor: colors.surfaceSecondary },
-                    ]}
-                  >
-                    <Text style={[styles.analysisHeroChipLabel, { color: colors.textTertiary }]}>{item.label}</Text>
-                    <Text style={[styles.analysisHeroChipValue, { color: colors.text }]}>{item.value}</Text>
-                  </View>
-                ))}
-              </View>
-              <View style={styles.analysisStatsRow}>
-                {[
-                  { label: '平均分', value: analysisExam.avg != null ? analysisExam.avg.toFixed(1) : '--', color: colors.primary },
-                  { label: '及格率', value: analysisExam.passRate != null ? `${analysisExam.passRate}%` : '--', color: colors.success },
-                  { label: '最高分', value: analysisExam.max != null ? analysisExam.max.toString() : '--', color: colors.info },
-                ].map((item) => (
-                  <View key={item.label} style={[styles.analysisStatCard, { backgroundColor: colors.surfaceSecondary }]}>
-                    <Text style={[styles.analysisStatValue, { color: item.color }]}>{item.value}</Text>
-                    <Text style={[styles.analysisStatLabel, { color: colors.textTertiary }]}>{item.label}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {/* 班级成绩对比 */}
-            <View style={[styles.analysisCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.analysisCardHeader}>
-                <Text style={[styles.analysisTitle, { color: colors.text }]}>分数段分布</Text>
-                <View style={[styles.analysisTag, { backgroundColor: colors.palette.blue.bg }]}>
-                  <Text style={[styles.analysisTagText, { color: colors.palette.blue.text }]}>{analysisExam.name} · {analysisExam.subject}</Text>
-                </View>
-              </View>
-
-              {[
-                { range: '90-100', count: 8, label: '优秀', color: '#22C55E' },
-                { range: '80-89', count: 15, label: '良好', color: '#3B82F6' },
-                { range: '70-79', count: 10, label: '中等', color: '#F59E0B' },
-                { range: '60-69', count: 7, label: '及格', color: '#EA580C' },
-                { range: '60以下', count: 3, label: '不及格', color: '#EF4444' },
-              ].map((item) => (
-                <View key={item.range} style={styles.barRow}>
-                  <View style={styles.barLabelCol}>
-                    <Text style={[styles.barRange, { color: colors.text }]}>{item.range}</Text>
-                    <Text style={[styles.barLabel, { color: colors.textTertiary }]}>{item.label}</Text>
-                  </View>
-                  <View style={[styles.barTrack, { backgroundColor: colors.surfaceSecondary }]}>
-                    <View style={[styles.barFill, { width: `${(item.count / 15) * 100}%`, backgroundColor: item.color }]}>
-                      <Text style={styles.barFillText}>{item.count}</Text>
+            ) : (
+              <>
+                <View style={[styles.analysisOverviewCard, { backgroundColor: colors.surface }]}>
+                  <View style={styles.scopeHeader}>
+                    <View style={styles.scopeTitleWrap}>
+                      <Text style={[styles.scopeTitle, { color: colors.text }]}>成绩分析</Text>
+                      <Text style={[styles.scopeSubtitle, { color: colors.textTertiary }]}>
+                        基于已完成的考试数据，查看分数分布。
+                      </Text>
+                    </View>
+                    <View style={[styles.scopeBadge, { backgroundColor: colors.palette.blue.bg }]}>
+                      <Text style={[styles.scopeBadgeText, { color: colors.palette.blue.text }]}>
+                        {analysisExam.className}
+                      </Text>
                     </View>
                   </View>
+                  <View style={styles.analysisHeroMeta}>
+                    {[
+                      { label: '考试', value: analysisExam.name, layout: 'half' as const },
+                      { label: '科目', value: analysisExam.subject, layout: 'half' as const },
+                    ].map((item) => (
+                      <View
+                        key={item.label}
+                        style={[styles.analysisHeroChip, styles.analysisHeroChipHalf, { backgroundColor: colors.surfaceSecondary }]}
+                      >
+                        <Text style={[styles.analysisHeroChipLabel, { color: colors.textTertiary }]}>{item.label}</Text>
+                        <Text style={[styles.analysisHeroChipValue, { color: colors.text }]}>{item.value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <View style={styles.analysisStatsRow}>
+                    {[
+                      { label: '平均分', value: analysisExam.avg.toFixed(1), color: colors.primary },
+                      { label: '及格率', value: `${analysisExam.passRate}%`, color: colors.success },
+                      { label: '最高分', value: analysisExam.max!.toString(), color: colors.info },
+                      { label: '最低分', value: analysisExam.min!.toString(), color: colors.error },
+                    ].map((item) => (
+                      <View key={item.label} style={[styles.analysisStatCard, { backgroundColor: colors.surfaceSecondary }]}>
+                        <Text style={[styles.analysisStatValue, { color: item.color }]}>{item.value}</Text>
+                        <Text style={[styles.analysisStatLabel, { color: colors.textTertiary }]}>{item.label}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              ))}
-            </View>
 
-            {/* 趋势 */}
-            <View style={[styles.analysisCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.analysisCardHeader}>
-                <Text style={[styles.analysisTitle, { color: colors.text }]}>班级平均分趋势</Text>
-                <View style={[styles.analysisTag, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={[styles.analysisTagText, { color: colors.primary }]}>最近三次</Text>
-                </View>
-              </View>
-              <View style={styles.trendList}>
-                {[
-                  { exam: '第一单元测验', subject: '语文', avg: 82.1, date: '02-28' },
-                  { exam: '第二单元测验', subject: '数学', avg: 78.3, date: '03-10' },
-                  { exam: '期中考试', subject: '语文', avg: 85.6, date: '03-15' },
-                ].map((item, i, arr) => {
-                  const prevAvg = i > 0 ? arr[i - 1].avg : item.avg;
-                  const trend = item.avg >= prevAvg ? 'up' : 'down';
-                  const diff = Math.abs(item.avg - prevAvg).toFixed(1);
-                  const sc = getSubjectColor(item.subject);
-
-                  return (
-                    <View
-                      key={i}
-                      style={[
-                        styles.trendItem,
-                        { backgroundColor: colors.surfaceSecondary },
-                        i < arr.length - 1 && { marginBottom: 8 },
-                      ]}
-                    >
-                      <View style={styles.trendLeft}>
-                        <View style={[styles.trendDot, { backgroundColor: sc.dot }]} />
-                        <View>
-                          <Text style={[styles.trendExam, { color: colors.text }]}>{item.exam}</Text>
-                          <View style={styles.trendMetaRow}>
-                            <View style={[styles.trendSubjectBadge, { backgroundColor: sc.bg }]}>
-                              <Text style={[styles.trendSubjectText, { color: sc.text }]}>{item.subject}</Text>
-                            </View>
-                            <Text style={[styles.trendDate, { color: colors.textTertiary }]}>{item.date}</Text>
+                <View style={[styles.analysisCard, { backgroundColor: colors.surface }]}>
+                  <View style={styles.analysisCardHeader}>
+                    <Text style={[styles.analysisTitle, { color: colors.text }]}>分数段分布</Text>
+                    <View style={[styles.analysisTag, { backgroundColor: colors.palette.blue.bg }]}>
+                      <Text style={[styles.analysisTagText, { color: colors.palette.blue.text }]}>{analysisExam.name} · {analysisExam.subject}</Text>
+                    </View>
+                  </View>
+                  {(() => {
+                    const distData = mockScoreDistributions[analysisExam.id] || mockScoreDistributions['1'];
+                    const maxCount = Math.max(...distData.map(d => d.count), 1);
+                    return distData.map((item) => (
+                      <View key={item.range} style={styles.barRow}>
+                        <View style={styles.barLabelCol}>
+                          <Text style={[styles.barRange, { color: colors.text }]}>{item.range}</Text>
+                          <Text style={[styles.barLabel, { color: colors.textTertiary }]}>{item.label}</Text>
+                        </View>
+                        <View style={[styles.barTrack, { backgroundColor: colors.surfaceSecondary }]}>
+                          <View style={[styles.barFill, { width: `${(item.count / maxCount) * 100}%`, backgroundColor: item.color }]}>
+                            <Text style={styles.barFillText}>{item.count}</Text>
                           </View>
                         </View>
                       </View>
-                      <View style={styles.trendRight}>
-                        <Text style={[styles.trendValue, { color: colors.text }]}>{item.avg}</Text>
-                        {i > 0 && (
-                          <View style={[styles.trendBadge, { backgroundColor: trend === 'up' ? colors.palette.green.bg : colors.palette.red.bg }]}>
-                            <Ionicons
-                              name={trend === 'up' ? 'arrow-up' : 'arrow-down'}
-                              size={10}
-                              color={trend === 'up' ? colors.success : colors.error}
-                            />
-                            <Text style={[styles.trendDiff, { color: trend === 'up' ? colors.success : colors.error }]}>{diff}</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* 科目对比 */}
-            <View style={[styles.analysisCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.analysisCardHeader}>
-                <Text style={[styles.analysisTitle, { color: colors.text }]}>科目平均分对比</Text>
-                <View style={[styles.analysisTag, { backgroundColor: colors.surfaceSecondary }]}>
-                  <Text style={[styles.analysisTagText, { color: colors.textSecondary }]}>学科维度</Text>
+                    ));
+                  })()}
                 </View>
-              </View>
-              <View style={styles.subjectCompare}>
-                {[
-                  { subject: '语文', avg: 83.9, exams: 2 },
-                  { subject: '数学', avg: 78.3, exams: 1 },
-                ].map((item) => {
-                  const sc = getSubjectColor(item.subject);
-                  return (
-                    <View key={item.subject} style={[styles.subjectCompareItem, { backgroundColor: colors.surfaceSecondary }]}>
-                      <View style={[styles.subjectCompareIcon, { backgroundColor: sc.bg }]}>
-                        <Text style={[styles.subjectCompareIconText, { color: sc.text }]}>{item.subject[0]}</Text>
-                      </View>
-                      <Text style={[styles.subjectCompareName, { color: colors.text }]}>{item.subject}</Text>
-                      <Text style={[styles.subjectCompareAvg, { color: sc.text }]}>{item.avg}</Text>
-                      <Text style={[styles.subjectCompareExams, { color: colors.textTertiary }]}>{item.exams} 次考试</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
+              </>
+            )}
           </View>
         </ScrollView>
       )}
@@ -804,6 +751,42 @@ export default function ScoresScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* 班级选择弹窗 */}
+      <Modal visible={classDropdownOpen} transparent animationType="slide" onRequestClose={() => setClassDropdownOpen(false)}>
+        <TouchableOpacity style={styles.classPkOverlay} activeOpacity={1} onPress={() => setClassDropdownOpen(false)}>
+          <View style={[styles.classPkContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={[styles.classPkHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.classPkTitle, { color: colors.text }]}>选择班级</Text>
+            <View style={styles.classPkList}>
+              {allClasses.map((cls) => {
+                const isActive = selectedClass === cls;
+                return (
+                  <TouchableOpacity
+                    key={cls}
+                    style={[
+                      styles.classPkItem,
+                      {
+                        backgroundColor: isActive ? colors.primaryLight : colors.surfaceSecondary,
+                        borderColor: isActive ? colors.primary : colors.border,
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setSelectedClass(cls);
+                      setClassDropdownOpen(false);
+                    }}
+                  >
+                    <Ionicons name="school-outline" size={18} color={isActive ? colors.primary : colors.textTertiary} />
+                    <Text style={[styles.classPkItemText, { color: isActive ? colors.primary : colors.text }]}>{cls}</Text>
+                    {isActive && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -854,7 +837,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
   scoreHeroEyebrow: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.9)', letterSpacing: 0.2 },
-  scoreHeroTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF' },
+  scoreHeroTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
   scoreHeroClassBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   scoreHeroMeta: { marginTop: 1, fontSize: 11, color: 'rgba(255,255,255,0.78)' },
   scoreHeroBadge: {
@@ -955,6 +938,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
     flexDirection: 'row',
+    borderWidth: 2,
+    borderColor: 'transparent',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -984,6 +969,27 @@ const styles = StyleSheet.create({
   examStatCard: { flex: 1, borderRadius: 12, paddingVertical: 10, alignItems: 'center', gap: 3 },
   examStatValue: { fontSize: 16, fontWeight: '800' },
   examStatLabel: { fontSize: 10 },
+  selectedIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  examDetailBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  examDetailBtnText: { fontSize: 12, fontWeight: '600' },
 
   // Analysis
   analysisOverviewCard: {
@@ -997,7 +1003,6 @@ const styles = StyleSheet.create({
   },
   analysisHeroMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   analysisHeroChip: { borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
-  analysisHeroChipWide: { width: '100%' },
   analysisHeroChipHalf: { flexGrow: 1, minWidth: 120 },
   analysisHeroChipLabel: { fontSize: 10, fontWeight: '500' },
   analysisHeroChipValue: { marginTop: 4, fontSize: 13, lineHeight: 18, fontWeight: '700' },
@@ -1026,26 +1031,20 @@ const styles = StyleSheet.create({
   barTrack: { flex: 1, height: 26, borderRadius: 10, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 10, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 8, minWidth: 30 },
   barFillText: { fontSize: 11, fontWeight: '700', color: '#FFF' },
-  trendList: { marginTop: 2 },
-  trendItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12, borderRadius: 14 },
-  trendLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  trendDot: { width: 8, height: 8, borderRadius: 4 },
-  trendExam: { fontSize: 14, fontWeight: '700' },
-  trendMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  trendSubjectBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999 },
-  trendSubjectText: { fontSize: 10, fontWeight: '700' },
-  trendDate: { fontSize: 11 },
-  trendRight: { alignItems: 'flex-end', gap: 4 },
-  trendValue: { fontSize: 18, fontWeight: '800' },
-  trendBadge: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 999 },
-  trendDiff: { fontSize: 10, fontWeight: '700' },
-  subjectCompare: { flexDirection: 'row', gap: 10, marginTop: 0 },
-  subjectCompareItem: { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 14, gap: 4 },
-  subjectCompareIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  subjectCompareIconText: { fontSize: 16, fontWeight: '800' },
-  subjectCompareName: { fontSize: 14, fontWeight: '700' },
-  subjectCompareAvg: { fontSize: 22, fontWeight: '800' },
-  subjectCompareExams: { fontSize: 11 },
+  // No data
+  noDataCard: {
+    borderRadius: 18,
+    padding: 40,
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  noDataTitle: { fontSize: 16, fontWeight: '700', marginTop: 8 },
+  noDataHint: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
 
   // Modal
   modalOverlay: {
@@ -1131,31 +1130,20 @@ const styles = StyleSheet.create({
   dpCancelText: { fontSize: 14, fontWeight: '600' },
   dpConfirmBtn: { flex: 1.5, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dpConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
-  // Class dropdown
-  classDropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: 6,
-    minWidth: 160,
-    borderRadius: 14,
-    paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    zIndex: 99,
-  },
-  classDropdownItem: {
+  // Class picker modal
+  classPkOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  classPkContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34, paddingHorizontal: 14 },
+  classPkHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 14 },
+  classPkTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  classPkList: { gap: 10 },
+  classPkItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    borderRadius: 10,
-    marginHorizontal: 4,
-    marginVertical: 2,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
   },
-  classDropdownText: { fontSize: 14, fontWeight: '700' },
+  classPkItemText: { flex: 1, fontSize: 15, fontWeight: '700' },
 });

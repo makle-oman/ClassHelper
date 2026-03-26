@@ -217,6 +217,7 @@ export default function ScheduleScreen() {
   const [currentWeek, setCurrentWeek] = useState(8);
   const totalWeeks = 18;
   const [selectedClassId, setSelectedClassId] = useState(initialClasses[0].id);
+  const [classPickerOpen, setClassPickerOpen] = useState(false);
   const [filterSubject, setFilterSubject] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -636,27 +637,23 @@ export default function ScheduleScreen() {
             style={styles.classSelectorScroll}
             contentContainerStyle={styles.classSelector}
           >
-            {classesData.map((cls) => {
-              const isActive = cls.id === selectedClassId;
-              return (
-                <TouchableOpacity
-                  key={cls.id}
-                  style={[
-                    styles.classTab,
-                    {
-                      backgroundColor: isActive ? colors.primary : colors.surfaceSecondary,
-                      borderColor: isActive ? colors.primary : colors.border,
-                    },
-                  ]}
-                  onPress={() => setSelectedClassId(cls.id)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.classTabText, { color: isActive ? '#FFFFFF' : colors.textSecondary }]}>
-                    {cls.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+            <TouchableOpacity
+              style={[
+                styles.classTab,
+                {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary,
+                },
+              ]}
+              onPress={() => setClassPickerOpen(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="school-outline" size={13} color="#FFFFFF" />
+              <Text style={[styles.classTabText, { color: '#FFFFFF' }]}>
+                {currentClass.name}
+              </Text>
+              <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.7)" />
+            </TouchableOpacity>
           </ScrollView>
           <View style={styles.topActions}>
             {isEditing && (
@@ -1259,6 +1256,42 @@ export default function ScheduleScreen() {
           </SafeAreaView>
         </View>
       </Modal>
+
+      {/* 班级选择弹窗 */}
+      <Modal visible={classPickerOpen} transparent animationType="slide" onRequestClose={() => setClassPickerOpen(false)}>
+        <TouchableOpacity style={styles.classPkOverlay} activeOpacity={1} onPress={() => setClassPickerOpen(false)}>
+          <View style={[styles.classPkContent, { backgroundColor: colors.surface }]} onStartShouldSetResponder={() => true}>
+            <View style={[styles.classPkHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.classPkTitle, { color: colors.text }]}>选择班级</Text>
+            <View style={styles.classPkList}>
+              {classesData.map((cls) => {
+                const isActive = cls.id === selectedClassId;
+                return (
+                  <TouchableOpacity
+                    key={cls.id}
+                    style={[
+                      styles.classPkItem,
+                      {
+                        backgroundColor: isActive ? colors.primaryLight : colors.surfaceSecondary,
+                        borderColor: isActive ? colors.primary : colors.border,
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setSelectedClassId(cls.id);
+                      setClassPickerOpen(false);
+                    }}
+                  >
+                    <Ionicons name="school-outline" size={18} color={isActive ? colors.primary : colors.textTertiary} />
+                    <Text style={[styles.classPkItemText, { color: isActive ? colors.primary : colors.text }]}>{cls.name}</Text>
+                    {isActive && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1321,7 +1354,7 @@ const styles = StyleSheet.create({
   },
   scheduleHeroTitle: {
     marginTop: 8,
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -1378,7 +1411,7 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, marginBottom: 6 },
   classSelectorScroll: { flex: 1, marginRight: 10 },
   classSelector: { flexDirection: 'row', gap: 8, paddingRight: 4 },
-  classTab: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
+  classTab: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
   classTabText: { fontSize: 12, fontWeight: '700' },
   topActions: { flexDirection: 'row', gap: 6, alignItems: 'center' },
   importBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
@@ -1546,5 +1579,21 @@ const styles = StyleSheet.create({
   importClassLabel: { fontSize: 13 },
   importHint: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 12, marginTop: 10, marginBottom: 6, padding: 10, borderRadius: 10 },
   importHintText: { fontSize: 12, flex: 1 },
+  // Class picker modal
+  classPkOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  classPkContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 34, paddingHorizontal: 14 },
+  classPkHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10, marginBottom: 14 },
+  classPkTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  classPkList: { gap: 10 },
+  classPkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  classPkItemText: { flex: 1, fontSize: 15, fontWeight: '700' },
 });
 
