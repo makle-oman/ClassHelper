@@ -1,9 +1,14 @@
-﻿import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/theme';
+import { PrimaryHeroSection } from '../src/components/ui/PrimaryHeroSection';
+import { AppCard } from '../src/components/ui/AppCard';
+import { AppChip } from '../src/components/ui/AppChip';
+import { AppInput } from '../src/components/ui/AppInput';
+import { AppSectionHeader } from '../src/components/ui/AppSectionHeader';
 
 const ALL_SUBJECTS = ['语文', '数学', '英语', '体育', '音乐', '美术', '科学', '道德与法治'];
 
@@ -41,10 +46,7 @@ export default function ProfileEditScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
-        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
-
+      <PrimaryHeroSection paddingBottom={10}>
         <View style={styles.navBar}>
           <TouchableOpacity style={styles.navButton} onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={20} color="#FFF" />
@@ -90,77 +92,50 @@ export default function ProfileEditScreen() {
             ))}
           </View>
         </View>
-      </View>
+      </PrimaryHeroSection>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.sectionRow}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>基本信息</Text>
-          <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>更新姓名和手机号</Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>姓名</Text>
-            <TextInput
-              style={[styles.fieldInput, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, color: colors.text }]}
-              value={name}
-              placeholder="请输入姓名"
-              placeholderTextColor={colors.textTertiary}
-              onChangeText={(value) => {
-                setName(value);
-                if (value.trim()) setAvatarLetter(value.trim()[0]);
-              }}
-            />
-          </View>
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>手机号</Text>
-            <TextInput
-              style={[styles.fieldInput, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, color: colors.text }]}
-              value={phone}
-              placeholder="请输入手机号"
-              placeholderTextColor={colors.textTertiary}
-              keyboardType="phone-pad"
-              maxLength={11}
-              onChangeText={setPhone}
-            />
-          </View>
-        </View>
+        <AppSectionHeader title="基本信息" actionLabel="更新姓名和手机号" />
+        <AppCard style={styles.cardSpacing}>
+          <AppInput
+            label="姓名"
+            value={name}
+            placeholder="请输入姓名"
+            containerStyle={styles.fieldGroup}
+            onChangeText={(value) => {
+              setName(value);
+              if (value.trim()) setAvatarLetter(value.trim()[0]);
+            }}
+          />
+          <AppInput
+            label="手机号"
+            value={phone}
+            placeholder="请输入手机号"
+            keyboardType="phone-pad"
+            maxLength={11}
+            onChangeText={setPhone}
+          />
+        </AppCard>
 
-        <View style={styles.sectionRow}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>授课科目</Text>
-          <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>支持多选，展示你的教学职责</Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+        <AppSectionHeader title="授课科目" actionLabel="支持多选，展示你的教学职责" />
+        <AppCard style={styles.cardSpacing}>
           <View style={styles.subjectWrap}>
-            {ALL_SUBJECTS.map((subject) => {
-              const selected = subjects.includes(subject);
-              return (
-                <TouchableOpacity
-                  key={subject}
-                  style={[
-                    styles.subjectChip,
-                    {
-                      backgroundColor: selected ? colors.primary : colors.surfaceSecondary,
-                      borderColor: selected ? colors.primary : colors.border,
-                    },
-                  ]}
-                  activeOpacity={0.75}
-                  onPress={() => toggleSubject(subject)}
-                >
-                  <Text style={[styles.subjectChipText, { color: selected ? '#FFF' : colors.textSecondary }]}>{subject}</Text>
-                </TouchableOpacity>
-              );
-            })}
+            {ALL_SUBJECTS.map((subject) => (
+              <AppChip
+                key={subject}
+                label={subject}
+                selected={subjects.includes(subject)}
+                onPress={() => toggleSubject(subject)}
+              />
+            ))}
           </View>
-        </View>
+        </AppCard>
 
-        <View style={styles.sectionRow}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>账号安全</Text>
-          <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>继续完善密码与认证能力</Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+        <AppSectionHeader title="账号安全" actionLabel="继续完善密码与认证能力" />
+        <AppCard style={styles.cardSpacing}>
           <TouchableOpacity style={styles.securityRow} activeOpacity={0.75} onPress={() => router.push('/change-password')}>
             <View style={styles.securityLeft}>
-              <View style={[styles.securityIcon, { backgroundColor: colors.palette.red.bg }]}> 
+              <View style={[styles.securityIcon, { backgroundColor: colors.palette.red.bg }]}>
                 <Ionicons name="lock-closed-outline" size={18} color={colors.palette.red.text} />
               </View>
               <View>
@@ -170,7 +145,7 @@ export default function ProfileEditScreen() {
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
           </TouchableOpacity>
-        </View>
+        </AppCard>
       </ScrollView>
     </SafeAreaView>
   );
@@ -179,17 +154,6 @@ export default function ProfileEditScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 28 },
-  // === Top Section (matches schedule hero) ===
-  topSection: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-  },
-  heroDecorLarge: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -80, right: -50 },
-  heroDecorSmall: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -20, left: -30 },
   navBar: { flexDirection: 'row', alignItems: 'center' },
   navButton: {
     width: 36,
@@ -242,17 +206,9 @@ const styles = StyleSheet.create({
   },
   heroStatLabel: { color: 'rgba(255,255,255,0.76)', fontSize: 11, fontWeight: '600' },
   heroStatValue: { color: '#FFF', fontSize: 13, fontWeight: '800' },
-  // === Content ===
-  sectionRow: { marginBottom: 8, marginTop: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: '700' },
-  sectionHint: { fontSize: 12, marginTop: 4 },
-  card: { borderRadius: 20, padding: 16, marginBottom: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
+  cardSpacing: { marginBottom: 18 },
   fieldGroup: { marginBottom: 14 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 10 },
-  fieldInput: { height: 46, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 14 },
   subjectWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  subjectChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
-  subjectChipText: { fontSize: 13, fontWeight: '700' },
   securityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   securityLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   securityIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

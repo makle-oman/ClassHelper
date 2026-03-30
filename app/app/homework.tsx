@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/theme';
+import { PrimaryHeroSection, AppCard, AppButton, AppSectionHeader } from '../src/components/ui';
 
 interface Homework {
   id: string;
@@ -138,9 +139,7 @@ export default function HomeworkScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
-        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+        <PrimaryHeroSection paddingBottom={10} style={styles.heroCard}>
           <View style={styles.heroTopBar}>
             <TouchableOpacity
               style={styles.heroBackButton}
@@ -179,10 +178,10 @@ export default function HomeworkScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </PrimaryHeroSection>
 
-        <View style={[styles.tabCard, { backgroundColor: colors.surface }]}> 
-          <View style={[styles.tabInner, { backgroundColor: colors.surfaceSecondary }]}> 
+        <AppCard padding="sm" radius={18} style={styles.tabCard}>
+          <View style={[styles.tabInner, { backgroundColor: colors.surfaceSecondary }]}>
             {(['list', 'status'] as const).map((tab) => {
               const selected = selectedTab === tab;
               return (
@@ -198,7 +197,7 @@ export default function HomeworkScreen() {
               );
             })}
           </View>
-        </View>
+        </AppCard>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>

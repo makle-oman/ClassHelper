@@ -1,10 +1,11 @@
-﻿import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../src/theme';
 import { classApi } from '../src/services/api';
+import { PrimaryHeroSection, AppCard, AppButton, AppSectionHeader } from '../src/components/ui';
 
 interface ClassInfo {
   id: string;
@@ -104,7 +105,7 @@ export default function ClassManageScreen() {
   const handleDelete = (cls: ClassInfo) => {
     Alert.alert(
       '删除班级',
-      `确定删除“${cls.name}”吗？删除后班级入口会移除，学生信息将保留待重新分配。`,
+      `确定删除"${cls.name}"吗？删除后班级入口会移除，学生信息将保留待重新分配。`,
       [
         { text: '取消', style: 'cancel' },
         {
@@ -128,9 +129,7 @@ export default function ClassManageScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
-        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+        <PrimaryHeroSection paddingBottom={10} style={styles.heroCard}>
           <View style={styles.heroTopBar}>
             <TouchableOpacity
               style={styles.heroBackButton}
@@ -168,15 +167,10 @@ export default function ClassManageScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </PrimaryHeroSection>
 
-        <View style={[styles.quickCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionRow}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>管理入口</Text>
-              <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>快速进入相关管理功能</Text>
-            </View>
-          </View>
+        <AppCard radius={18} padding="sm" style={styles.quickCardSpacing}>
+          <AppSectionHeader title="管理入口" style={styles.sectionHeaderInCard} />
           <View style={styles.quickGrid}>
             {[
               { label: '学期管理', desc: '查看当前学期与历史归档', icon: 'calendar-outline' as const, colorKey: 'blue' as const, route: '/semester' },
@@ -188,7 +182,7 @@ export default function ClassManageScreen() {
                 activeOpacity={0.75}
                 onPress={() => router.push(item.route as any)}
               >
-                <View style={[styles.quickIcon, { backgroundColor: colors.palette[item.colorKey].bg }]}> 
+                <View style={[styles.quickIcon, { backgroundColor: colors.palette[item.colorKey].bg }]}>
                   <Ionicons name={item.icon} size={18} color={colors.palette[item.colorKey].text} />
                 </View>
                 <Text style={[styles.quickTitle, { color: colors.text }]}>{item.label}</Text>
@@ -196,33 +190,25 @@ export default function ClassManageScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </AppCard>
 
-        <View style={styles.sectionRow}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>班级列表</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>查看、编辑或删除班级</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.inlineAddButton, { backgroundColor: colors.primaryLight }]}
-            activeOpacity={0.75}
-            onPress={() => setShowCreateModal(true)}
-          >
-            <Ionicons name="add" size={16} color={colors.primary} />
-            <Text style={[styles.inlineAddButtonText, { color: colors.primary }]}>新增班级</Text>
-          </TouchableOpacity>
-        </View>
+        <AppSectionHeader
+          title="班级列表"
+          count={classes.length}
+          actionLabel="新增班级"
+          onActionPress={() => setShowCreateModal(true)}
+        />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {classes.length === 0 ? (
-          <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
+          <AppCard radius={20} padding="lg" style={styles.emptyCardContent}>
             <View style={[styles.emptyIconBox, { backgroundColor: colors.surfaceSecondary }]}>
               <Ionicons name="school-outline" size={32} color={colors.textTertiary} />
             </View>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>还没有创建班级</Text>
             <Text style={[styles.emptyText, { color: colors.textTertiary }]}>先添加班级，再配置学生和课程表。</Text>
-          </View>
+          </AppCard>
         ) : (
           <View style={styles.listSection}>
             {classes.map((cls) => {
@@ -232,60 +218,57 @@ export default function ClassManageScreen() {
               return (
                 <TouchableOpacity
                   key={cls.id}
-                  style={[styles.classCard, { backgroundColor: colors.surface }]}
                   activeOpacity={0.78}
                   onPress={() => router.push('/(tabs)/students' as any)}
                 >
-                  <View style={[styles.classAccent, { backgroundColor: gradePalette.text }]} />
-                  <View style={styles.classBody}>
-                    <View style={styles.classHeader}>
-                      <View style={styles.classHeaderLeft}>
-                        <Text style={[styles.className, { color: colors.text }]}>{cls.name}</Text>
-                        <View style={[styles.gradeBadge, { backgroundColor: gradePalette.bg }]}> 
-                          <Text style={[styles.gradeBadgeText, { color: gradePalette.text }]}>{cls.grade}</Text>
+                  <AppCard radius={18} padding="none" style={styles.classCardRow}>
+                    <View style={[styles.classAccent, { backgroundColor: gradePalette.text }]} />
+                    <View style={styles.classBody}>
+                      <View style={styles.classHeader}>
+                        <View style={styles.classHeaderLeft}>
+                          <Text style={[styles.className, { color: colors.text }]}>{cls.name}</Text>
+                          <View style={[styles.gradeBadge, { backgroundColor: gradePalette.bg }]}>
+                            <Text style={[styles.gradeBadgeText, { color: gradePalette.text }]}>{cls.grade}</Text>
+                          </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                      </View>
+
+                      <View style={styles.metaRow}>
+                        <View style={[styles.metaChip, { backgroundColor: colors.surfaceSecondary }]}>
+                          <Ionicons name="people-outline" size={12} color={colors.textTertiary} />
+                          <Text style={[styles.metaChipText, { color: colors.textSecondary }]}>{cls.studentCount} 名学生</Text>
+                        </View>
+                        <View style={[styles.metaChip, { backgroundColor: colors.surfaceSecondary }]}>
+                          <Ionicons name="book-outline" size={12} color={colors.textTertiary} />
+                          <Text style={[styles.metaChipText, { color: colors.textSecondary }]}>
+                            {cls.subjects.length > 0 ? cls.subjects.join(' / ') : '待补充学科'}
+                          </Text>
                         </View>
                       </View>
-                      <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-                    </View>
 
-                    <View style={styles.metaRow}>
-                      <View style={[styles.metaChip, { backgroundColor: colors.surfaceSecondary }]}> 
-                        <Ionicons name="people-outline" size={12} color={colors.textTertiary} />
-                        <Text style={[styles.metaChipText, { color: colors.textSecondary }]}>{cls.studentCount} 名学生</Text>
-                      </View>
-                      <View style={[styles.metaChip, { backgroundColor: colors.surfaceSecondary }]}> 
-                        <Ionicons name="book-outline" size={12} color={colors.textTertiary} />
-                        <Text style={[styles.metaChipText, { color: colors.textSecondary }]}>
-                          {cls.subjects.length > 0 ? cls.subjects.join(' / ') : '待补充学科'}
-                        </Text>
+                      <View style={[styles.cardFooter, { borderTopColor: colors.divider }]}>
+                        <AppButton
+                          label="编辑"
+                          leftIconName="create-outline"
+                          variant="soft"
+                          tone="info"
+                          size="md"
+                          style={styles.footerBtn}
+                          onPress={() => handleEdit(cls)}
+                        />
+                        <AppButton
+                          label="删除"
+                          leftIconName="trash-outline"
+                          variant="soft"
+                          tone="error"
+                          size="md"
+                          style={styles.footerBtn}
+                          onPress={() => handleDelete(cls)}
+                        />
                       </View>
                     </View>
-
-                    <View style={[styles.cardFooter, { borderTopColor: colors.divider }]}>
-                      <TouchableOpacity
-                        style={[styles.footerButton, { backgroundColor: colors.palette.blue.bg }]}
-                        activeOpacity={0.75}
-                        onPress={(event) => {
-                          event.stopPropagation();
-                          handleEdit(cls);
-                        }}
-                      >
-                        <Ionicons name="create-outline" size={14} color={colors.palette.blue.text} />
-                        <Text style={[styles.footerButtonText, { color: colors.palette.blue.text }]}>编辑</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.footerButton, { backgroundColor: colors.palette.red.bg }]}
-                        activeOpacity={0.75}
-                        onPress={(event) => {
-                          event.stopPropagation();
-                          handleDelete(cls);
-                        }}
-                      >
-                        <Ionicons name="trash-outline" size={14} color={colors.palette.red.text} />
-                        <Text style={[styles.footerButtonText, { color: colors.palette.red.text }]}>删除</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  </AppCard>
                 </TouchableOpacity>
               );
             })}
@@ -295,7 +278,7 @@ export default function ClassManageScreen() {
 
       <Modal visible={showCreateModal} transparent animationType="fade" onRequestClose={closeModal}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}> 
+          <AppCard radius={24} padding="none" style={styles.modalCardSize}>
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>{editingClass ? '编辑班级' : '创建班级'}</Text>
@@ -306,7 +289,7 @@ export default function ClassManageScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.previewCard, { backgroundColor: colors.primaryLight }]}> 
+            <View style={[styles.previewCard, { backgroundColor: colors.primaryLight }]}>
               <Text style={[styles.previewLabel, { color: colors.primary }]}>班级预览</Text>
               <Text style={[styles.previewValue, { color: colors.text }]}>{previewName}</Text>
             </View>
@@ -358,22 +341,23 @@ export default function ClassManageScreen() {
             </View>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.modalCancelButton, { borderColor: colors.border }]}
-                activeOpacity={0.75}
+              <AppButton
+                label="取消"
+                variant="outline"
+                tone="primary"
+                style={styles.modalCancelBtn}
                 onPress={closeModal}
-              >
-                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
-                activeOpacity={0.82}
+              />
+              <AppButton
+                label={editingClass ? '保存修改' : '确认创建'}
+                variant="solid"
+                tone="primary"
+                loading={loading}
+                style={styles.modalConfirmBtn}
                 onPress={editingClass ? handleSaveEdit : handleCreate}
-              >
-                <Text style={styles.modalConfirmText}>{editingClass ? '保存修改' : '确认创建'}</Text>
-              </TouchableOpacity>
+              />
             </View>
-          </View>
+          </AppCard>
         </View>
       </Modal>
     </SafeAreaView>
@@ -386,12 +370,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 14, paddingTop: 0, paddingBottom: 24 },
   heroCard: {
     marginHorizontal: -14,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    overflow: 'hidden',
     marginBottom: 12,
   },
   heroTopBar: {
@@ -417,22 +395,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
   heroPageTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  heroDecorLarge: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -80,
-    right: -50,
-  },
-  heroDecorSmall: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -20,
-    left: -30,
-  },
   heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
   heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
   heroStatsRow: {
@@ -445,47 +407,21 @@ const styles = StyleSheet.create({
   heroStatItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 5 },
   heroStatValue: { color: '#FFF', fontSize: 16, fontWeight: '800' },
   heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, marginTop: 2 },
-  quickCard: {
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  sectionTitle: { fontSize: 16, fontWeight: '700' },
-  sectionHint: { fontSize: 12, marginTop: 4 },
+  quickCardSpacing: { marginBottom: 12 },
+  sectionHeaderInCard: { marginBottom: 8 },
   quickGrid: { flexDirection: 'row', gap: 10 },
   quickItem: { flex: 1, borderRadius: 16, padding: 12 },
   quickIcon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   quickTitle: { fontSize: 14, fontWeight: '700', marginTop: 10 },
   quickDesc: { fontSize: 12, lineHeight: 17, marginTop: 5 },
-  inlineAddButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  inlineAddButtonText: { fontSize: 13, fontWeight: '700' },
-  emptyCard: { borderRadius: 20, padding: 24, alignItems: 'center' },
+  emptyCardContent: { alignItems: 'center' },
   emptyIconBox: { width: 72, height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 17, fontWeight: '700', marginTop: 16 },
   emptyText: { fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: 'center' },
   listSection: { gap: 10 },
-  classCard: {
+  classCardRow: {
     flexDirection: 'row',
-    borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
   classAccent: { width: 5 },
   classBody: { flex: 1, padding: 14 },
@@ -498,16 +434,7 @@ const styles = StyleSheet.create({
   metaChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
   metaChipText: { fontSize: 12, fontWeight: '500' },
   cardFooter: { flexDirection: 'row', gap: 8, marginTop: 12, paddingTop: 10, borderTopWidth: 0.5 },
-  footerButton: {
-    flex: 1,
-    height: 38,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  footerButtonText: { fontSize: 13, fontWeight: '700' },
+  footerBtn: { flex: 1, height: 38, borderRadius: 12 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -515,7 +442,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  modalCard: { width: '100%', maxWidth: 420, borderRadius: 24, overflow: 'hidden' },
+  modalCardSize: { width: '100%', maxWidth: 420 },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -543,15 +470,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   modalFooter: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingBottom: 20 },
-  modalCancelButton: {
-    flex: 1,
-    height: 46,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalConfirmButton: { flex: 1.4, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  modalCancelText: { fontSize: 14, fontWeight: '600' },
-  modalConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  modalCancelBtn: { flex: 1 },
+  modalConfirmBtn: { flex: 1.4 },
 });

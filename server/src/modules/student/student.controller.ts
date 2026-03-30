@@ -5,7 +5,7 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { success, fail } from '../../common/response';
 
-@Controller('api/student')
+@Controller('student')
 @UseGuards(JwtAuthGuard)
 export class StudentController {
   constructor(private readonly studentService: StudentService) {}

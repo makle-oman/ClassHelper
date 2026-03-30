@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useTheme, useThemeMode } from '../src/theme';
 import { getReminderSettings, saveReminderSettings, type ReminderSettings } from '../src/services/reminderSettings';
 import { requestNotificationPermission, cancelAllCourseReminders } from '../src/services/courseReminder';
+import { AppButton, AppCard, AppChip, AppSectionHeader, PrimaryHeroSection } from '../src/components/ui';
 
 const MINUTE_OPTIONS = [5, 10, 15, 20, 30];
 
@@ -72,10 +73,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
-        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
-
+      <PrimaryHeroSection style={styles.topSection}>
         <View style={styles.navBar}>
           <TouchableOpacity
             style={styles.navButton}
@@ -116,14 +114,12 @@ export default function SettingsScreen() {
             ))}
           </View>
         </View>
-      </View>
+      </PrimaryHeroSection>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.pageContent}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>课程提醒</Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+        <AppSectionHeader title="课程提醒" style={styles.sectionHeader} />
+        <AppCard padding="none" style={styles.card}> 
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
               <View style={[styles.settingIcon, { backgroundColor: colors.palette.green.bg }]}> 
@@ -156,20 +152,13 @@ export default function SettingsScreen() {
                   {MINUTE_OPTIONS.map((minute) => {
                     const selected = settings.minutesBefore === minute;
                     return (
-                      <TouchableOpacity
+                      <AppChip
                         key={minute}
-                        style={[
-                          styles.minuteChip,
-                          {
-                            backgroundColor: selected ? colors.primary : colors.surfaceSecondary,
-                            borderColor: selected ? colors.primary : colors.border,
-                          },
-                        ]}
-                        activeOpacity={0.75}
+                        label={`${minute} 分钟`}
+                        selected={selected}
+                        style={styles.minuteChip}
                         onPress={() => handleMinutesChange(minute)}
-                      >
-                        <Text style={[styles.minuteChipText, { color: selected ? '#FFF' : colors.textSecondary }]}>{minute} 分钟</Text>
-                      </TouchableOpacity>
+                      />
                     );
                   })}
                 </View>
@@ -177,19 +166,17 @@ export default function SettingsScreen() {
               </View>
             </>
           )}
-        </View>
+        </AppCard>
 
-        <View style={[styles.tipCard, { backgroundColor: colors.surface }]}> 
+        <AppCard padding="none" style={styles.tipCard}> 
           <View style={[styles.tipIconWrap, { backgroundColor: colors.surfaceSecondary }]}>
             <Ionicons name="information-circle-outline" size={15} color={colors.textTertiary} />
           </View>
           <Text style={[styles.tipText, { color: colors.textTertiary }]}>提醒仅对标记为“我的课程”的课程生效，打开 App 时会自动刷新当天提醒计划。</Text>
-        </View>
+        </AppCard>
 
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>显示与个性化</Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+        <AppSectionHeader title="显示与个性化" style={styles.sectionHeader} />
+        <AppCard padding="none" style={styles.card}> 
           <TouchableOpacity style={styles.settingRow} activeOpacity={0.75} onPress={() => setShowThemeModal(true)}>
             <View style={styles.settingLeft}>
               <View style={[styles.settingIcon, { backgroundColor: colors.palette.purple.bg }]}> 
@@ -209,12 +196,10 @@ export default function SettingsScreen() {
               </View>
             </View>
           </TouchableOpacity>
-        </View>
+        </AppCard>
 
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>帮助与反馈</Text>
-        </View>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+        <AppSectionHeader title="帮助与反馈" style={styles.sectionHeader} />
+        <AppCard padding="none" style={styles.card}> 
           <TouchableOpacity style={styles.settingRow} activeOpacity={0.75} onPress={() => setShowFeedbackModal(true)}>
             <View style={styles.settingLeft}>
               <View style={[styles.settingIcon, { backgroundColor: colors.palette.orange.bg }]}> 
@@ -251,7 +236,7 @@ export default function SettingsScreen() {
               </View>
             </View>
           </TouchableOpacity>
-        </View>
+        </AppCard>
         </View>
       </ScrollView>
 
@@ -331,9 +316,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.aboutInfoValue, { color: colors.text }]}>前端静态完善</Text>
               </View>
             </View>
-            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} activeOpacity={0.82} onPress={() => setShowAboutModal(false)}>
-              <Text style={styles.primaryButtonText}>关闭</Text>
-            </TouchableOpacity>
+            <AppButton label="关闭" onPress={() => setShowAboutModal(false)} style={styles.primaryButton} />
             </View>
           </View>
         </TouchableOpacity>
@@ -369,12 +352,20 @@ export default function SettingsScreen() {
             </View>
             </View>
             <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
-              <TouchableOpacity style={[styles.modalCancelButton, { borderColor: colors.border }]} activeOpacity={0.75} onPress={() => setShowFeedbackModal(false)}>
-                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]} activeOpacity={0.82} onPress={handleSubmitFeedback}>
-                <Text style={styles.modalConfirmText}>提交反馈</Text>
-              </TouchableOpacity>
+              <AppButton
+                fullWidth={false}
+                label="取消"
+                onPress={() => setShowFeedbackModal(false)}
+                style={styles.modalCancelButton}
+                tone="info"
+                variant="outline"
+              />
+              <AppButton
+                fullWidth={false}
+                label="提交反馈"
+                onPress={handleSubmitFeedback}
+                style={styles.modalConfirmButton}
+              />
             </View>
           </View>
         </TouchableOpacity>
@@ -386,12 +377,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topSection: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 10,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
   },
   navBar: { flexDirection: 'row', alignItems: 'center' },
   navButton: {
@@ -407,22 +393,6 @@ const styles = StyleSheet.create({
   navTitle: { fontSize: 16, fontWeight: '800', color: '#FFF' },
   navSubtitle: { marginTop: 1, fontSize: 11, color: 'rgba(255,255,255,0.78)' },
   heroCard: { paddingTop: 6 },
-  heroDecorLarge: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -80,
-    right: -50,
-  },
-  heroDecorSmall: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -20,
-    left: -30,
-  },
   heroTopRow: {
     flexDirection: 'row',
     alignItems: 'center',

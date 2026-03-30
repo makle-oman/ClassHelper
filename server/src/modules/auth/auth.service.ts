@@ -1,11 +1,22 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import { QueryFailedError, Repository } from 'typeorm';
 import { Teacher } from '../../entities/teacher.entity';
-import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+
+const RETRYABLE_DB_ERROR_CODES = new Set([
+  'ECONNRESET',
+  'PROTOCOL_CONNECTION_LOST',
+  'ETIMEDOUT',
+  'EPIPE',
+]);
 
 @Injectable()
 export class AuthService {
@@ -15,28 +26,66 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  /** 注册 */
+  private isRetryableDatabaseError(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+
+    const driverError = (error as QueryFailedError & {
+      driverError?: { code?: string };
+    }).driverError;
+
+    return typeof driverError?.code === 'string'
+      && RETRYABLE_DB_ERROR_CODES.has(driverError.code);
+  }
+
+  // The remote MySQL instance occasionally resets pooled connections.
+  // A short retry lets TypeORM grab a fresh connection without surfacing
+  // a false-negative login failure to the user.
+  private async withDatabaseRetry<T>(operation: () => Promise<T>): Promise<T> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error;
+
+        if (!this.isRetryableDatabaseError(error) || attempt === 3) {
+          throw error;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, attempt * 200));
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error('database operation failed');
+  }
+
   async register(dto: RegisterDto) {
-    // 检查手机号是否已注册
-    const exists = await this.teacherRepo.findOne({ where: { phone: dto.phone } });
+    const exists = await this.withDatabaseRetry(() =>
+      this.teacherRepo.findOne({ where: { phone: dto.phone } }),
+    );
+
     if (exists) {
       throw new ConflictException('该手机号已注册');
     }
 
-    // 加密密码
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    // 创建教师记录
     const teacher = this.teacherRepo.create({
       phone: dto.phone,
       password: hashedPassword,
       name: dto.name,
     });
-    await this.teacherRepo.save(teacher);
 
-    // 生成 token 并存入数据库（单设备登录）
+    await this.withDatabaseRetry(() => this.teacherRepo.save(teacher));
+
     const token = this.jwtService.sign({ id: teacher.id, phone: teacher.phone });
-    await this.teacherRepo.update(teacher.id, { current_token: token });
+    await this.withDatabaseRetry(() =>
+      this.teacherRepo.update(teacher.id, { current_token: token }),
+    );
 
     return {
       token,
@@ -48,9 +97,11 @@ export class AuthService {
     };
   }
 
-  /** 登录 */
   async login(dto: LoginDto) {
-    const teacher = await this.teacherRepo.findOne({ where: { phone: dto.phone } });
+    const teacher = await this.withDatabaseRetry(() =>
+      this.teacherRepo.findOne({ where: { phone: dto.phone } }),
+    );
+
     if (!teacher) {
       throw new UnauthorizedException('手机号或密码错误');
     }
@@ -60,9 +111,10 @@ export class AuthService {
       throw new UnauthorizedException('手机号或密码错误');
     }
 
-    // 生成 token 并存入数据库（单设备登录，旧 token 自动失效）
     const token = this.jwtService.sign({ id: teacher.id, phone: teacher.phone });
-    await this.teacherRepo.update(teacher.id, { current_token: token });
+    await this.withDatabaseRetry(() =>
+      this.teacherRepo.update(teacher.id, { current_token: token }),
+    );
 
     return {
       token,
@@ -77,9 +129,11 @@ export class AuthService {
     };
   }
 
-  /** 校验 token 是否是当前有效的（用于 JwtStrategy） */
   async validateToken(id: number, token: string): Promise<boolean> {
-    const teacher = await this.teacherRepo.findOne({ where: { id } });
+    const teacher = await this.withDatabaseRetry(() =>
+      this.teacherRepo.findOne({ where: { id } }),
+    );
+
     return teacher?.current_token === token;
   }
 }

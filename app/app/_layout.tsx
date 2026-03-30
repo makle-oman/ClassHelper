@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import { ThemeProvider, useIsDark } from '../src/theme';
 import { refreshReminders } from '../src/services/courseReminder';
+import { ToastHost } from '../src/components/ToastHost';
 
 // 当前老师今天的课程（后续从API获取，这里先硬编码）
 const todayMyCourses = [
@@ -41,6 +42,7 @@ function AppContent() {
         <Stack.Screen name="semester" />
         <Stack.Screen name="promotion" />
       </Stack>
+      <ToastHost />
     </>
   );
 }

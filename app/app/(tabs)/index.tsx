@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { getTeacher, classApi, type TeacherInfo } from '../../src/services/api';
+import { PrimaryHeroSection } from '../../src/components/ui';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -56,9 +57,7 @@ export default function HomeScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* 顶部问候 */}
-        <View style={[styles.headerSection, { backgroundColor: colors.primary }]}>
-          <View style={[styles.headerDecor1, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-          <View style={[styles.headerDecor2, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+        <PrimaryHeroSection style={styles.headerSection}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
               <Text style={styles.greetingText}>
@@ -88,7 +87,7 @@ export default function HomeScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </PrimaryHeroSection>
 
         {/* 快捷操作 */}
         <View style={styles.section}>
@@ -231,28 +230,7 @@ const styles = StyleSheet.create({
   },
   // === Header ===
   headerSection: {
-    paddingTop: 12,
     paddingBottom: 10,
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-  },
-  headerDecor1: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -80,
-    right: -50,
-  },
-  headerDecor2: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -20,
-    left: -30,
   },
   headerContent: {
     flexDirection: 'row',

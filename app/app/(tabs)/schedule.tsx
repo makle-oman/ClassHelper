@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, Pla
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme';
+import { PrimaryHeroSection, AppCard, AppButton } from '../../src/components/ui';
 import * as DocumentPicker from 'expo-document-picker';
 import * as XLSX from 'xlsx';
 import * as FileSystem from 'expo-file-system';
@@ -600,9 +601,7 @@ export default function ScheduleScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={[styles.scheduleHeroCard, { backgroundColor: colors.primary }]}>
-        <View style={[styles.scheduleHeroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-        <View style={[styles.scheduleHeroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+      <PrimaryHeroSection paddingBottom={10}>
         <View style={styles.scheduleHeroHeader}>
           <View style={styles.scheduleHeroMain}>
             <View style={styles.scheduleHeroEyebrowWrap}>
@@ -625,7 +624,7 @@ export default function ScheduleScreen() {
             </View>
           ))}
         </View>
-      </View>
+      </PrimaryHeroSection>
 
       {/* 顶部栏 */}
       <View style={[styles.topBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -895,7 +894,7 @@ export default function ScheduleScreen() {
 
         {/* 图例 */}
         {!isEditing && (
-          <View style={[styles.legend, { backgroundColor: colors.surface }]}>
+          <AppCard padding="sm" radius={14} style={styles.legend}>
             <View style={styles.legendHeader}>
               <Text style={[styles.legendTitle, { color: colors.textSecondary }]}>点击科目筛选</Text>
               {filterSubject && (
@@ -941,7 +940,7 @@ export default function ScheduleScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </AppCard>
         )}
 
         {/* 编辑模式提示 */}
@@ -1136,9 +1135,7 @@ export default function ScheduleScreen() {
                       </View>
                     )}
                   </View>
-                  <TouchableOpacity style={[styles.modalCloseBtn, { backgroundColor: colors.primary }]} onPress={() => setSelectedCourse(null)}>
-                    <Text style={styles.modalCloseBtnText}>关闭</Text>
-                  </TouchableOpacity>
+                  <AppButton label="关闭" onPress={() => setSelectedCourse(null)} style={styles.modalCloseBtn} />
                 </>
               );
             })()}
@@ -1300,32 +1297,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   // === Top Bar ===
   topBar: { paddingTop: 10, paddingBottom: 8, borderBottomWidth: 0.5 },
-  scheduleHeroCard: {
-    marginHorizontal: 0,
-    marginBottom: 0,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-  },
-  scheduleHeroDecorLarge: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -80,
-    right: -50,
-  },
-  scheduleHeroDecorSmall: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -20,
-    left: -30,
-  },
   scheduleHeroHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1462,7 +1433,7 @@ const styles = StyleSheet.create({
   courseSubject: { fontSize: 11, fontWeight: '700' },
   holidayCellText: { fontSize: 11, fontWeight: '500' },
   // === Legend ===
-  legend: { marginHorizontal: 12, marginTop: 12, padding: 12, borderRadius: 14 },
+  legend: { marginHorizontal: 12, marginTop: 12 },
   legendHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   legendTitle: { fontSize: 12, fontWeight: '600' },
   clearFilter: { fontSize: 12, fontWeight: '600' },
@@ -1567,8 +1538,7 @@ const styles = StyleSheet.create({
   modalBody: { paddingHorizontal: 14, paddingVertical: 16, gap: 14 },
   modalRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   modalLabel: { fontSize: 14 },
-  modalCloseBtn: { marginHorizontal: 20, marginBottom: 20, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
-  modalCloseBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  modalCloseBtn: { marginHorizontal: 20, marginBottom: 20, borderRadius: 10 },
   // === Import Modal ===
   importModalContainer: { flex: 1 },
   importHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },

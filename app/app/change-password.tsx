@@ -1,18 +1,19 @@
-﻿import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/theme';
+import { PrimaryHeroSection } from '../src/components/ui/PrimaryHeroSection';
+import { AppCard } from '../src/components/ui/AppCard';
+import { AppInput } from '../src/components/ui/AppInput';
+import { AppButton } from '../src/components/ui/AppButton';
 
 export default function ChangePasswordScreen() {
   const colors = useTheme();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showOld, setShowOld] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSubmit = () => {
     if (!oldPassword.trim()) {
@@ -31,39 +32,9 @@ export default function ChangePasswordScreen() {
     Alert.alert('修改成功', '密码已更新，请使用新密码继续登录。', [{ text: '确定', onPress: () => router.back() }]);
   };
 
-  const renderPasswordField = (
-    label: string,
-    value: string,
-    onChange: (text: string) => void,
-    visible: boolean,
-    onToggle: () => void,
-    placeholder: string
-  ) => (
-    <View style={styles.fieldGroup}>
-      <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{label}</Text>
-      <View style={[styles.passwordField, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}> 
-        <TextInput
-          style={[styles.passwordInput, { color: colors.text }]}
-          value={value}
-          onChangeText={onChange}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textTertiary}
-          secureTextEntry={!visible}
-          autoCapitalize="none"
-        />
-        <TouchableOpacity activeOpacity={0.75} onPress={onToggle}>
-          <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textTertiary} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
-        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
-
+      <PrimaryHeroSection paddingBottom={10}>
         <View style={styles.navBar}>
           <TouchableOpacity style={styles.navButton} onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={20} color="#FFF" />
@@ -97,26 +68,49 @@ export default function ChangePasswordScreen() {
             ))}
           </View>
         </View>
-      </View>
+      </PrimaryHeroSection>
 
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
         <View style={styles.sectionRow}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>密码信息</Text>
         </View>
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          {renderPasswordField('旧密码', oldPassword, setOldPassword, showOld, () => setShowOld((prev) => !prev), '请输入当前密码')}
-          {renderPasswordField('新密码', newPassword, setNewPassword, showNew, () => setShowNew((prev) => !prev), '请输入新密码（至少 6 位）')}
-          {renderPasswordField('确认密码', confirmPassword, setConfirmPassword, showConfirm, () => setShowConfirm((prev) => !prev), '请再次输入新密码')}
-        </View>
+        <AppCard style={styles.cardSpacing}>
+          <AppInput
+            label="旧密码"
+            value={oldPassword}
+            onChangeText={setOldPassword}
+            placeholder="请输入当前密码"
+            secureTextEntry
+            autoCapitalize="none"
+            containerStyle={styles.fieldGroup}
+          />
+          <AppInput
+            label="新密码"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            placeholder="请输入新密码（至少 6 位）"
+            secureTextEntry
+            autoCapitalize="none"
+            containerStyle={styles.fieldGroup}
+          />
+          <AppInput
+            label="确认密码"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="请再次输入新密码"
+            secureTextEntry
+            autoCapitalize="none"
+          />
+        </AppCard>
 
-        <View style={[styles.tipCard, { backgroundColor: colors.surface }]}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.textTertiary} />
-          <Text style={[styles.tipText, { color: colors.textTertiary }]}>密码修改成功后需使用新密码重新登录。</Text>
-        </View>
+        <AppCard style={styles.tipCard}>
+          <View style={styles.tipRow}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.textTertiary} />
+            <Text style={[styles.tipText, { color: colors.textTertiary }]}>密码修改成功后需使用新密码重新登录。</Text>
+          </View>
+        </AppCard>
 
-        <TouchableOpacity style={[styles.submitButton, { backgroundColor: colors.primary }]} activeOpacity={0.82} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>确认修改</Text>
-        </TouchableOpacity>
+        <AppButton label="确认修改" onPress={handleSubmit} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -125,17 +119,6 @@ export default function ChangePasswordScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 28 },
-  // === Top Section (unified green hero) ===
-  topSection: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-  },
-  heroDecorLarge: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -80, right: -50 },
-  heroDecorSmall: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -20, left: -30 },
   navBar: { flexDirection: 'row', alignItems: 'center' },
   navButton: {
     width: 36,
@@ -182,16 +165,11 @@ const styles = StyleSheet.create({
   },
   heroStatLabel: { color: 'rgba(255,255,255,0.76)', fontSize: 11, fontWeight: '600' },
   heroStatValue: { color: '#FFF', fontSize: 13, fontWeight: '800' },
-  // === Content ===
   sectionRow: { marginBottom: 8, marginTop: 4 },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
-  card: { borderRadius: 20, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
+  cardSpacing: { marginBottom: 12 },
   fieldGroup: { marginBottom: 14 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', marginBottom: 10 },
-  passwordField: { height: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  passwordInput: { flex: 1, fontSize: 14 },
-  tipCard: { flexDirection: 'row', gap: 8, borderRadius: 18, padding: 14, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
+  tipCard: { marginBottom: 24 },
+  tipRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   tipText: { flex: 1, fontSize: 12, lineHeight: 18 },
-  submitButton: { height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  submitButtonText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
 });

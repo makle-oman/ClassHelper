@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  TextInput,
   Alert,
   Modal,
   ScrollView,
@@ -17,6 +16,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { classApi, studentApi } from '../../src/services/api';
+import {
+  PrimaryHeroSection,
+  AppCard,
+  AppInput,
+  AppButton,
+  AppSectionHeader,
+} from '../../src/components/ui';
 
 interface Student {
   id: string;
@@ -204,9 +210,11 @@ export default function StudentsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
-        <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.summaryDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-          <View style={[styles.summaryDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+        <PrimaryHeroSection
+          paddingTop={10}
+          paddingBottom={12}
+          style={{ marginHorizontal: -20 }}
+        >
           <View style={styles.summaryTopRow}>
             <View>
               <Text style={styles.summaryEyebrow}>学生花名册</Text>
@@ -240,7 +248,7 @@ export default function StudentsScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </PrimaryHeroSection>
 
         <View style={styles.fixedPanel}>
           <View style={styles.toolbar}>
@@ -255,33 +263,31 @@ export default function StudentsScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.searchCard, { backgroundColor: colors.surface }]}>
+          <AppCard padding="sm" radius={16} style={{ marginTop: 12 }}>
             <View style={styles.searchSection}>
-              <View style={[styles.searchBar, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-                <Ionicons name="search" size={18} color={colors.textTertiary} />
-                <TextInput
-                  style={[styles.searchInput, { color: colors.text }]}
-                  placeholder="搜索学生姓名或学号"
-                  placeholderTextColor={colors.textTertiary}
-                  value={searchText}
-                  onChangeText={setSearchText}
-                />
-                {searchText ? (
-                  <TouchableOpacity onPress={() => setSearchText('')}>
-                    <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              <TouchableOpacity
-                style={[styles.importBtn, { borderColor: colors.primary }]}
+              <AppInput
+                iconName="search"
+                placeholder="搜索学生姓名或学号"
+                value={searchText}
+                onChangeText={setSearchText}
+                containerStyle={{ flex: 1 }}
+              />
+              <AppButton
+                label="导入"
+                leftIconName="cloud-upload-outline"
+                variant="outline"
+                size="md"
+                fullWidth={false}
                 onPress={handleImport}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="cloud-upload-outline" size={14} color={colors.primary} />
-                <Text style={[styles.importBtnText, { color: colors.primary }]}>导入</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                style={styles.importBtn}
+                textStyle={styles.importBtnText}
+              />
+              <AppButton
+                label="新增"
+                leftIconName="add"
+                variant="solid"
+                size="md"
+                fullWidth={false}
                 onPress={() => {
                   setNewStudent({
                     name: '',
@@ -293,11 +299,9 @@ export default function StudentsScreen() {
                   });
                   setShowAddModal(true);
                 }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={16} color="#FFF" />
-                <Text style={styles.addBtnText}>新增</Text>
-              </TouchableOpacity>
+                style={styles.addBtn}
+                textStyle={styles.addBtnText}
+              />
             </View>
 
             <View style={styles.searchFooter}>
@@ -306,17 +310,13 @@ export default function StudentsScreen() {
               </Text>
               <Text style={[styles.searchFooterText, { color: colors.textTertiary }]}>输入姓名或学号即可快速找到学生</Text>
             </View>
-          </View>
+          </AppCard>
 
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>班级花名册</Text>
-              <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>含家长联系方式</Text>
-            </View>
-            <View style={[styles.sectionBadge, { backgroundColor: colors.primaryLight }]}>
-              <Text style={[styles.sectionBadgeText, { color: colors.primary }]}>{visibleCount}</Text>
-            </View>
-          </View>
+          <AppSectionHeader
+            title="班级花名册"
+            count={visibleCount}
+            style={{ paddingTop: 12, paddingBottom: 8, marginBottom: 0 }}
+          />
         </View>
       </View>
 
@@ -332,7 +332,7 @@ export default function StudentsScreen() {
           <View style={styles.emptyState}>
             <Ionicons name="people-outline" size={56} color={colors.textTertiary} />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {searchText ? '没有找到匹配的学生' : '暂无学生，点击”新增”或”导入”添加'}
+              {searchText ? '没有找到匹配的学生' : '暂无学生，点击"新增"或"导入"添加'}
             </Text>
           </View>
         }
@@ -349,27 +349,21 @@ export default function StudentsScreen() {
             </View>
 
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>姓名 *</Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
-                  placeholder="请输入学生姓名"
-                  placeholderTextColor={colors.textTertiary}
-                  value={newStudent.name}
-                  onChangeText={(text) => setNewStudent({ ...newStudent, name: text })}
-                />
-              </View>
+              <AppInput
+                label="姓名 *"
+                placeholder="请输入学生姓名"
+                value={newStudent.name}
+                onChangeText={(text: string) => setNewStudent({ ...newStudent, name: text })}
+                containerStyle={styles.formGroup}
+              />
 
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>学号 *</Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
-                  placeholder="请输入学号"
-                  placeholderTextColor={colors.textTertiary}
-                  value={newStudent.studentNo}
-                  onChangeText={(text) => setNewStudent({ ...newStudent, studentNo: text })}
-                />
-              </View>
+              <AppInput
+                label="学号 *"
+                placeholder="请输入学号"
+                value={newStudent.studentNo}
+                onChangeText={(text: string) => setNewStudent({ ...newStudent, studentNo: text })}
+                containerStyle={styles.formGroup}
+              />
 
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>性别</Text>
@@ -444,43 +438,39 @@ export default function StudentsScreen() {
                 </View>
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>家长姓名</Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
-                  placeholder="请输入家长姓名"
-                  placeholderTextColor={colors.textTertiary}
-                  value={newStudent.parentName}
-                  onChangeText={(text) => setNewStudent({ ...newStudent, parentName: text })}
-                />
-              </View>
+              <AppInput
+                label="家长姓名"
+                placeholder="请输入家长姓名"
+                value={newStudent.parentName}
+                onChangeText={(text: string) => setNewStudent({ ...newStudent, parentName: text })}
+                containerStyle={styles.formGroup}
+              />
 
-              <View style={styles.formGroup}>
-                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>家长电话</Text>
-                <TextInput
-                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, color: colors.text, borderColor: colors.border }]}
-                  placeholder="请输入家长电话"
-                  placeholderTextColor={colors.textTertiary}
-                  keyboardType="phone-pad"
-                  value={newStudent.parentPhone}
-                  onChangeText={(text) => setNewStudent({ ...newStudent, parentPhone: text })}
-                />
-              </View>
+              <AppInput
+                label="家长电话"
+                placeholder="请输入家长电话"
+                keyboardType="phone-pad"
+                value={newStudent.parentPhone}
+                onChangeText={(text: string) => setNewStudent({ ...newStudent, parentPhone: text })}
+                containerStyle={styles.formGroup}
+              />
             </ScrollView>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.modalCancelBtn, { borderColor: colors.border }]}
+              <AppButton
+                label="取消"
+                variant="outline"
+                size="md"
                 onPress={() => setShowAddModal(false)}
-              >
-                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalConfirmBtn, { backgroundColor: colors.primary }]}
+                style={{ flex: 1 }}
+              />
+              <AppButton
+                label="确认添加"
+                variant="solid"
+                size="md"
                 onPress={handleAddStudent}
-              >
-                <Text style={styles.modalConfirmText}>确认添加</Text>
-              </TouchableOpacity>
+                style={{ flex: 1.5 }}
+              />
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -538,31 +528,6 @@ const styles = StyleSheet.create({
   },
   studentList: {
     flex: 1,
-  },
-  summaryCard: {
-    marginHorizontal: -20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 12,
-  },
-  summaryDecorLarge: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -80,
-    right: -50,
-  },
-  summaryDecorSmall: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -20,
-    left: -30,
   },
   summaryEyebrow: {
     fontSize: 12,
@@ -655,62 +620,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   classPkItemText: { flex: 1, fontSize: 15, fontWeight: '700' },
-  searchCard: {
-    marginTop: 12,
-    borderRadius: 16,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
   searchSection: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 44,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    gap: 10,
-    borderWidth: 1,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    height: '100%',
-    outlineStyle: 'none',
-  } as any,
   importBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     paddingHorizontal: 14,
     height: 36,
     borderRadius: 10,
-    borderWidth: 1,
   },
   importBtnText: {
     fontSize: 12,
-    fontWeight: '600',
   },
   addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     paddingHorizontal: 14,
     height: 36,
     borderRadius: 10,
   },
   addBtnText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
   },
   searchFooter: {
     flexDirection: 'row',
@@ -723,33 +652,6 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontSize: 13,
-  },
-  sectionHeader: {
-    paddingTop: 12,
-    paddingBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  sectionSubtitle: {
-    fontSize: 12,
-    marginTop: 3,
-  },
-  sectionBadge: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-  },
-  sectionBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
   },
   list: {
     paddingHorizontal: 14,
@@ -869,14 +771,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 8,
   },
-  formInput: {
-    height: 44,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    borderWidth: 1,
-    outlineStyle: 'none',
-  } as any,
   chipRow: {
     flexDirection: 'row',
     gap: 8,
@@ -900,29 +794,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 20,
     paddingTop: 8,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  modalCancelText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modalConfirmBtn: {
-    flex: 1.5,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalConfirmText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFF',
   },
 });

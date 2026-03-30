@@ -4,6 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/theme';
+import { PrimaryHeroSection } from '../src/components/ui/PrimaryHeroSection';
+import { AppCard } from '../src/components/ui/AppCard';
+import { AppButton } from '../src/components/ui/AppButton';
 
 type LeaveStatus = 'pending' | 'approved' | 'rejected';
 
@@ -106,7 +109,7 @@ export default function LeaveApprovalScreen() {
       : { label: '已拒绝', bg: colors.palette.red.bg, text: colors.palette.red.text, icon: 'close-circle' as const };
 
     return (
-      <View key={leave.id} style={[styles.leaveCard, { backgroundColor: colors.surface }]}> 
+      <AppCard key={leave.id} radius={18} padding="sm" style={styles.leaveCard}> 
         <View style={styles.cardHeader}>
           <View style={styles.studentBlock}>
             <View style={[styles.avatar, { backgroundColor: avatarColor }]}> 
@@ -159,25 +162,27 @@ export default function LeaveApprovalScreen() {
 
         {pending && (
           <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.rejectButton, { backgroundColor: colors.palette.red.bg }]}
-              activeOpacity={0.75}
+            <AppButton
+              label="拒绝"
+              leftIconName="close-circle"
+              variant="soft"
+              tone="error"
+              size="md"
               onPress={() => handleReject(leave)}
-            >
-              <Ionicons name="close-circle" size={16} color={colors.palette.red.text} />
-              <Text style={[styles.rejectButtonText, { color: colors.palette.red.text }]}>拒绝</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.approveButton, { backgroundColor: colors.primary }]}
-              activeOpacity={0.82}
+              style={styles.actionButton}
+            />
+            <AppButton
+              label="同意"
+              leftIconName="checkmark-circle"
+              variant="solid"
+              tone="primary"
+              size="md"
               onPress={() => handleApprove(leave)}
-            >
-              <Ionicons name="checkmark-circle" size={16} color="#FFF" />
-              <Text style={styles.approveButtonText}>同意</Text>
-            </TouchableOpacity>
+              style={styles.actionButton}
+            />
           </View>
         )}
-      </View>
+      </AppCard>
     );
   };
 
@@ -186,9 +191,7 @@ export default function LeaveApprovalScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
-        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+        <PrimaryHeroSection paddingBottom={10} style={styles.heroCard}>
           <View style={styles.heroTopBar}>
             <TouchableOpacity
               style={styles.heroBackButton}
@@ -220,9 +223,9 @@ export default function LeaveApprovalScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </PrimaryHeroSection>
 
-        <View style={[styles.tabCard, { backgroundColor: colors.surface }]}>
+        <AppCard radius={18} padding="sm" style={styles.tabCard}>
           <View style={[styles.tabInner, { backgroundColor: colors.surfaceSecondary }]}>
             {(['pending', 'processed'] as const).map((tab) => {
               const selected = selectedTab === tab;
@@ -239,7 +242,7 @@ export default function LeaveApprovalScreen() {
               );
             })}
           </View>
-        </View>
+        </AppCard>
 
         {selectedTab === 'processed' && (
           <View style={styles.overviewRow}>
@@ -247,13 +250,13 @@ export default function LeaveApprovalScreen() {
               { label: '已批准', value: approvedCount.toString(), colorKey: 'green' as const, icon: 'checkmark-circle' as const },
               { label: '已拒绝', value: rejectedCount.toString(), colorKey: 'red' as const, icon: 'close-circle' as const },
             ].map((item) => (
-              <View key={item.label} style={[styles.overviewCard, { backgroundColor: colors.surface }]}> 
-                <View style={[styles.overviewIcon, { backgroundColor: colors.palette[item.colorKey].bg }]}> 
+              <AppCard key={item.label} radius={18} padding="sm" style={styles.overviewCard}>
+                <View style={[styles.overviewIcon, { backgroundColor: colors.palette[item.colorKey].bg }]}>
                   <Ionicons name={item.icon} size={16} color={colors.palette[item.colorKey].text} />
                 </View>
                 <Text style={[styles.overviewValue, { color: colors.text }]}>{item.value}</Text>
                 <Text style={[styles.overviewLabel, { color: colors.textTertiary }]}>{item.label}</Text>
-              </View>
+              </AppCard>
             ))}
           </View>
         )}
@@ -263,11 +266,11 @@ export default function LeaveApprovalScreen() {
         {currentList.length > 0 ? (
           <View style={styles.listSection}>{currentList.map((leave) => renderLeaveCard(leave, selectedTab === 'pending'))}</View>
         ) : (
-          <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}> 
+          <AppCard padding="lg" style={styles.emptyCard}>
             <Ionicons name="document-text-outline" size={32} color={colors.textTertiary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>{selectedTab === 'pending' ? '暂无待审批申请' : '暂无已处理记录'}</Text>
             <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{selectedTab === 'pending' ? '家长提交的新申请会实时显示在这里' : '已处理的申请会保存在这里，方便后续查询'}</Text>
-          </View>
+          </AppCard>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -280,12 +283,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 14, paddingTop: 0, paddingBottom: 24 },
   heroCard: {
     marginHorizontal: -14,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    overflow: 'hidden',
     marginBottom: 12,
   },
   heroTopBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
@@ -299,25 +296,23 @@ const styles = StyleSheet.create({
   },
   heroTopSpacer: { width: 34, height: 34 },
   heroPageTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  heroDecorLarge: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -80, right: -50 },
-  heroDecorSmall: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -20, left: -30 },
   heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
   heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
   heroStatsRow: { flexDirection: 'row', marginTop: 8, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)', paddingVertical: 4 },
   heroStatItem: { flex: 1, alignItems: 'center', paddingVertical: 5 },
   heroStatValue: { color: '#FFF', fontSize: 16, fontWeight: '800' },
   heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, marginTop: 2 },
-  tabCard: { borderRadius: 18, padding: 10, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
+  tabCard: { marginBottom: 12 },
   tabInner: { flexDirection: 'row', borderRadius: 14, padding: 4 },
   tabItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 8, borderRadius: 12 },
   tabText: { fontSize: 13, fontWeight: '700' },
   overviewRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  overviewCard: { flex: 1, borderRadius: 18, padding: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
+  overviewCard: { flex: 1, alignItems: 'center' },
   overviewIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   overviewValue: { fontSize: 18, fontWeight: '800', marginTop: 8 },
   overviewLabel: { fontSize: 11, marginTop: 3 },
   listSection: { gap: 10 },
-  leaveCard: { borderRadius: 18, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
+  leaveCard: { padding: 14 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   studentBlock: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   avatar: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
@@ -339,11 +334,8 @@ const styles = StyleSheet.create({
   relationBadgeText: { fontSize: 11, fontWeight: '700' },
   createdAt: { fontSize: 12, marginTop: 8 },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  rejectButton: { flex: 1, height: 42, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  rejectButtonText: { fontSize: 14, fontWeight: '700' },
-  approveButton: { flex: 1, height: 42, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  approveButtonText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
-  emptyCard: { borderRadius: 20, padding: 28, alignItems: 'center' },
+  actionButton: { flex: 1 },
+  emptyCard: { alignItems: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 14 },
   emptyText: { fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: 'center' },
 });

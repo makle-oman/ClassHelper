@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../src/theme';
+import { PrimaryHeroSection, AppCard, AppSectionHeader } from '../../src/components/ui';
 
 interface StudentDetail {
   id: string;
@@ -197,8 +198,7 @@ export default function StudentDetailScreen() {
       {/* 顶部导航 */}
       <View style={styles.topSection}>
         {/* 学生头像卡片 */}
-        <View style={[styles.headerCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.headerDecorCircle, { backgroundColor: 'rgba(255,255,255,0.06)' }]} />
+        <PrimaryHeroSection paddingTop={14} paddingBottom={20} paddingHorizontal={14}>
           <View style={styles.headerTopBar}>
             <TouchableOpacity
               style={styles.headerIconButton}
@@ -258,7 +258,7 @@ export default function StudentDetailScreen() {
               </View>
             </View>
           </View>
-        </View>
+        </PrimaryHeroSection>
 
         <View style={styles.overviewRow}>
           {[
@@ -266,10 +266,10 @@ export default function StudentDetailScreen() {
             { label: '最高分', value: highestScore.toString(), color: colors.success },
             { label: '出勤率', value: `${attendanceRate}%`, color: colors.info },
           ].map((item) => (
-            <View key={item.label} style={[styles.overviewCard, { backgroundColor: colors.surface }]}>
+            <AppCard key={item.label} radius={18} padding="none" style={styles.overviewCard}>
               <Text style={[styles.overviewValue, { color: item.color }]}>{item.value}</Text>
               <Text style={[styles.overviewLabel, { color: colors.textTertiary }]}>{item.label}</Text>
-            </View>
+            </AppCard>
           ))}
         </View>
       </View>
@@ -280,11 +280,8 @@ export default function StudentDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionDot, { backgroundColor: colors.primary }]} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>基本信息</Text>
-          </View>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <AppSectionHeader title="基本信息" style={{ paddingHorizontal: 14 }} />
+          <AppCard radius={14} padding="none" style={{ marginHorizontal: 20 }}>
             {[
               { label: '性别', value: student.gender, icon: student.gender === '男' ? 'male' as const : 'female' as const },
               { label: '出生日期', value: student.birthDate, icon: 'calendar-outline' as const },
@@ -301,16 +298,13 @@ export default function StudentDetailScreen() {
                 {i < arr.length - 1 && <View style={[styles.divider, { backgroundColor: colors.divider }]} />}
               </View>
             ))}
-          </View>
+          </AppCard>
         </View>
 
         {/* 家长信息 */}
         <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionDot, { backgroundColor: colors.info }]} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>家长信息</Text>
-          </View>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <AppSectionHeader title="家长信息" style={{ paddingHorizontal: 14 }} />
+          <AppCard radius={14} padding="none" style={{ marginHorizontal: 20 }}>
             <View style={styles.infoRow}>
               <View style={styles.infoLeft}>
                 <Ionicons name="person-outline" size={16} color={colors.textTertiary} />
@@ -339,20 +333,17 @@ export default function StudentDetailScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </AppCard>
         </View>
 
         {/* 成绩概览 */}
         <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionDot, { backgroundColor: colors.warning }]} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>成绩概览</Text>
-          </View>
+          <AppSectionHeader title="成绩概览" style={{ paddingHorizontal: 14 }} />
           <View style={styles.scoreCards}>
             {student.recentScores.map((item, i) => {
               const sc = getSubjectColor(item.subject);
               return (
-                <View key={i} style={[styles.scoreCard, { backgroundColor: colors.surface }]}>
+                <AppCard key={i} radius={14} padding="none" style={{ padding: 14 }}>
                   <View style={styles.scoreCardTop}>
                     <View style={[styles.subjectBadge, { backgroundColor: sc.bg }]}>
                       <Text style={[styles.subjectBadgeText, { color: sc.text }]}>{item.subject}</Text>
@@ -374,7 +365,7 @@ export default function StudentDetailScreen() {
                       ]}
                     />
                   </View>
-                </View>
+                </AppCard>
               );
             })}
           </View>
@@ -382,12 +373,9 @@ export default function StudentDetailScreen() {
 
         {/* 综合分析 */}
         <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionDot, { backgroundColor: colors.palette.purple.text }]} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>综合分析</Text>
-          </View>
+          <AppSectionHeader title="综合分析" style={{ paddingHorizontal: 14 }} />
 
-          <View style={[styles.analysisCard, { backgroundColor: colors.surface }]}>
+          <AppCard radius={14} style={{ marginHorizontal: 20 }}>
             {/* 总体等级 */}
             <View style={styles.analysisLevelRow}>
               <View style={styles.analysisLevelLeft}>
@@ -429,16 +417,13 @@ export default function StudentDetailScreen() {
               <Ionicons name="chatbubble-outline" size={14} color={colors.textTertiary} />
               <Text style={[styles.commentText, { color: colors.textSecondary }]}>{analysis.comment}</Text>
             </View>
-          </View>
+          </AppCard>
         </View>
 
         {/* 考勤统计 */}
         <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <View style={[styles.sectionDot, { backgroundColor: colors.success }]} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>考勤统计</Text>
-          </View>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
+          <AppSectionHeader title="考勤统计" style={{ paddingHorizontal: 14 }} />
+          <AppCard radius={14} padding="none" style={{ marginHorizontal: 20 }}>
             <Text style={[styles.attendanceSemester, { color: colors.textTertiary }]}>本学期</Text>
             <View style={styles.attendanceGrid}>
               {[
@@ -471,7 +456,7 @@ export default function StudentDetailScreen() {
                 />
               </View>
             </View>
-          </View>
+          </AppCard>
         </View>
 
         <View style={{ height: 40 }} />
@@ -596,22 +581,6 @@ const styles = StyleSheet.create({
   },
 
   // Header card
-  headerCard: {
-    paddingTop: 14,
-    paddingBottom: 20,
-    paddingHorizontal: 14,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-  },
-  headerDecorCircle: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    top: -30,
-    right: -20,
-  },
   headerTopBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -708,14 +677,8 @@ const styles = StyleSheet.create({
   },
   overviewCard: {
     flex: 1,
-    borderRadius: 18,
     paddingVertical: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
   },
   overviewValue: {
     fontSize: 18,
@@ -729,34 +692,6 @@ const styles = StyleSheet.create({
   // Section
   section: {
     marginTop: 20,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    marginBottom: 10,
-  },
-  sectionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  // Card
-  card: {
-    marginHorizontal: 20,
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
   },
 
   // Info rows
@@ -802,15 +737,6 @@ const styles = StyleSheet.create({
   scoreCards: {
     paddingHorizontal: 14,
     gap: 10,
-  },
-  scoreCard: {
-    borderRadius: 14,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
   },
   scoreCardTop: {
     flexDirection: 'row',
@@ -912,7 +838,6 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
 
   // 综合分析
-  analysisCard: { marginHorizontal: 20, borderRadius: 14, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1 },
   analysisLevelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   analysisLevelLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   analysisLevelLabel: { fontSize: 13 },

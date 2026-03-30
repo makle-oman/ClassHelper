@@ -6,6 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../src/theme';
+import { PrimaryHeroSection } from '../../src/components/ui/PrimaryHeroSection';
+import { AppCard } from '../../src/components/ui/AppCard';
+import { AppChip } from '../../src/components/ui/AppChip';
+import { AppSectionHeader } from '../../src/components/ui/AppSectionHeader';
 
 interface StudentScore {
   id: string;
@@ -81,10 +85,12 @@ export default function ExamDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={[styles.topSection, { backgroundColor: colors.primary }]}>
-        <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.08)' }]} />
-        <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
-
+      <PrimaryHeroSection
+        bottomRadius={22}
+        paddingHorizontal={14}
+        paddingTop={4}
+        paddingBottom={6}
+      >
         <View style={styles.navBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.navBack}>
             <Ionicons name="chevron-back" size={20} color="#FFF" />
@@ -123,7 +129,7 @@ export default function ExamDetailScreen() {
             ))}
           </View>
         </View>
-      </View>
+      </PrimaryHeroSection>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
@@ -131,7 +137,7 @@ export default function ExamDetailScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.pageContent}>
-            <View style={[styles.statsCard, { backgroundColor: colors.surface }]}>
+            <AppCard padding="sm" radius={18} style={{ marginTop: 6 }}>
               <View style={styles.statsCardTopRow}>
                 <Text style={[styles.statsCardTitle, { color: colors.text }]}>本次概览</Text>
                 <Text style={[styles.statsCardHint, { color: colors.primary }]}>录入 {completionRate}%</Text>
@@ -165,21 +171,30 @@ export default function ExamDetailScreen() {
                     { label: '优秀率', value: `${excellentRate}%`, tone: colors.successLight, text: colors.success },
                     { label: '待录入', value: `${pendingCount}人`, tone: colors.palette.orange.bg, text: colors.palette.orange.text },
                   ].map((item) => (
-                    <View key={item.label} style={[styles.progressMetaChip, { backgroundColor: item.tone }]}>
-                      <Text style={[styles.progressMetaLabel, { color: item.text }]}>{item.label}</Text>
-                      <Text style={[styles.progressMetaValue, { color: item.text }]}>{item.value}</Text>
-                    </View>
+                    <AppChip
+                      key={item.label}
+                      label={`${item.label} ${item.value}`}
+                      style={{
+                        flex: 1,
+                        backgroundColor: item.tone,
+                        borderColor: item.tone,
+                        borderRadius: 12,
+                        paddingHorizontal: 8,
+                        paddingVertical: 6,
+                        justifyContent: 'center',
+                      }}
+                      textStyle={{ color: item.text, fontSize: 10, fontWeight: '700' }}
+                    />
                   ))}
                 </View>
               </View>
-            </View>
+            </AppCard>
 
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>学生成绩</Text>
-              <View style={[styles.sectionBadge, { backgroundColor: colors.primaryLight }]}>
-                <Text style={[styles.sectionBadgeText, { color: colors.primary }]}>满分 {FULL_SCORE}</Text>
-              </View>
-            </View>
+            <AppSectionHeader
+              title="学生成绩"
+              actionLabel={`满分 ${FULL_SCORE}`}
+              style={{ marginTop: 10, marginBottom: 6 }}
+            />
 
             <View style={styles.studentList}>
               {students.map((student, index) => {
@@ -201,19 +216,20 @@ export default function ExamDetailScreen() {
                     : colors.palette.red.text;
 
                 return (
-                  <View
+                  <AppCard
                     key={student.id}
+                    padding="none"
+                    radius={16}
+                    variant={isAbsent ? 'secondary' : 'surface'}
                     style={[
-                      styles.studentCard,
+                      styles.studentCardInner,
                       {
-                        backgroundColor: colors.surface,
                         borderColor: isAbsent
                           ? colors.border
                           : isFail
                             ? colors.error + '22'
                             : colors.borderLight,
                       },
-                      isAbsent && { backgroundColor: colors.surfaceSecondary },
                     ]}
                   >
                     <View style={[styles.studentIndexBadge, { backgroundColor: isFail ? colors.errorLight : colors.surfaceSecondary }]}>
@@ -228,20 +244,26 @@ export default function ExamDetailScreen() {
                       <View style={styles.studentNameRow}>
                         <Text style={[styles.studentName, { color: isAbsent ? colors.textSecondary : colors.text }]}>{student.name}</Text>
                         {isAbsent && (
-                          <View style={[styles.statusChip, { backgroundColor: colors.errorLight }]}>
-                            <Text style={[styles.statusChipText, { color: colors.error }]}>缺考</Text>
-                          </View>
+                          <AppChip
+                            label="缺考"
+                            style={{ backgroundColor: colors.errorLight, borderColor: colors.errorLight, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 999 }}
+                            textStyle={{ color: colors.error, fontSize: 10 }}
+                          />
                         )}
                         {isFail && !isAbsent && (
-                          <View style={[styles.statusChip, { backgroundColor: colors.error + '12' }]}>
-                            <Text style={[styles.statusChipText, { color: colors.error }]}>待提升</Text>
-                          </View>
+                          <AppChip
+                            label="待提升"
+                            style={{ backgroundColor: colors.error + '12', borderColor: colors.error + '12', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 999 }}
+                            textStyle={{ color: colors.error, fontSize: 10 }}
+                          />
                         )}
                         {isExcellent && (
-                          <View style={[styles.statusChip, { backgroundColor: '#FFF7E8' }]}>
-                            <Ionicons name="star" size={10} color="#F59E0B" />
-                            <Text style={[styles.statusChipText, { color: '#D97706' }]}>优秀</Text>
-                          </View>
+                          <AppChip
+                            iconName="star"
+                            label="优秀"
+                            style={{ backgroundColor: '#FFF7E8', borderColor: '#FFF7E8', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 999 }}
+                            textStyle={{ color: '#D97706', fontSize: 10 }}
+                          />
                         )}
                       </View>
                       <Text style={[styles.studentNo, { color: colors.textTertiary }]}>{student.studentNo}</Text>
@@ -302,7 +324,7 @@ export default function ExamDetailScreen() {
                         </TouchableOpacity>
                       </View>
                     )}
-                  </View>
+                  </AppCard>
                 );
               })}
             </View>
@@ -330,14 +352,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
 
   // Nav
-  topSection: {
-    paddingHorizontal: 14,
-    paddingTop: 4,
-    paddingBottom: 6,
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
-    overflow: 'hidden',
-  },
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -368,40 +382,12 @@ const styles = StyleSheet.create({
   // Page
   scrollContent: { paddingBottom: 104 },
   pageContent: { paddingHorizontal: 12, paddingTop: 2 },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  sectionTitle: { fontSize: 15, fontWeight: '800' },
-  sectionSubtitle: { marginTop: 2, fontSize: 11, lineHeight: 16 },
-  sectionBadge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 },
-  sectionBadgeText: { fontSize: 11, fontWeight: '700' },
 
   // Hero
   heroCard: {
     paddingHorizontal: 0,
     paddingTop: 5,
     paddingBottom: 0,
-  },
-  heroDecorLarge: {
-    position: 'absolute',
-    width: 156,
-    height: 156,
-    borderRadius: 78,
-    top: -68,
-    right: -18,
-  },
-  heroDecorSmall: {
-    position: 'absolute',
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    bottom: -24,
-    right: 28,
   },
   heroCompactRow: {
     flexDirection: 'row',
@@ -447,16 +433,6 @@ const styles = StyleSheet.create({
   heroStatValue: { color: '#FFF', fontSize: 13, fontWeight: '800', textAlign: 'center' },
 
   // Stats
-  statsCard: {
-    marginTop: 6,
-    borderRadius: 18,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 5,
-    elevation: 1,
-  },
   statsCardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -493,32 +469,15 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: '100%', borderRadius: 999 },
   progressMetaRow: { flexDirection: 'row', gap: 6, marginTop: 8 },
-  progressMetaChip: {
-    flex: 1,
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    alignItems: 'center',
-    gap: 2,
-  },
-  progressMetaLabel: { fontSize: 9, fontWeight: '700' },
-  progressMetaValue: { fontSize: 11, fontWeight: '800' },
 
   // Students
   studentList: { gap: 7 },
-  studentCard: {
-    borderRadius: 16,
-    borderWidth: 1,
+  studentCardInner: {
     paddingHorizontal: 14,
     paddingVertical: 9,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.025,
-    shadowRadius: 4,
-    elevation: 1,
   },
   studentIndexBadge: {
     width: 26,
@@ -540,15 +499,6 @@ const styles = StyleSheet.create({
   studentNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   studentName: { fontSize: 13, fontWeight: '700' },
   studentNo: { fontSize: 10, marginTop: 2 },
-  statusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 999,
-  },
-  statusChipText: { fontSize: 10, fontWeight: '700' },
   scoreArea: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   scoreInputWrapper: { position: 'relative' },
   scoreInput: {

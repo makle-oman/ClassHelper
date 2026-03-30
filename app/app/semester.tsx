@@ -1,10 +1,14 @@
-﻿import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../src/theme';
 import { semesterApi } from '../src/services/api';
+import { PrimaryHeroSection } from '../src/components/ui/PrimaryHeroSection';
+import { AppCard } from '../src/components/ui/AppCard';
+import { AppButton } from '../src/components/ui/AppButton';
+import { AppSectionHeader } from '../src/components/ui/AppSectionHeader';
 
 type SemesterStatus = 'active' | 'ended' | 'archived';
 
@@ -167,9 +171,10 @@ export default function SemesterScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
-        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+        <PrimaryHeroSection
+          paddingBottom={10}
+          style={{ marginHorizontal: -14, marginBottom: 12 }}
+        >
           <View style={styles.heroTopBar}>
             <TouchableOpacity
               style={styles.heroBackButton}
@@ -207,25 +212,25 @@ export default function SemesterScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </PrimaryHeroSection>
 
         {activeSemester && (
-          <View style={[styles.activeCard, { backgroundColor: colors.surface }]}>
+          <AppCard radius={18} padding="sm" style={{ padding: 14, marginBottom: 14 }}>
             <View style={styles.sectionRow}>
               <View>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>当前学期进度</Text>
                 <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>当前正在进行的学期信息</Text>
               </View>
-              <View style={[styles.activeBadge, { backgroundColor: colors.primaryLight }]}> 
+              <View style={[styles.activeBadge, { backgroundColor: colors.primaryLight }]}>
                 <Text style={[styles.activeBadgeText, { color: colors.primary }]}>进行中</Text>
               </View>
             </View>
             <View style={styles.detailRow}>
-              <View style={[styles.detailItem, { backgroundColor: colors.surfaceSecondary }]}> 
+              <View style={[styles.detailItem, { backgroundColor: colors.surfaceSecondary }]}>
                 <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>起止日期</Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>{formatDate(activeSemester.startDate)} - {formatDate(activeSemester.endDate)}</Text>
               </View>
-              <View style={[styles.detailItem, { backgroundColor: colors.surfaceSecondary }]}> 
+              <View style={[styles.detailItem, { backgroundColor: colors.surfaceSecondary }]}>
                 <Text style={[styles.detailLabel, { color: colors.textTertiary }]}>总周数</Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>{activeSemester.weeksCount} 周</Text>
               </View>
@@ -234,25 +239,21 @@ export default function SemesterScreen() {
               <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>学期进度</Text>
               <Text style={[styles.progressValue, { color: colors.primary }]}>{activeSemester.currentWeek}/{activeSemester.weeksCount}</Text>
             </View>
-            <View style={[styles.progressTrack, { backgroundColor: colors.primaryLight }]}> 
+            <View style={[styles.progressTrack, { backgroundColor: colors.primaryLight }]}>
               <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${activeProgress}%` }]} />
             </View>
-          </View>
+          </AppCard>
         )}
 
-        <View style={styles.sectionRow}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>历史学期</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>可重新启用，也可归档为只读</Text>
-          </View>
-        </View>
+        <AppSectionHeader title="历史学期" style={{ marginBottom: 10 }} />
+        <Text style={[styles.sectionHint, { color: colors.textTertiary, marginBottom: 10 }]}>可重新启用，也可归档为只读</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {endedSemesters.length > 0 ? (
           <View style={styles.listSection}>
             {endedSemesters.map((semester) => (
-              <View key={semester.id} style={[styles.semesterCard, { backgroundColor: colors.surface }]}> 
+              <AppCard key={semester.id} radius={18} padding="sm" style={{ padding: 14 }}>
                 <View style={styles.cardHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.cardTitle, { color: colors.text }]}>{semester.name}</Text>
@@ -260,49 +261,49 @@ export default function SemesterScreen() {
                       {formatDate(semester.startDate)} - {formatDate(semester.endDate)} · {semester.weeksCount} 周
                     </Text>
                   </View>
-                  <View style={[styles.statusChip, { backgroundColor: colors.surfaceSecondary }]}> 
+                  <View style={[styles.statusChip, { backgroundColor: colors.surfaceSecondary }]}>
                     <Text style={[styles.statusChipText, { color: colors.textTertiary }]}>已结束</Text>
                   </View>
                 </View>
-                <View style={[styles.cardFooter, { borderTopColor: colors.divider }]}> 
-                  <TouchableOpacity
-                    style={[styles.secondaryButton, { backgroundColor: colors.primaryLight }]}
-                    activeOpacity={0.75}
+                <View style={[styles.cardFooter, { borderTopColor: colors.divider }]}>
+                  <AppButton
+                    label="设为当前"
+                    variant="soft"
+                    tone="primary"
+                    size="md"
+                    leftIconName="refresh-outline"
                     onPress={() => handleSetActive(semester)}
-                  >
-                    <Ionicons name="refresh-outline" size={14} color={colors.primary} />
-                    <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>设为当前</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.secondaryButton, { backgroundColor: colors.palette.orange.bg }]}
-                    activeOpacity={0.75}
+                    style={{ flex: 1, height: 38, borderRadius: 12 }}
+                    textStyle={{ fontSize: 13 }}
+                  />
+                  <AppButton
+                    label="归档"
+                    variant="soft"
+                    tone="error"
+                    size="md"
+                    leftIconName="archive-outline"
                     onPress={() => handleArchive(semester)}
-                  >
-                    <Ionicons name="archive-outline" size={14} color={colors.palette.orange.text} />
-                    <Text style={[styles.secondaryButtonText, { color: colors.palette.orange.text }]}>归档</Text>
-                  </TouchableOpacity>
+                    style={{ flex: 1, height: 38, borderRadius: 12, backgroundColor: colors.palette.orange.bg }}
+                    textStyle={{ fontSize: 13, color: colors.palette.orange.text }}
+                  />
                 </View>
-              </View>
+              </AppCard>
             ))}
           </View>
         ) : (
-          <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}> 
+          <AppCard radius={20} padding="lg" style={{ marginBottom: 14 }}>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>暂无历史学期</Text>
             <Text style={[styles.emptyText, { color: colors.textTertiary }]}>创建新学期后，往期学期会显示在这里。</Text>
-          </View>
+          </AppCard>
         )}
 
-        <View style={styles.sectionRow}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>已归档学期</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>归档后仅可查看，不可修改</Text>
-          </View>
-        </View>
+        <AppSectionHeader title="已归档学期" style={{ marginBottom: 10 }} />
+        <Text style={[styles.sectionHint, { color: colors.textTertiary, marginBottom: 10 }]}>归档后仅可查看，不可修改</Text>
 
         {archivedSemesters.length > 0 ? (
           <View style={styles.listSection}>
             {archivedSemesters.map((semester) => (
-              <View key={semester.id} style={[styles.semesterCard, { backgroundColor: colors.surface, opacity: 0.92 }]}> 
+              <AppCard key={semester.id} radius={18} padding="sm" style={{ padding: 14, opacity: 0.92 }}>
                 <View style={styles.cardHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.cardTitle, { color: colors.text }]}>{semester.name}</Text>
@@ -311,29 +312,29 @@ export default function SemesterScreen() {
                     </Text>
                   </View>
                   <View style={styles.archivedBadges}>
-                    <View style={[styles.statusChip, { backgroundColor: colors.surfaceSecondary }]}> 
+                    <View style={[styles.statusChip, { backgroundColor: colors.surfaceSecondary }]}>
                       <Text style={[styles.statusChipText, { color: colors.textTertiary }]}>已归档</Text>
                     </View>
-                    <View style={[styles.lockChip, { backgroundColor: colors.palette.orange.bg }]}> 
+                    <View style={[styles.lockChip, { backgroundColor: colors.palette.orange.bg }]}>
                       <Ionicons name="lock-closed" size={10} color={colors.palette.orange.text} />
                       <Text style={[styles.lockChipText, { color: colors.palette.orange.text }]}>只读</Text>
                     </View>
                   </View>
                 </View>
-              </View>
+              </AppCard>
             ))}
           </View>
         ) : (
-          <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}> 
+          <AppCard radius={20} padding="lg" style={{ marginBottom: 14 }}>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>暂无归档学期</Text>
             <Text style={[styles.emptyText, { color: colors.textTertiary }]}>学期结束后归档，课程表、成绩和考勤记录仍可查看。</Text>
-          </View>
+          </AppCard>
         )}
       </ScrollView>
 
       <Modal visible={showCreateModal} transparent animationType="fade" onRequestClose={closeCreateModal}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}> 
+          <AppCard radius={24} padding="none" style={{ width: '100%', maxWidth: 420, overflow: 'hidden' }}>
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>创建学期</Text>
@@ -413,22 +414,25 @@ export default function SemesterScreen() {
             </View>
 
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.modalCancelButton, { borderColor: colors.border }]}
-                activeOpacity={0.75}
+              <AppButton
+                label="取消"
+                variant="outline"
+                tone="primary"
+                size="lg"
                 onPress={closeCreateModal}
-              >
-                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
-                activeOpacity={0.82}
+                style={{ flex: 1, borderColor: colors.border }}
+                textStyle={{ color: colors.textSecondary }}
+              />
+              <AppButton
+                label="创建学期"
+                variant="solid"
+                tone="primary"
+                size="lg"
                 onPress={handleCreate}
-              >
-                <Text style={styles.modalConfirmText}>创建学期</Text>
-              </TouchableOpacity>
+                style={{ flex: 1.35 }}
+              />
             </View>
-          </View>
+          </AppCard>
         </View>
       </Modal>
 
@@ -483,20 +487,23 @@ export default function SemesterScreen() {
             </View>
             <Text style={[styles.datePreview, { color: colors.primary }]}>{selectedDatePreview}</Text>
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.modalCancelButton, { borderColor: colors.border }]}
-                activeOpacity={0.75}
+              <AppButton
+                label="取消"
+                variant="outline"
+                tone="primary"
+                size="lg"
                 onPress={() => setDatePickerVisible(false)}
-              >
-                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
-                activeOpacity={0.82}
+                style={{ flex: 1, borderColor: colors.border }}
+                textStyle={{ color: colors.textSecondary }}
+              />
+              <AppButton
+                label="确定"
+                variant="solid"
+                tone="primary"
+                size="lg"
                 onPress={confirmDatePicker}
-              >
-                <Text style={styles.modalConfirmText}>确定</Text>
-              </TouchableOpacity>
+                style={{ flex: 1.35 }}
+              />
             </View>
           </View>
         </TouchableOpacity>
@@ -509,16 +516,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   topSection: { paddingHorizontal: 14, zIndex: 1 },
   scrollContent: { paddingHorizontal: 14, paddingTop: 0, paddingBottom: 24 },
-  heroCard: {
-    marginHorizontal: -14,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
   heroTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -542,22 +539,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
   heroPageTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  heroDecorLarge: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -80,
-    right: -50,
-  },
-  heroDecorSmall: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -20,
-    left: -30,
-  },
   heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
   heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
   heroStatsRow: {
@@ -570,16 +551,6 @@ const styles = StyleSheet.create({
   heroStatItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 5 },
   heroStatValue: { color: '#FFF', fontSize: 16, fontWeight: '800' },
   heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, marginTop: 2 },
-  activeCard: {
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-  },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
   sectionHint: { fontSize: 12, marginTop: 4 },
@@ -595,35 +566,15 @@ const styles = StyleSheet.create({
   progressTrack: { height: 8, borderRadius: 999, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 999 },
   listSection: { gap: 10, marginBottom: 14 },
-  semesterCard: {
-    borderRadius: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-  },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   cardTitle: { fontSize: 15, fontWeight: '700' },
   cardMeta: { fontSize: 12, marginTop: 6, lineHeight: 17 },
   statusChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 },
   statusChipText: { fontSize: 11, fontWeight: '700' },
   cardFooter: { flexDirection: 'row', gap: 8, marginTop: 12, paddingTop: 10, borderTopWidth: 0.5 },
-  secondaryButton: {
-    flex: 1,
-    height: 38,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  secondaryButtonText: { fontSize: 13, fontWeight: '700' },
   archivedBadges: { alignItems: 'flex-end', gap: 6 },
   lockChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   lockChipText: { fontSize: 11, fontWeight: '700' },
-  emptyCard: { borderRadius: 20, padding: 20, marginBottom: 14 },
   emptyTitle: { fontSize: 16, fontWeight: '700' },
   emptyText: { fontSize: 13, lineHeight: 20, marginTop: 8 },
   modalOverlay: {
@@ -633,7 +584,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  modalCard: { width: '100%', maxWidth: 420, borderRadius: 24, overflow: 'hidden' },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -669,10 +619,6 @@ const styles = StyleSheet.create({
   },
   toggleCardText: { fontSize: 14, fontWeight: '600' },
   modalFooter: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingBottom: 20, paddingTop: 4 },
-  modalCancelButton: { flex: 1, height: 46, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  modalConfirmButton: { flex: 1.35, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  modalCancelText: { fontSize: 14, fontWeight: '600' },
-  modalConfirmText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
   datePickerOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
   datePickerCard: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 20, maxHeight: '78%' },
   datePickerHandle: { width: 44, height: 5, borderRadius: 999, alignSelf: 'center', marginBottom: 14 },

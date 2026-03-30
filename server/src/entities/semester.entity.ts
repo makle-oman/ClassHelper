@@ -27,7 +27,7 @@ export class Semester {
   weeks_count: number;
 
   @Column({ type: 'int', nullable: true, comment: '当前第几周' })
-  current_week: number;
+  current_week: number | null;
 
   @Column({ type: 'boolean', default: false, comment: '是否为当前活跃学期' })
   is_active: boolean;

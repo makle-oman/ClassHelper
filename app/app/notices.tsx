@@ -1,9 +1,10 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/theme';
+import { PrimaryHeroSection, AppCard, AppChip, AppSectionHeader } from '../src/components/ui';
 
 type NoticeType = 'normal' | 'holiday' | 'activity' | 'urgent';
 
@@ -72,9 +73,7 @@ export default function NoticesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
-        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+        <PrimaryHeroSection paddingBottom={10} style={styles.heroCard}>
           <View style={styles.heroTopBar}>
             <TouchableOpacity
               style={styles.heroBackButton}
@@ -112,48 +111,34 @@ export default function NoticesScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </PrimaryHeroSection>
 
-        <View style={[styles.filterCard, { backgroundColor: colors.surface }]}>
+        <AppCard radius={18} padding="sm" style={styles.filterCardSpacing}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>通知筛选</Text>
           <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>快速切换通知类型</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
             {filterOptions.map((option) => {
               const selected = selectedFilter === option.key;
               return (
-                <TouchableOpacity
+                <AppChip
                   key={option.key}
-                  style={[
-                    styles.filterChip,
-                    {
-                      backgroundColor: selected ? option.color : colors.surfaceSecondary,
-                    },
-                  ]}
-                  activeOpacity={0.75}
+                  iconName={option.icon}
+                  label={option.label}
+                  selected={selected}
                   onPress={() => setSelectedFilter(option.key)}
-                >
-                  <Ionicons name={option.icon} size={14} color={selected ? '#FFF' : option.color} />
-                  <Text style={[styles.filterChipText, { color: selected ? '#FFF' : option.color }]}>{option.label}</Text>
-                </TouchableOpacity>
+                  style={selected ? { backgroundColor: option.color, borderColor: option.color } : undefined}
+                  textStyle={selected ? { color: '#FFF' } : { color: option.color }}
+                />
               );
             })}
           </ScrollView>
-        </View>
+        </AppCard>
 
-        <View style={styles.sectionHeaderRow}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>通知列表</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>查看通知详情、类型和家长阅读情况</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.publishButton, { backgroundColor: colors.primaryLight }]}
-            activeOpacity={0.75}
-            onPress={() => setShowCreateModal(true)}
-          >
-            <Ionicons name="add" size={16} color={colors.primary} />
-            <Text style={[styles.publishButtonText, { color: colors.primary }]}>发布通知</Text>
-          </TouchableOpacity>
-        </View>
+        <AppSectionHeader
+          title="通知列表"
+          actionLabel="发布通知"
+          onActionPress={() => setShowCreateModal(true)}
+        />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -164,13 +149,13 @@ export default function NoticesScreen() {
               const readRate = Math.round((notice.readCount / notice.totalCount) * 100);
 
               return (
-                <View key={notice.id} style={[styles.noticeCard, { backgroundColor: colors.surface }]}> 
+                <AppCard key={notice.id} radius={18} padding="sm">
                   <View style={styles.noticeHeader}>
                     <View style={styles.noticeHeaderLeft}>
-                      <View style={[styles.noticeIcon, { backgroundColor: config.bg }]}> 
+                      <View style={[styles.noticeIcon, { backgroundColor: config.bg }]}>
                         <Ionicons name={config.icon} size={16} color={config.color} />
                       </View>
-                      <View style={[styles.noticeTypeBadge, { backgroundColor: config.bg }]}> 
+                      <View style={[styles.noticeTypeBadge, { backgroundColor: config.bg }]}>
                         <Text style={[styles.noticeTypeBadgeText, { color: config.color }]}>{config.label}</Text>
                       </View>
                     </View>
@@ -181,35 +166,35 @@ export default function NoticesScreen() {
                   <Text style={[styles.noticeContent, { color: colors.textSecondary }]} numberOfLines={3}>{notice.content}</Text>
 
                   <View style={styles.noticeMetaRow}>
-                    <View style={[styles.noticeMetaChip, { backgroundColor: colors.surfaceSecondary }]}> 
+                    <View style={[styles.noticeMetaChip, { backgroundColor: colors.surfaceSecondary }]}>
                       <Ionicons name="school-outline" size={12} color={colors.textTertiary} />
                       <Text style={[styles.noticeMetaChipText, { color: colors.textSecondary }]}>{notice.className}</Text>
                     </View>
-                    <View style={[styles.noticeMetaChip, { backgroundColor: colors.surfaceSecondary }]}> 
+                    <View style={[styles.noticeMetaChip, { backgroundColor: colors.surfaceSecondary }]}>
                       <Ionicons name="eye-outline" size={12} color={colors.textTertiary} />
                       <Text style={[styles.noticeMetaChipText, { color: colors.textSecondary }]}>{notice.readCount}/{notice.totalCount} 已读</Text>
                     </View>
                   </View>
 
-                  <View style={[styles.progressBlock, { borderTopColor: colors.divider }]}> 
+                  <View style={[styles.progressBlock, { borderTopColor: colors.divider }]}>
                     <View style={styles.progressHeader}>
                       <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>阅读进度</Text>
                       <Text style={[styles.progressValue, { color: colors.primary }]}>{readRate}%</Text>
                     </View>
-                    <View style={[styles.progressTrack, { backgroundColor: colors.surfaceSecondary }]}> 
+                    <View style={[styles.progressTrack, { backgroundColor: colors.surfaceSecondary }]}>
                       <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${readRate}%` }]} />
                     </View>
                   </View>
-                </View>
+                </AppCard>
               );
             })}
           </View>
         ) : (
-          <View style={[styles.emptyCard, { backgroundColor: colors.surface }]}> 
+          <AppCard radius={20} padding="lg" style={styles.emptyCardContent}>
             <Ionicons name="documents-outline" size={30} color={colors.textTertiary} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>当前筛选下暂无通知</Text>
             <Text style={[styles.emptyText, { color: colors.textTertiary }]}>可以切换筛选类型，或点击右下角继续发布新的通知公告。</Text>
-          </View>
+          </AppCard>
         )}
       </ScrollView>
 
@@ -223,7 +208,7 @@ export default function NoticesScreen() {
 
       <Modal visible={showCreateModal} transparent animationType="fade" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}> 
+          <AppCard radius={24} padding="none">
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalTitle, { color: colors.text }]}>发布通知</Text>
@@ -266,21 +251,15 @@ export default function NoticesScreen() {
                     const config = typeConfig[type];
                     const selected = newNotice.type === type;
                     return (
-                      <TouchableOpacity
+                      <AppChip
                         key={type}
-                        style={[
-                          styles.optionChip,
-                          {
-                            backgroundColor: selected ? config.bg : colors.surfaceSecondary,
-                            borderColor: selected ? config.color : colors.border,
-                          },
-                        ]}
-                        activeOpacity={0.75}
+                        iconName={config.icon}
+                        label={config.label.replace('通知', '')}
+                        selected={selected}
                         onPress={() => setNewNotice((prev) => ({ ...prev, type }))}
-                      >
-                        <Ionicons name={config.icon} size={13} color={selected ? config.color : colors.textTertiary} />
-                        <Text style={[styles.optionChipText, { color: selected ? config.color : colors.textSecondary }]}>{config.label.replace('通知', '')}</Text>
-                      </TouchableOpacity>
+                        style={selected ? { backgroundColor: config.bg, borderColor: config.color } : undefined}
+                        textStyle={{ color: selected ? config.color : colors.textSecondary }}
+                      />
                     );
                   })}
                 </View>
@@ -292,20 +271,14 @@ export default function NoticesScreen() {
                   {['全部班级', '三年级1班', '三年级2班'].map((className) => {
                     const selected = newNotice.className === className;
                     return (
-                      <TouchableOpacity
+                      <AppChip
                         key={className}
-                        style={[
-                          styles.optionChip,
-                          {
-                            backgroundColor: selected ? colors.primaryLight : colors.surfaceSecondary,
-                            borderColor: selected ? colors.primary : colors.border,
-                          },
-                        ]}
-                        activeOpacity={0.75}
+                        label={className}
+                        selected={selected}
                         onPress={() => setNewNotice((prev) => ({ ...prev, className }))}
-                      >
-                        <Text style={[styles.optionChipText, { color: selected ? colors.primary : colors.textSecondary }]}>{className}</Text>
-                      </TouchableOpacity>
+                        style={selected ? { backgroundColor: colors.primaryLight, borderColor: colors.primary } : undefined}
+                        textStyle={{ color: selected ? colors.primary : colors.textSecondary }}
+                      />
                     );
                   })}
                 </View>
@@ -328,7 +301,7 @@ export default function NoticesScreen() {
                 <Text style={styles.modalConfirmText}>发布通知</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </AppCard>
         </View>
       </Modal>
     </SafeAreaView>
@@ -341,12 +314,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 14, paddingTop: 0, paddingBottom: 96 },
   heroCard: {
     marginHorizontal: -14,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    overflow: 'hidden',
     marginBottom: 12,
   },
   heroTopBar: {
@@ -372,42 +339,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
   heroPageTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  heroDecorLarge: { position: 'absolute', width: 200, height: 200, borderRadius: 100, top: -80, right: -50 },
-  heroDecorSmall: { position: 'absolute', width: 120, height: 120, borderRadius: 60, bottom: -20, left: -30 },
   heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
   heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
   heroStatsRow: { flexDirection: 'row', marginTop: 8, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)', paddingVertical: 4 },
   heroStatItem: { flex: 1, alignItems: 'center', paddingVertical: 5 },
   heroStatValue: { color: '#FFF', fontSize: 16, fontWeight: '800' },
   heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, marginTop: 2 },
-  filterCard: {
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-  },
+  filterCardSpacing: { marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontWeight: '700' },
   sectionHint: { fontSize: 12, marginTop: 4 },
   filterRow: { gap: 8, paddingTop: 10 },
-  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12 },
-  filterChipText: { fontSize: 13, fontWeight: '700' },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  publishButton: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 12 },
-  publishButtonText: { fontSize: 13, fontWeight: '700' },
   listSection: { gap: 10 },
-  noticeCard: {
-    borderRadius: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-  },
   noticeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   noticeHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   noticeIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
@@ -425,12 +367,11 @@ const styles = StyleSheet.create({
   progressValue: { fontSize: 12, fontWeight: '700' },
   progressTrack: { height: 8, borderRadius: 999, overflow: 'hidden', marginTop: 8 },
   progressFill: { height: '100%', borderRadius: 999 },
-  emptyCard: { borderRadius: 20, padding: 28, alignItems: 'center' },
+  emptyCardContent: { alignItems: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 14 },
   emptyText: { fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: 'center' },
   fab: { position: 'absolute', right: 20, bottom: 20, width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', shadowColor: '#4CC590', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10, elevation: 6 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  modalCard: { width: '100%', maxWidth: 420, borderRadius: 24, overflow: 'hidden' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 14, paddingTop: 20, paddingBottom: 8 },
   modalTitle: { fontSize: 18, fontWeight: '700' },
   modalHint: { fontSize: 12, marginTop: 4 },
@@ -440,8 +381,6 @@ const styles = StyleSheet.create({
   formInput: { height: 46, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 14 },
   formTextArea: { height: 110, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingTop: 12, fontSize: 14 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  optionChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
-  optionChipText: { fontSize: 13, fontWeight: '600' },
   modalFooter: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingBottom: 20, paddingTop: 4 },
   modalCancelButton: { flex: 1, height: 46, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   modalConfirmButton: { flex: 1.35, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

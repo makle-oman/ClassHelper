@@ -1,9 +1,14 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/theme';
+import { PrimaryHeroSection } from '../src/components/ui/PrimaryHeroSection';
+import { AppCard } from '../src/components/ui/AppCard';
+import { AppChip } from '../src/components/ui/AppChip';
+import { AppButton } from '../src/components/ui/AppButton';
+import { AppSectionHeader } from '../src/components/ui/AppSectionHeader';
 
 interface ClassForPromotion {
   id: string;
@@ -89,9 +94,7 @@ export default function PromotionScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={styles.topSection}>
-        <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
-          <View style={[styles.heroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-          <View style={[styles.heroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+        <PrimaryHeroSection paddingBottom={10} style={styles.heroCard}>
           <View style={styles.heroTopBar}>
             <TouchableOpacity
               style={styles.heroBackButton}
@@ -123,22 +126,18 @@ export default function PromotionScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </PrimaryHeroSection>
 
-        <View style={[styles.guideCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.sectionRow}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>处理规则</Text>
-              <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>了解升班和归档的区别</Text>
-            </View>
-          </View>
+        <AppCard style={styles.guideCard}>
+          <AppSectionHeader title="处理规则" style={styles.guideHeader} />
+          <Text style={[styles.guideHint, { color: colors.textTertiary }]}>了解升班和归档的区别</Text>
           <View style={styles.guideList}>
             {[
               { title: '普通升迁', desc: '一至五年级班级整体升入下一年级，学生信息随班级迁移。', icon: 'trending-up-outline' as const, colorKey: 'green' as const },
               { title: '毕业归档', desc: '六年级毕业班移入历史归档区，保留只读记录与追溯能力。', icon: 'archive-outline' as const, colorKey: 'orange' as const },
             ].map((item) => (
-              <View key={item.title} style={[styles.guideItem, { backgroundColor: colors.surfaceSecondary }]}> 
-                <View style={[styles.guideIcon, { backgroundColor: colors.palette[item.colorKey].bg }]}> 
+              <View key={item.title} style={[styles.guideItem, { backgroundColor: colors.surfaceSecondary }]}>
+                <View style={[styles.guideIcon, { backgroundColor: colors.palette[item.colorKey].bg }]}>
                   <Ionicons name={item.icon} size={16} color={colors.palette[item.colorKey].text} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -148,39 +147,31 @@ export default function PromotionScreen() {
               </View>
             ))}
           </View>
-        </View>
+        </AppCard>
 
         {(promotableClasses.length > 0 || graduatingClasses.length > 0) && (
           <View style={styles.actionRow}>
             {promotableClasses.length > 0 && (
-              <TouchableOpacity
-                style={[styles.primaryAction, { backgroundColor: colors.primary }]}
-                activeOpacity={0.82}
+              <AppButton
+                label="一键升年级"
+                leftIconName="trending-up"
                 onPress={handlePromote}
-              >
-                <Ionicons name="trending-up" size={18} color="#FFF" />
-                <Text style={styles.primaryActionText}>一键升年级</Text>
-              </TouchableOpacity>
+              />
             )}
             {graduatingClasses.length > 0 && (
-              <TouchableOpacity
-                style={[styles.secondaryAction, { backgroundColor: colors.palette.red.bg }]}
-                activeOpacity={0.82}
+              <AppButton
+                label="毕业归档"
+                leftIconName="archive"
+                variant="soft"
+                tone="error"
                 onPress={handleArchive}
-              >
-                <Ionicons name="archive" size={18} color={colors.palette.red.text} />
-                <Text style={[styles.secondaryActionText, { color: colors.palette.red.text }]}>毕业归档</Text>
-              </TouchableOpacity>
+              />
             )}
           </View>
         )}
 
-        <View style={styles.sectionRow}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>升迁预览</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>查看各班级将升入的目标年级</Text>
-          </View>
-        </View>
+        <AppSectionHeader title="升迁预览" />
+        <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>查看各班级将升入的目标年级</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -190,9 +181,9 @@ export default function PromotionScreen() {
             const toPalette = cls.isGraduating ? colors.palette.red : colors.palette[getGradeColorKey(Math.min(cls.gradeNumber + 1, 6))];
 
             return (
-              <View key={cls.id} style={[styles.flowCard, { backgroundColor: colors.surface }]}> 
+              <AppCard key={cls.id}>
                 <View style={styles.flowSide}>
-                  <View style={[styles.gradeAvatar, { backgroundColor: fromPalette.bg }]}> 
+                  <View style={[styles.gradeAvatar, { backgroundColor: fromPalette.bg }]}>
                     <Text style={[styles.gradeAvatarText, { color: fromPalette.text }]}>{gradeChars[cls.gradeNumber - 1]}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -206,7 +197,7 @@ export default function PromotionScreen() {
                 </View>
 
                 <View style={styles.flowSide}>
-                  <View style={[styles.gradeAvatar, { backgroundColor: toPalette.bg }]}> 
+                  <View style={[styles.gradeAvatar, { backgroundColor: toPalette.bg }]}>
                     {cls.isGraduating ? (
                       <Ionicons name="archive" size={16} color={toPalette.text} />
                     ) : (
@@ -217,28 +208,24 @@ export default function PromotionScreen() {
                     <Text style={[styles.className, { color: cls.isGraduating ? colors.palette.red.text : colors.text }]}>
                       {cls.isGraduating ? '毕业归档' : cls.targetName}
                     </Text>
-                    <Text style={[styles.classMeta, { color: colors.textTertiary }]}> 
+                    <Text style={[styles.classMeta, { color: colors.textTertiary }]}>
                       {cls.isGraduating ? '保留历史记录与只读查询' : '升入下一年级并保留班号'}
                     </Text>
                   </View>
                 </View>
-              </View>
+              </AppCard>
             );
           })}
         </View>
 
-        <View style={styles.sectionRow}>
-          <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>已归档班级</Text>
-            <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>往届毕业班的历史记录</Text>
-          </View>
-        </View>
+        <AppSectionHeader title="已归档班级" />
+        <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>往届毕业班的历史记录</Text>
 
         <View style={styles.listSection}>
           {archived.map((cls) => (
-            <View key={cls.id} style={[styles.archivedCard, { backgroundColor: colors.surface }]}> 
+            <AppCard key={cls.id} style={styles.archivedCard}>
               <View style={styles.archivedLeft}>
-                <View style={[styles.archivedIcon, { backgroundColor: colors.surfaceSecondary }]}> 
+                <View style={[styles.archivedIcon, { backgroundColor: colors.surfaceSecondary }]}>
                   <Ionicons name="archive-outline" size={18} color={colors.textTertiary} />
                 </View>
                 <View>
@@ -246,10 +233,8 @@ export default function PromotionScreen() {
                   <Text style={[styles.archivedMeta, { color: colors.textTertiary }]}>{cls.studentCount} 名学生 · 归档于 {cls.archivedDate}</Text>
                 </View>
               </View>
-              <View style={[styles.archivedBadge, { backgroundColor: colors.surfaceSecondary }]}> 
-                <Text style={[styles.archivedBadgeText, { color: colors.textTertiary }]}>已归档</Text>
-              </View>
-            </View>
+              <AppChip label="已归档" style={styles.archivedChip} />
+            </AppCard>
           ))}
         </View>
       </ScrollView>
@@ -265,10 +250,6 @@ const styles = StyleSheet.create({
     marginHorizontal: -14,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    overflow: 'hidden',
     marginBottom: 12,
   },
   heroTopBar: {
@@ -287,61 +268,23 @@ const styles = StyleSheet.create({
   },
   heroTopSpacer: { width: 34, height: 34 },
   heroPageTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  heroDecorLarge: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -80,
-    right: -50,
-  },
-  heroDecorSmall: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -20,
-    left: -30,
-  },
   heroEyebrow: { color: 'rgba(255,255,255,0.76)', fontSize: 10, fontWeight: '600' },
   heroTitle: { color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 4 },
   heroStatsRow: { flexDirection: 'row', marginTop: 8, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)', paddingVertical: 4 },
   heroStatItem: { flex: 1, alignItems: 'center', paddingVertical: 5 },
   heroStatValue: { color: '#FFF', fontSize: 16, fontWeight: '800' },
   heroStatLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 10, marginTop: 2 },
-  guideCard: {
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  sectionRow: { marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: '700' },
-  sectionHint: { fontSize: 12, marginTop: 4 },
+  guideCard: { marginBottom: 16 },
+  guideHeader: { marginBottom: 0 },
+  guideHint: { fontSize: 12, marginTop: 2, marginBottom: 12 },
   guideList: { gap: 10 },
   guideItem: { flexDirection: 'row', gap: 12, borderRadius: 16, padding: 14 },
   guideIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   guideTitle: { fontSize: 14, fontWeight: '700' },
   guideDesc: { fontSize: 12, lineHeight: 18, marginTop: 4 },
   actionRow: { gap: 10, marginBottom: 18 },
-  primaryAction: { height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  primaryActionText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  secondaryAction: { height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  secondaryActionText: { fontSize: 15, fontWeight: '700' },
+  sectionHint: { fontSize: 12, marginTop: -8, marginBottom: 12 },
   listSection: { gap: 12, marginBottom: 18 },
-  flowCard: {
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-  },
   flowSide: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   gradeAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   gradeAvatarText: { fontSize: 17, fontWeight: '800' },
@@ -349,22 +292,14 @@ const styles = StyleSheet.create({
   classMeta: { fontSize: 12, marginTop: 4 },
   arrowWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
   archivedCard: {
-    borderRadius: 20,
-    padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
   },
   archivedLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   archivedIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   archivedName: { fontSize: 15, fontWeight: '700' },
   archivedMeta: { fontSize: 12, marginTop: 4 },
-  archivedBadge: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 },
-  archivedBadgeText: { fontSize: 11, fontWeight: '700' },
+  archivedChip: { borderRadius: 999 },
 });

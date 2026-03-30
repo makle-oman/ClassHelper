@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { getTeacher, classApi, clearAuth, type TeacherInfo } from '../../src/services/api';
+import { PrimaryHeroSection, AppCard } from '../../src/components/ui';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -44,9 +45,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* 用户信息卡片 */}
-        <View style={[styles.profileSection, { backgroundColor: colors.primary }]}>
-          <View style={[styles.profileDecorCircle, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-          <View style={[styles.profileDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+        <PrimaryHeroSection paddingTop={20} paddingBottom={28}>
           <View style={styles.profileContent}>
             <View style={styles.avatarWrapper}>
               <View style={styles.avatar}>
@@ -74,7 +73,7 @@ export default function ProfileScreen() {
               <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
           </View>
-        </View>
+        </PrimaryHeroSection>
 
         {/* 数据统计 */}
         <View style={styles.statsRow}>
@@ -94,7 +93,7 @@ export default function ProfileScreen() {
 
         {/* 菜单列表 */}
         {menuGroups.map((group, gi) => (
-          <View key={gi} style={[styles.menuGroup, { backgroundColor: colors.surface }]}>
+          <AppCard key={gi} padding="none" radius={16} style={styles.menuGroup}>
             {group.map((item, i) => {
               const palette = colors.palette[item.colorKey];
               return (
@@ -136,7 +135,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </AppCard>
         ))}
 
         {/* 退出登录 */}
@@ -173,30 +172,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  profileSection: {
-    paddingTop: 20,
-    paddingBottom: 28,
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-  },
-  profileDecorCircle: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -80,
-    right: -50,
-  },
-  profileDecorSmall: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -20,
-    left: -30,
   },
   profileContent: {
     flexDirection: 'row',
@@ -298,13 +273,7 @@ const styles = StyleSheet.create({
   },
   menuGroup: {
     marginHorizontal: 20,
-    borderRadius: 16,
     marginTop: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
   },
   menuItem: {
     flexDirection: 'row',

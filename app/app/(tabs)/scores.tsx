@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../../src/theme';
+import { PrimaryHeroSection, AppCard, AppSectionHeader } from '../../src/components/ui';
 
 interface Exam {
   id: string;
@@ -212,9 +213,7 @@ export default function ScoresScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-      <View style={[styles.scoreHeroCard, { backgroundColor: colors.primary }]}>
-        <View style={[styles.scoreHeroDecorLarge, { backgroundColor: 'rgba(255,255,255,0.07)' }]} />
-        <View style={[styles.scoreHeroDecorSmall, { backgroundColor: 'rgba(255,255,255,0.04)' }]} />
+      <PrimaryHeroSection paddingBottom={10}>
         <View style={styles.scoreHeroHeader}>
           <View style={styles.scoreHeroMain}>
             <View style={styles.scoreHeroEyebrowWrap}>
@@ -243,7 +242,7 @@ export default function ScoresScreen() {
             </View>
           ))}
         </View>
-      </View>
+      </PrimaryHeroSection>
 
       <View style={[styles.tabBar, { backgroundColor: colors.background }]}>
         <View style={[styles.tabInner, { backgroundColor: colors.surfaceSecondary }]}>
@@ -300,7 +299,7 @@ export default function ScoresScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.scopeCard, { backgroundColor: colors.surface }]}>
+            <AppCard radius={18} padding="sm" style={{ marginTop: 10 }}>
               <View style={styles.scopeHeader}>
                 <View style={styles.scopeTitleWrap}>
                   <Text style={[styles.scopeTitle, { color: colors.text }]}>最近的考试</Text>
@@ -326,17 +325,13 @@ export default function ScoresScreen() {
                   </View>
                 ))}
               </View>
-            </View>
+            </AppCard>
 
-            <View style={styles.sectionHeader}>
-              <View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>考试进度</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>点击选择考试查看分析，长按进入录分</Text>
-              </View>
-              <View style={[styles.sectionBadge, { backgroundColor: colors.surfaceSecondary }]}>
-                <Text style={[styles.sectionBadgeText, { color: colors.textSecondary }]}>{classExams.length} 场</Text>
-              </View>
-            </View>
+            <AppSectionHeader
+              title="考试进度"
+              count={classExams.length}
+              style={{ marginTop: 14 }}
+            />
 
             <View style={styles.listSection}>
             {classExams.map((exam) => {
@@ -446,16 +441,16 @@ export default function ScoresScreen() {
         >
           <View style={styles.pageContent}>
             {analysisExam?.avg == null ? (
-              <View style={[styles.noDataCard, { backgroundColor: colors.surface }]}>
+              <AppCard radius={18} padding="none" style={{ padding: 40, alignItems: 'center', gap: 8 }}>
                 <Ionicons name="bar-chart-outline" size={40} color={colors.textTertiary} />
                 <Text style={[styles.noDataTitle, { color: colors.textSecondary }]}>暂无分析数据</Text>
                 <Text style={[styles.noDataHint, { color: colors.textTertiary }]}>
                   {selectedExamId ? '该考试尚未完成录入，录入完成后可查看分析' : '请在考试列表中选择一场已完成的考试'}
                 </Text>
-              </View>
+              </AppCard>
             ) : (
               <>
-                <View style={[styles.analysisOverviewCard, { backgroundColor: colors.surface }]}>
+                <AppCard radius={18} padding="sm">
                   <View style={styles.scopeHeader}>
                     <View style={styles.scopeTitleWrap}>
                       <Text style={[styles.scopeTitle, { color: colors.text }]}>成绩分析</Text>
@@ -496,9 +491,9 @@ export default function ScoresScreen() {
                       </View>
                     ))}
                   </View>
-                </View>
+                </AppCard>
 
-                <View style={[styles.analysisCard, { backgroundColor: colors.surface }]}>
+                <AppCard radius={18} padding="sm" style={{ marginTop: 10 }}>
                   <View style={styles.analysisCardHeader}>
                     <Text style={[styles.analysisTitle, { color: colors.text }]}>分数段分布</Text>
                     <View style={[styles.analysisTag, { backgroundColor: colors.palette.blue.bg }]}>
@@ -522,7 +517,7 @@ export default function ScoresScreen() {
                       </View>
                     ));
                   })()}
-                </View>
+                </AppCard>
               </>
             )}
           </View>
@@ -795,30 +790,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
 
   // Hero & Tabs
-  scoreHeroCard: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: 'hidden',
-  },
-  scoreHeroDecorLarge: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -80,
-    right: -50,
-  },
-  scoreHeroDecorSmall: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -20,
-    left: -30,
-  },
   scoreHeroHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -902,16 +873,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   actionButtonPrimaryText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
-  scopeCard: {
-    marginTop: 10,
-    borderRadius: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
   scopeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   scopeTitleWrap: { flex: 1 },
   scopeTitle: { fontSize: 16, fontWeight: '800' },
@@ -921,18 +882,6 @@ const styles = StyleSheet.create({
   scopeMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   scopeMetaChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999 },
   scopeMetaText: { fontSize: 12, fontWeight: '500' },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 14,
-    marginBottom: 8,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '800' },
-  sectionSubtitle: { fontSize: 12, marginTop: 3 },
-  sectionBadge: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999 },
-  sectionBadgeText: { fontSize: 11, fontWeight: '700' },
   listSection: { gap: 10 },
   examCard: {
     borderRadius: 18,
@@ -992,15 +941,6 @@ const styles = StyleSheet.create({
   examDetailBtnText: { fontSize: 12, fontWeight: '600' },
 
   // Analysis
-  analysisOverviewCard: {
-    borderRadius: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
   analysisHeroMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   analysisHeroChip: { borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
   analysisHeroChipHalf: { flexGrow: 1, minWidth: 120 },
@@ -1010,16 +950,6 @@ const styles = StyleSheet.create({
   analysisStatCard: { flex: 1, borderRadius: 12, paddingVertical: 10, alignItems: 'center', gap: 3 },
   analysisStatValue: { fontSize: 16, fontWeight: '800' },
   analysisStatLabel: { fontSize: 10 },
-  analysisCard: {
-    marginTop: 10,
-    borderRadius: 18,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
   analysisCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 14 },
   analysisTitle: { fontSize: 16, fontWeight: '800' },
   analysisTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
@@ -1032,17 +962,6 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: 10, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 8, minWidth: 30 },
   barFillText: { fontSize: 11, fontWeight: '700', color: '#FFF' },
   // No data
-  noDataCard: {
-    borderRadius: 18,
-    padding: 40,
-    alignItems: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
   noDataTitle: { fontSize: 16, fontWeight: '700', marginTop: 8 },
   noDataHint: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
 
