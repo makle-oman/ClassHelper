@@ -192,6 +192,394 @@ Authorization: Bearer <token>
 
 ---
 
+## 3. 班级模块 `/class`（需登录）
+
+### 3.1 获取班级列表
+**POST** `/api/class/list`
+**请求参数：** 无（通过 Token 识别用户）
+
+### 3.2 创建班级
+**POST** `/api/class/create`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| grade_number | int | 是 | 年级数字（1-6） |
+| class_number | int | 是 | 班级序号 |
+
+### 3.3 更新班级
+**POST** `/api/class/update`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 班级ID |
+| grade_number | int | 否 | 年级数字 |
+| class_number | int | 否 | 班级序号 |
+
+### 3.4 删除班级
+**POST** `/api/class/delete`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 班级ID |
+
+---
+
+## 4. 学期模块 `/semester`（需登录）
+
+### 4.1 获取学期列表
+**POST** `/api/semester/list`
+
+### 4.2 创建学期
+**POST** `/api/semester/create`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 是 | 学期名称 |
+| start_date | string | 是 | 开始日期 |
+| end_date | string | 是 | 结束日期 |
+| weeks_count | int | 是 | 总周数 |
+
+### 4.3 更新学期
+**POST** `/api/semester/update`
+
+### 4.4 设置活跃学期
+**POST** `/api/semester/set-active`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 学期ID |
+
+### 4.5 归档学期
+**POST** `/api/semester/archive`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 学期ID |
+
+### 4.6 删除学期
+**POST** `/api/semester/delete`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 学期ID |
+
+---
+
+## 5. 学生模块 `/student`（需登录）
+
+### 5.1 获取学生列表
+**POST** `/api/student/list`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+
+### 5.2 创建学生
+**POST** `/api/student/create`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| student_no | string | 是 | 学号 |
+| name | string | 是 | 姓名 |
+| gender | string | 是 | 性别 |
+| birth_date | string | 否 | 出生日期 |
+| class_id | int | 是 | 班级ID |
+
+### 5.3 更新学生
+**POST** `/api/student/update`
+
+### 5.4 删除学生
+**POST** `/api/student/delete`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 学生ID |
+
+---
+
+## 6. 课程表模块 `/course`（需登录）
+
+### 6.1 获取课程列表
+**POST** `/api/course/list`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| semester_id | int | 是 | 学期ID |
+| class_id | int | 是 | 班级ID |
+
+### 6.2 创建课程
+**POST** `/api/course/create`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+| semester_id | int | 是 | 学期ID |
+| weekday | int | 是 | 星期几（1-7） |
+| period | int | 是 | 第几节课 |
+| subject | string | 是 | 科目 |
+| room | string | 否 | 教室 |
+
+### 6.3 更新课程
+**POST** `/api/course/update`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 课程ID |
+| weekday | int | 否 | 星期几 |
+| period | int | 否 | 第几节课 |
+| subject | string | 否 | 科目 |
+| room | string | 否 | 教室 |
+
+### 6.4 删除课程
+**POST** `/api/course/delete`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 课程ID |
+
+### 6.5 获取今日我的课程
+**POST** `/api/course/my-today`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| semester_id | int | 否 | 学期ID（可选筛选） |
+
+### 6.6 批量创建课程
+**POST** `/api/course/batch-create`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+| semester_id | int | 是 | 学期ID |
+| items | array | 是 | 课程数组 [{weekday, period, subject, room?}] |
+
+---
+
+## 7. 考勤模块 `/attendance`（需登录）
+
+### 7.1 获取考勤记录
+**POST** `/api/attendance/list`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+| date | string | 是 | 日期（YYYY-MM-DD） |
+
+### 7.2 批量保存考勤
+**POST** `/api/attendance/batch-save`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+| date | string | 是 | 日期 |
+| items | array | 是 | [{student_id, status, remark?}] |
+
+status 可选值：出勤 / 迟到 / 早退 / 请假 / 缺席
+
+### 7.3 学生考勤统计
+**POST** `/api/attendance/student-stats`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| student_id | int | 是 | 学生ID |
+| start_date | string | 是 | 开始日期 |
+| end_date | string | 是 | 结束日期 |
+
+### 7.4 班级考勤统计
+**POST** `/api/attendance/class-stats`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+| date | string | 是 | 日期 |
+
+---
+
+## 8. 考试模块 `/exam`（需登录）
+
+### 8.1 获取考试列表
+**POST** `/api/exam/list`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+
+### 8.2 创建考试
+**POST** `/api/exam/create`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 是 | 考试名称 |
+| subject | string | 是 | 科目 |
+| date | string | 是 | 考试日期 |
+| full_score | int | 否 | 满分（默认100） |
+| class_id | int | 是 | 班级ID |
+
+### 8.3 更新考试
+**POST** `/api/exam/update`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 考试ID |
+| name | string | 否 | 考试名称 |
+| subject | string | 否 | 科目 |
+| date | string | 否 | 考试日期 |
+| full_score | int | 否 | 满分 |
+
+### 8.4 删除考试
+**POST** `/api/exam/delete`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 考试ID |
+
+### 8.5 获取考试详情（含学生成绩）
+**POST** `/api/exam/detail`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 考试ID |
+
+---
+
+## 9. 成绩模块 `/score`（需登录）
+
+### 9.1 批量录入成绩
+**POST** `/api/score/batch-save`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| exam_id | int | 是 | 考试ID |
+| items | array | 是 | [{student_id, score}] |
+
+### 9.2 考试统计
+**POST** `/api/score/stats`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| exam_id | int | 是 | 考试ID |
+
+**返回数据：** 平均分、最高分、最低分、分数段分布（90-100/80-89/70-79/60-69/60以下）、及格率、优秀率
+
+### 9.3 获取学生成绩
+**POST** `/api/score/student-scores`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| student_id | int | 是 | 学生ID |
+| class_id | int | 是 | 班级ID |
+
+---
+
+## 10. 作业模块 `/homework`（需登录）
+
+### 10.1 获取作业列表
+**POST** `/api/homework/list`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+| page | int | 否 | 页码（默认1） |
+| pageSize | int | 否 | 每页条数（默认20） |
+
+### 10.2 发布作业
+**POST** `/api/homework/create`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+| subject | string | 是 | 科目 |
+| content | string | 是 | 作业内容 |
+| deadline | string | 是 | 截止日期 |
+
+### 10.3 更新作业
+**POST** `/api/homework/update`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 作业ID |
+| subject | string | 否 | 科目 |
+| content | string | 否 | 作业内容 |
+| deadline | string | 否 | 截止日期 |
+
+### 10.4 删除作业
+**POST** `/api/homework/delete`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 作业ID |
+
+### 10.5 获取作业详情（含提交情况）
+**POST** `/api/homework/detail`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 作业ID |
+
+### 10.6 批量更新提交状态
+**POST** `/api/homework/record-save`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| homework_id | int | 是 | 作业ID |
+| items | array | 是 | [{student_id, status}]，status: 已交/未交/迟交 |
+
+### 10.7 作业完成率统计
+**POST** `/api/homework/stats`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| homework_id | int | 是 | 作业ID |
+
+---
+
+## 11. 通知模块 `/notice`（需登录）
+
+### 11.1 获取通知列表
+**POST** `/api/notice/list`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 否 | 班级ID（可选筛选） |
+
+### 11.2 发布通知
+**POST** `/api/notice/create`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | 是 | 通知标题 |
+| content | string | 是 | 通知内容 |
+| type | string | 否 | 通知类型：普通通知/放假通知/活动通知/紧急通知 |
+| class_id | int | 是 | 目标班级ID |
+
+### 11.3 更新通知
+**POST** `/api/notice/update`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 通知ID |
+| title | string | 否 | 标题 |
+| content | string | 否 | 内容 |
+| type | string | 否 | 通知类型 |
+
+### 11.4 删除通知
+**POST** `/api/notice/delete`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 通知ID |
+
+### 11.5 获取通知详情（含已读统计）
+**POST** `/api/notice/detail`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 通知ID |
+
+**返回数据：** 通知内容 + read_count + total_parents + unread_count
+
+---
+
+## 12. 请假模块 `/leave`（需登录）
+
+### 12.1 获取请假列表
+**POST** `/api/leave/list`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| class_id | int | 是 | 班级ID |
+| status | string | 否 | 状态筛选：待审批/已批准/已拒绝 |
+
+### 12.2 创建请假申请
+**POST** `/api/leave/create`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| student_id | int | 是 | 学生ID |
+| class_id | int | 是 | 班级ID |
+| parent_id | int | 否 | 家长ID |
+| start_date | string | 是 | 开始日期 |
+| end_date | string | 是 | 结束日期 |
+| reason | string | 是 | 请假原因 |
+
+### 12.3 获取请假详情
+**POST** `/api/leave/detail`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 请假ID |
+
+### 12.4 批准请假
+**POST** `/api/leave/approve`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 请假ID |
+
+### 12.5 拒绝请假
+**POST** `/api/leave/reject`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 请假ID |
+
+---
+
 ## 开发进度
 
 | 模块 | 接口 | 状态 |
@@ -215,9 +603,38 @@ Authorization: Bearer <token>
 | 学生 | POST /api/student/create | ✅ 已完成 |
 | 学生 | POST /api/student/update | ✅ 已完成 |
 | 学生 | POST /api/student/delete | ✅ 已完成 |
-| 课程 | 待开发 | ⬜ |
-| 考勤 | 待开发 | ⬜ |
-| 成绩 | 待开发 | ⬜ |
-| 作业 | 待开发 | ⬜ |
-| 通知 | 待开发 | ⬜ |
-| 请假 | 待开发 | ⬜ |
+| 课程 | POST /api/course/list | ✅ 已完成 |
+| 课程 | POST /api/course/create | ✅ 已完成 |
+| 课程 | POST /api/course/update | ✅ 已完成 |
+| 课程 | POST /api/course/delete | ✅ 已完成 |
+| 课程 | POST /api/course/my-today | ✅ 已完成 |
+| 课程 | POST /api/course/batch-create | ✅ 已完成 |
+| 考勤 | POST /api/attendance/list | ✅ 已完成 |
+| 考勤 | POST /api/attendance/batch-save | ✅ 已完成 |
+| 考勤 | POST /api/attendance/student-stats | ✅ 已完成 |
+| 考勤 | POST /api/attendance/class-stats | ✅ 已完成 |
+| 考试 | POST /api/exam/list | ✅ 已完成 |
+| 考试 | POST /api/exam/create | ✅ 已完成 |
+| 考试 | POST /api/exam/update | ✅ 已完成 |
+| 考试 | POST /api/exam/delete | ✅ 已完成 |
+| 考试 | POST /api/exam/detail | ✅ 已完成 |
+| 成绩 | POST /api/score/batch-save | ✅ 已完成 |
+| 成绩 | POST /api/score/stats | ✅ 已完成 |
+| 成绩 | POST /api/score/student-scores | ✅ 已完成 |
+| 作业 | POST /api/homework/list | ✅ 已完成 |
+| 作业 | POST /api/homework/create | ✅ 已完成 |
+| 作业 | POST /api/homework/update | ✅ 已完成 |
+| 作业 | POST /api/homework/delete | ✅ 已完成 |
+| 作业 | POST /api/homework/detail | ✅ 已完成 |
+| 作业 | POST /api/homework/record-save | ✅ 已完成 |
+| 作业 | POST /api/homework/stats | ✅ 已完成 |
+| 通知 | POST /api/notice/list | ✅ 已完成 |
+| 通知 | POST /api/notice/create | ✅ 已完成 |
+| 通知 | POST /api/notice/update | ✅ 已完成 |
+| 通知 | POST /api/notice/delete | ✅ 已完成 |
+| 通知 | POST /api/notice/detail | ✅ 已完成 |
+| 请假 | POST /api/leave/list | ✅ 已完成 |
+| 请假 | POST /api/leave/create | ✅ 已完成 |
+| 请假 | POST /api/leave/detail | ✅ 已完成 |
+| 请假 | POST /api/leave/approve | ✅ 已完成 |
+| 请假 | POST /api/leave/reject | ✅ 已完成 |
