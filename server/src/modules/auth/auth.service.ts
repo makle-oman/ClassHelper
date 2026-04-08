@@ -78,6 +78,7 @@ export class AuthService {
       phone: dto.phone,
       password: hashedPassword,
       name: dto.name,
+      subject: dto.subject || null,
     });
 
     await this.withDatabaseRetry(() => this.teacherRepo.save(teacher));
@@ -93,6 +94,7 @@ export class AuthService {
         id: teacher.id,
         phone: teacher.phone,
         name: teacher.name,
+        subject: teacher.subject,
       },
     };
   }

@@ -22,6 +22,6 @@ export function login(phone: string, password: string) {
 }
 
 /** 教师注册 */
-export function register(phone: string, password: string, name: string) {
-  return request<RegisterResult>('/auth/register', { phone, password, name }, { skipAuth: true });
+export function register(phone: string, password: string, name: string, subject?: string) {
+  return request<RegisterResult>('/auth/register', { phone, password, name, subject }, { skipAuth: true });
 }

@@ -8,6 +8,8 @@ import { PrimaryHeroSection } from '../src/components/ui/PrimaryHeroSection';
 import { AppCard } from '../src/components/ui/AppCard';
 import { AppInput } from '../src/components/ui/AppInput';
 import { AppButton } from '../src/components/ui/AppButton';
+import { teacherApi } from '../src/services/api';
+import { showFeedback } from '../src/services/feedback';
 
 export default function ChangePasswordScreen() {
   const colors = useTheme();
@@ -15,7 +17,9 @@ export default function ChangePasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSubmit = () => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
     if (!oldPassword.trim()) {
       Alert.alert('提示', '请输入旧密码');
       return;
@@ -29,7 +33,16 @@ export default function ChangePasswordScreen() {
       return;
     }
 
-    Alert.alert('修改成功', '密码已更新，请使用新密码继续登录。', [{ text: '确定', onPress: () => router.back() }]);
+    try {
+      setSubmitting(true);
+      await teacherApi.changePassword(oldPassword, newPassword);
+      showFeedback({ title: '密码修改成功', tone: 'success' });
+      router.back();
+    } catch (err: any) {
+      showFeedback({ title: err.message || '密码修改失败', tone: 'error' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

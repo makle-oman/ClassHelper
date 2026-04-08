@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, Platform, Animated, Easing, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, Platform, Animated, Easing, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme';
@@ -7,13 +7,12 @@ import { PrimaryHeroSection, AppCard, AppButton } from '../../src/components/ui'
 import * as DocumentPicker from 'expo-document-picker';
 import * as XLSX from 'xlsx';
 import * as FileSystem from 'expo-file-system';
+import { classApi, semesterApi, courseApi, getTeacher, type TeacherInfo } from '../../src/services/api';
+import { showFeedback } from '../../src/services/feedback';
 
 const TIME_COL_WIDTH = 36;
 
 const weekdays = ['周一', '周二', '周三', '周四', '周五'];
-
-// 模拟当前登录老师信息
-const currentTeacher = { name: '王老师', subject: '数学' };
 
 interface PeriodConfig {
   key: string;
@@ -66,139 +65,41 @@ interface ClassInfo {
   schedule: Record<string, Record<string, CourseInfo>>;
 }
 
-const initialClasses: ClassInfo[] = [
-  {
-    id: '1',
-    name: '三年级1班',
-    schedule: {
-      '周一': {
-        'morning': { subject: '语文', weeks: '1-18周', isMine: false },
-        '1': { subject: '语文', weeks: '1-18周', isMine: false },
-        '2': { subject: '数学', weeks: '1-18周', isMine: true },
-        '3': { subject: '英语', weeks: '1-16周' },
-        '4': { subject: '体育', weeks: '1-18周' },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '音乐', weeks: '1-18周' },
-        '6': { subject: '科学', weeks: '1-18周' },
-        'after': { subject: '语文', weeks: '1-18周' },
-      },
-      '周二': {
-        'morning': { subject: '英语', weeks: '1-18周' },
-        '1': { subject: '数学', weeks: '1-18周', isMine: true },
-        '2': { subject: '语文', weeks: '1-18周' },
-        '3': { subject: '美术', weeks: '1-16周' },
-        '4': { subject: '语文', weeks: '1-18周' },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '道法', weeks: '1-18周' },
-        '6': { subject: '体育', weeks: '1-18周' },
-        'after': { subject: '数学', weeks: '1-18周', isMine: true },
-      },
-      '周三': {
-        'morning': { subject: '语文', weeks: '1-18周' },
-        '1': { subject: '英语', weeks: '1-18周' },
-        '2': { subject: '语文', weeks: '1-18周' },
-        '3': { subject: '数学', weeks: '1-18周', isMine: true },
-        '4': { subject: '科学', weeks: '1-16周' },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '美术', weeks: '1-18周' },
-        '6': { subject: '音乐', weeks: '1-18周' },
-        'after': { subject: '英语', weeks: '1-18周' },
-      },
-      '周四': {
-        'morning': { subject: '数学', weeks: '1-18周', isMine: true },
-        '1': { subject: '语文', weeks: '1-18周' },
-        '2': { subject: '数学', weeks: '1-18周', isMine: true },
-        '3': { subject: '体育', weeks: '1-18周' },
-        '4': { subject: '英语', weeks: '1-16周' },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '语文', weeks: '1-18周' },
-        '6': { subject: '道法', weeks: '1-18周' },
-        'after': { subject: '数学', weeks: '1-18周', isMine: true },
-      },
-      '周五': {
-        'morning': { subject: '英语', weeks: '1-18周' },
-        '1': { subject: '数学', weeks: '1-18周', isMine: true },
-        '2': { subject: '语文', weeks: '1-18周' },
-        '3': { subject: '科学', weeks: '1-18周' },
-        '4': { subject: '语文', weeks: '1-16周' },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '体育', weeks: '1-18周' },
-        '6': { subject: '英语', weeks: '1-18周' },
-        'after': { subject: '语文', weeks: '1-18周' },
-      },
-    },
-  },
-  {
-    id: '2',
-    name: '三年级2班',
-    schedule: {
-      '周一': {
-        'morning': { subject: '数学', weeks: '1-18周', isMine: true },
-        '1': { subject: '数学', weeks: '1-18周', isMine: true },
-        '2': { subject: '语文', weeks: '1-18周' },
-        '3': { subject: '体育', weeks: '1-16周' },
-        '4': { subject: '英语', weeks: '1-18周' },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '科学', weeks: '1-18周' },
-        '6': { subject: '美术', weeks: '1-18周' },
-        'after': { subject: '数学', weeks: '1-18周', isMine: true },
-      },
-      '周二': {
-        'morning': { subject: '语文', weeks: '1-18周' },
-        '1': { subject: '英语', weeks: '1-18周' },
-        '2': { subject: '数学', weeks: '1-18周', isMine: true },
-        '3': { subject: '语文', weeks: '1-16周' },
-        '4': { subject: '音乐', weeks: '1-18周' },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '体育', weeks: '1-18周' },
-        '6': { subject: '语文', weeks: '1-18周' },
-        'after': { subject: '英语', weeks: '1-18周' },
-      },
-      '周三': {
-        'morning': { subject: '英语', weeks: '1-18周' },
-        '1': { subject: '数学', weeks: '1-18周', isMine: true },
-        '2': { subject: '体育', weeks: '1-18周' },
-        '3': { subject: '语文', weeks: '1-18周' },
-        '4': { subject: '数学', weeks: '1-16周', isMine: true },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '道法', weeks: '1-18周' },
-        '6': { subject: '科学', weeks: '1-18周' },
-        'after': { subject: '语文', weeks: '1-18周' },
-      },
-      '周四': {
-        'morning': { subject: '语文', weeks: '1-18周' },
-        '1': { subject: '美术', weeks: '1-18周' },
-        '2': { subject: '英语', weeks: '1-18周' },
-        '3': { subject: '数学', weeks: '1-18周', isMine: true },
-        '4': { subject: '语文', weeks: '1-16周' },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '数学', weeks: '1-18周', isMine: true },
-        '6': { subject: '体育', weeks: '1-18周' },
-        'after': { subject: '英语', weeks: '1-18周' },
-      },
-      '周五': {
-        'morning': { subject: '数学', weeks: '1-18周', isMine: true },
-        '1': { subject: '语文', weeks: '1-18周' },
-        '2': { subject: '英语', weeks: '1-18周' },
-        '3': { subject: '音乐', weeks: '1-18周' },
-        '4': { subject: '数学', weeks: '1-16周', isMine: true },
-        'noon': { subject: '阅读', weeks: '1-18周' },
-        '5': { subject: '语文', weeks: '1-18周' },
-        '6': { subject: '道法', weeks: '1-18周' },
-        'after': { subject: '数学', weeks: '1-18周', isMine: true },
-      },
-    },
-  },
-];
-
-// 假期
-const holidays: Record<string, string> = {
-  '周三-10': '五一', '周四-10': '五一', '周五-10': '五一',
-  '周四-14': '端午', '周五-14': '端午',
+// 前端 periodKey → 后端 period 编号
+const PERIOD_KEY_TO_NUM: Record<string, number> = {
+  'morning': 0, '1': 1, '2': 2, '3': 3, '4': 4,
+  'noon': 5, '5': 6, '6': 7, 'after': 8,
 };
+const PERIOD_NUM_TO_KEY: Record<number, string> = {};
+Object.entries(PERIOD_KEY_TO_NUM).forEach(([k, v]) => { PERIOD_NUM_TO_KEY[v] = k; });
 
-const SEMESTER_START = '2026-02-17';
-const SEMESTER_END = '2026-06-30';
+// 前端 weekday 中文 → 后端 weekday 编号
+const WEEKDAY_LABEL_TO_NUM: Record<string, number> = {
+  '周一': 1, '周二': 2, '周三': 3, '周四': 4, '周五': 5,
+};
+const WEEKDAY_NUM_TO_LABEL: Record<number, string> = {};
+Object.entries(WEEKDAY_LABEL_TO_NUM).forEach(([k, v]) => { WEEKDAY_NUM_TO_LABEL[v] = k; });
+
+/** 将后端课程列表转换为前端 schedule 结构 */
+function mapCoursesToSchedule(
+  courses: { weekday: number; period: number; subject: string; teacher_id: number }[],
+  teacherId: number | null,
+): Record<string, Record<string, CourseInfo>> {
+  const schedule: Record<string, Record<string, CourseInfo>> = {};
+  weekdays.forEach((d) => (schedule[d] = {}));
+
+  for (const c of courses) {
+    const dayLabel = WEEKDAY_NUM_TO_LABEL[c.weekday];
+    const periodKey = PERIOD_NUM_TO_KEY[c.period];
+    if (!dayLabel || periodKey === undefined) continue;
+    if (!schedule[dayLabel]) schedule[dayLabel] = {};
+    schedule[dayLabel][periodKey] = {
+      subject: c.subject,
+      isMine: teacherId != null && c.teacher_id === teacherId,
+    };
+  }
+  return schedule;
+}
 
 function getWeekNumberInSemester(date: Date, SEMESTER_START: string, totalWeeks: number) {
   const start = new Date(`${SEMESTER_START}T00:00:00`);
@@ -214,16 +115,30 @@ function getWeekNumberInSemester(date: Date, SEMESTER_START: string, totalWeeks:
 export default function ScheduleScreen() {
   const colors = useTheme();
   const { width: windowWidth } = useWindowDimensions();
-  // viewMode removed - calendar integrated into schedule header
-  const [currentWeek, setCurrentWeek] = useState(8);
-  const totalWeeks = 18;
-  const [selectedClassId, setSelectedClassId] = useState(initialClasses[0].id);
+
+  // API 加载状态
+  const [loading, setLoading] = useState(true);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [teacherInfo, setTeacherInfo] = useState<TeacherInfo | null>(null);
+
+  // 班级 & 学期（从 API 加载）
+  const [apiClasses, setApiClasses] = useState<{ id: number; name: string }[]>([]);
+  const [semesters, setSemesters] = useState<{ id: number; name: string; start_date: string; end_date: string; weeks_count: number; current_week: number | null; is_active: boolean }[]>([]);
+  const [activeSemesterId, setActiveSemesterId] = useState<number | null>(null);
+
+  const activeSemester = useMemo(() => semesters.find((s) => s.id === activeSemesterId) ?? null, [semesters, activeSemesterId]);
+  const semesterStart = activeSemester?.start_date ?? '';
+  const semesterEnd = activeSemester?.end_date ?? '';
+  const totalWeeks = activeSemester?.weeks_count ?? 18;
+
+  const [currentWeek, setCurrentWeek] = useState(1);
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [classPickerOpen, setClassPickerOpen] = useState(false);
   const [filterSubject, setFilterSubject] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   // 可变课程数据
-  const [classesData, setClassesData] = useState<ClassInfo[]>(initialClasses);
+  const [classesData, setClassesData] = useState<ClassInfo[]>([]);
 
   // 编辑面板状态
   const [editingCell, setEditingCell] = useState<{ day: string; periodKey: string } | null>(null);
@@ -251,8 +166,13 @@ export default function ScheduleScreen() {
     return Math.max(68, (safeWidth - 40 - 30) / 4);
   }, [windowWidth]);
 
-  const currentClass = classesData.find((c) => c.id === selectedClassId)!;
-  const schedule = currentClass.schedule;
+  const emptySchedule: Record<string, Record<string, CourseInfo>> = useMemo(() => {
+    const s: Record<string, Record<string, CourseInfo>> = {};
+    weekdays.forEach((d) => (s[d] = {}));
+    return s;
+  }, []);
+  const currentClass = classesData.find((c) => c.id === selectedClassId);
+  const schedule = currentClass?.schedule ?? emptySchedule;
   const myCourseCount = Object.values(schedule).reduce(
     (sum, dayData) => sum + Object.values(dayData).filter((course) => course.isMine).length,
     0,
@@ -262,25 +182,30 @@ export default function ScheduleScreen() {
     ? Object.keys(schedule[weekdays[todayWeekIndex]] || {}).length
     : 0;
 
-  const weekHolidays = useMemo(() => {
-    const result: Record<string, string> = {};
-    weekdays.forEach((day) => {
-      const key = `${day}-${currentWeek}`;
-      if (holidays[key]) result[day] = holidays[key];
-    });
-    return result;
-  }, [currentWeek]);
+  const weekHolidays = useMemo<Record<string, string>>(() => ({}), []);
 
   // 计算当前周每天的实际日期
   const weekDates = useMemo(() => {
-    const semStart = new Date(`${SEMESTER_START}T00:00:00`);
+    if (!semesterStart) {
+      // 学期未加载时用当前周的日期
+      const today = new Date();
+      const dayOfWeek = today.getDay() || 7; // 1=Mon...7=Sun
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - (dayOfWeek - 1));
+      return weekdays.map((_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        return d;
+      });
+    }
+    const semStart = new Date(`${semesterStart}T00:00:00`);
     const mondayOffset = (currentWeek - 1) * 7;
     return weekdays.map((_, i) => {
       const d = new Date(semStart);
       d.setDate(d.getDate() + mondayOffset + i);
       return d;
     });
-  }, [currentWeek]);
+  }, [currentWeek, semesterStart]);
 
   const todayDate = new Date();
   const todayDateStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
@@ -296,14 +221,13 @@ export default function ScheduleScreen() {
           ...newSchedule[day],
           [periodKey]: {
             subject,
-            weeks: '1-18周',
-            isMine: subject === currentTeacher.subject,
+            isMine: !!teacherInfo?.subject && subject === teacherInfo.subject,
           },
         };
         return { ...cls, schedule: newSchedule };
       }),
     );
-  }, [selectedClassId]);
+  }, [selectedClassId, teacherInfo]);
 
   // 编辑：删除某个格子
   const deleteCellCourse = useCallback((day: string, periodKey: string) => {
@@ -400,6 +324,193 @@ export default function ScheduleScreen() {
     ]).start();
   }, [showSubjectPicker, sheetBackdropOpacity, sheetOpacity, sheetTranslateY]);
 
+  // ====== 数据加载 ======
+
+  // 初始加载：班级、学期、教师信息
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const [clsList, semList, teacher] = await Promise.all([
+          classApi.list(),
+          semesterApi.list(),
+          getTeacher(),
+        ]);
+
+        if (cancelled) return;
+
+        if (teacher) setTeacherInfo(teacher);
+
+        // 设置班级
+        const mappedClasses = clsList.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+        }));
+        setApiClasses(mappedClasses);
+        if (clsList.length > 0 && !selectedClassId) {
+          setSelectedClassId(String(clsList[0].id));
+        }
+
+        // 设置学期
+        setSemesters(semList.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          start_date: s.start_date,
+          end_date: s.end_date,
+          weeks_count: s.weeks_count,
+          current_week: s.current_week,
+          is_active: s.is_active,
+        })));
+
+        // 选择活跃学期
+        const active = semList.find((s: any) => s.is_active);
+        if (active) {
+          setActiveSemesterId(active.id);
+          // 设置当前周
+          if (active.current_week) {
+            setCurrentWeek(active.current_week);
+          } else if (active.start_date) {
+            setCurrentWeek(getWeekNumberInSemester(new Date(), active.start_date, active.weeks_count));
+          }
+        } else if (semList.length > 0) {
+          setActiveSemesterId(semList[0].id);
+        }
+
+        // 初始化 classesData 壳（schedule 将由下一个 useEffect 填充）
+        if (clsList.length > 0) {
+          setClassesData(clsList.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            schedule: weekdays.reduce((acc, d) => { acc[d] = {}; return acc; }, {} as Record<string, Record<string, CourseInfo>>),
+          })));
+          if (!selectedClassId) {
+            setSelectedClassId(String(clsList[0].id));
+          }
+        }
+      } catch (err: any) {
+        showFeedback({ title: '加载失败', tone: 'error' });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 加载课程：当班级或学期变化时
+  useEffect(() => {
+    if (!selectedClassId || !activeSemesterId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setCoursesLoading(true);
+        const courses = await courseApi.list(activeSemesterId, Number(selectedClassId));
+        if (cancelled) return;
+
+        const schedule = mapCoursesToSchedule(courses, teacherInfo?.id ?? null);
+
+        setClassesData((prev) => {
+          // 如果班级已存在则更新，否则添加
+          const exists = prev.find((c) => c.id === selectedClassId);
+          if (exists) {
+            return prev.map((c) => c.id === selectedClassId ? { ...c, schedule } : c);
+          }
+          return [...prev, { id: selectedClassId, name: selectedClassId, schedule }];
+        });
+      } catch (err: any) {
+        showFeedback({ title: '课程加载失败', tone: 'error' });
+      } finally {
+        if (!cancelled) setCoursesLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedClassId, activeSemesterId, teacherInfo]);
+
+  // 保存课程表到后端
+  const handleSaveSchedule = useCallback(async () => {
+    if (!selectedClassId || !activeSemesterId) return;
+    const cls = classesData.find((c) => c.id === selectedClassId);
+    if (!cls) return;
+
+    const items: { weekday: number; period: number; subject: string }[] = [];
+    for (const [dayLabel, daySchedule] of Object.entries(cls.schedule)) {
+      const weekdayNum = WEEKDAY_LABEL_TO_NUM[dayLabel];
+      if (!weekdayNum) continue;
+      for (const [periodKey, course] of Object.entries(daySchedule)) {
+        const periodNum = PERIOD_KEY_TO_NUM[periodKey];
+        if (periodNum === undefined) continue;
+        items.push({ weekday: weekdayNum, period: periodNum, subject: course.subject });
+      }
+    }
+
+    try {
+      await courseApi.batchCreate({
+        class_id: Number(selectedClassId),
+        semester_id: activeSemesterId,
+        items,
+      });
+      showFeedback({ title: '课程表已保存', tone: 'success' });
+    } catch (err: any) {
+      showFeedback({ title: '保存失败', tone: 'error' });
+    }
+  }, [selectedClassId, activeSemesterId, classesData]);
+
+  // 下载课程表模板
+  const handleDownloadTemplate = async () => {
+    try {
+      const templateData = [
+        ['节次', '周一', '周二', '周三', '周四', '周五'],
+        ['早读', '语文', '英语', '语文', '英语', '语文'],
+        ['第1节', '语文', '数学', '英语', '语文', '数学'],
+        ['第2节', '数学', '英语', '语文', '数学', '英语'],
+        ['第3节', '英语', '语文', '数学', '英语', '语文'],
+        ['第4节', '体育', '音乐', '美术', '科学', '道法'],
+        ['午阅', '', '', '', '', ''],
+        ['第5节', '科学', '美术', '体育', '音乐', '科学'],
+        ['第6节', '道法', '体育', '科学', '道法', '美术'],
+        ['课后', '数学', '语文', '数学', '体育', '英语'],
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(templateData);
+      ws['!cols'] = [{ wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '课程表');
+
+      if (Platform.OS === 'web') {
+        XLSX.writeFile(wb, '课程表模板.xlsx');
+        showFeedback({ title: '模板已下载', tone: 'success' });
+      } else {
+        const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+        const uri = FileSystem.cacheDirectory + '课程表模板.xlsx';
+        await FileSystem.writeAsStringAsync(uri, wbout, { encoding: FileSystem.EncodingType.Base64 });
+        try {
+          const Sharing = require('expo-sharing');
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(uri);
+          } else {
+            Alert.alert('模板已保存', `文件已保存到：${uri}`);
+          }
+        } catch {
+          Alert.alert('模板已保存', `文件已保存到缓存目录，请使用文件管理器查看`);
+        }
+      }
+    } catch (err: any) {
+      showFeedback({ title: '生成模板失败', tone: 'error' });
+    }
+  };
+
+  // 导入入口：选择下载模板或导入文件
+  const handleImportEntry = () => {
+    Alert.alert(
+      'Excel 导入课程表',
+      '表头格式：节次 | 周一 ~ 周五\n节次支持：早读、第1节~第6节、午阅、课后\n格子内填写科目名称，空格子表示没课',
+      [
+        { text: '取消', style: 'cancel' },
+        { text: '下载模板', onPress: handleDownloadTemplate },
+        { text: '选择文件', onPress: handleImportExcel },
+      ],
+    );
+  };
+
   // Excel 导入
   const handleImportExcel = async () => {
     try {
@@ -477,7 +588,7 @@ export default function ScheduleScreen() {
           parsed[day][periodKey] = {
             subject: cellValue,
             weeks: '1-18周',
-            isMine: cellValue === currentTeacher.subject,
+            isMine: !!teacherInfo?.subject && cellValue === teacherInfo.subject,
           };
         }
       }
@@ -502,8 +613,10 @@ export default function ScheduleScreen() {
   };
 
   // 确认导入
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     if (!importPreview) return;
+
+    // 更新本地状态
     setClassesData((prev) =>
       prev.map((cls) => {
         if (cls.id !== importTargetClassId) return cls;
@@ -513,7 +626,32 @@ export default function ScheduleScreen() {
     setShowImportModal(false);
     setImportPreview(null);
     setSelectedClassId(importTargetClassId);
-    Alert.alert('导入成功', `已将课程表导入到 ${classesData.find((c) => c.id === importTargetClassId)?.name}，${currentTeacher.subject}课已自动标记为"我的课程"`);
+
+    // 保存到后端
+    if (activeSemesterId) {
+      const items: { weekday: number; period: number; subject: string }[] = [];
+      for (const [dayLabel, daySchedule] of Object.entries(importPreview)) {
+        const weekdayNum = WEEKDAY_LABEL_TO_NUM[dayLabel];
+        if (!weekdayNum) continue;
+        for (const [periodKey, course] of Object.entries(daySchedule)) {
+          const periodNum = PERIOD_KEY_TO_NUM[periodKey];
+          if (periodNum === undefined) continue;
+          items.push({ weekday: weekdayNum, period: periodNum, subject: course.subject });
+        }
+      }
+      try {
+        await courseApi.batchCreate({
+          class_id: Number(importTargetClassId),
+          semester_id: activeSemesterId,
+          items,
+        });
+        showFeedback({ title: '导入并保存成功', tone: 'success' });
+      } catch {
+        showFeedback({ title: '导入成功但保存到服务器失败', tone: 'warning' });
+      }
+    } else {
+      showFeedback({ title: '导入成功', tone: 'success' });
+    }
   };
 
   // 统计导入预览中"我的课"数量
@@ -530,8 +668,8 @@ export default function ScheduleScreen() {
   };
 
   const currentSemesterWeek = useMemo(
-    () => getWeekNumberInSemester(new Date(), SEMESTER_START, totalWeeks),
-    [totalWeeks],
+    () => semesterStart ? getWeekNumberInSemester(new Date(), semesterStart, totalWeeks) : 1,
+    [totalWeeks, semesterStart],
   );
   const isViewingCurrentWeek = currentWeek === currentSemesterWeek;
   const todayWeekday = new Date().getDay();
@@ -556,25 +694,7 @@ export default function ScheduleScreen() {
   const editingCellCourse = editingCell ? schedule[editingCell.day]?.[editingCell.periodKey] : null;
   const editingPeriod = editingCell ? periods.find((p) => p.key === editingCell.periodKey) : null;
 
-  // 校历事件数据
-  const calendarEvents: Record<string, { type: 'holiday' | 'exam' | 'event'; label: string }> = {
-    '2026-02-17': { type: 'event', label: '开学日' },
-    '2026-03-15': { type: 'exam', label: '期中考试' },
-    '2026-03-16': { type: 'exam', label: '期中考试' },
-    '2026-03-17': { type: 'exam', label: '期中考试' },
-    '2026-04-05': { type: 'holiday', label: '清明节' },
-    '2026-04-06': { type: 'holiday', label: '清明节' },
-    '2026-04-07': { type: 'holiday', label: '清明节' },
-    '2026-05-01': { type: 'holiday', label: '五一劳动节' },
-    '2026-05-02': { type: 'holiday', label: '五一劳动节' },
-    '2026-05-03': { type: 'holiday', label: '五一劳动节' },
-    '2026-05-31': { type: 'holiday', label: '端午节' },
-    '2026-06-01': { type: 'holiday', label: '端午节' },
-    '2026-06-22': { type: 'exam', label: '期末考试' },
-    '2026-06-23': { type: 'exam', label: '期末考试' },
-    '2026-06-24': { type: 'exam', label: '期末考试' },
-    '2026-06-30': { type: 'event', label: '结课日' },
-  };
+  const calendarEvents: Record<string, { type: 'holiday' | 'exam' | 'event'; label: string }> = {};
 
   // 当前周的校历事件（去重合并连续天数）
   const weekCalendarEvents = useMemo(() => {
@@ -608,8 +728,8 @@ export default function ScheduleScreen() {
               <Ionicons name="grid-outline" size={12} color="rgba(255,255,255,0.9)" />
               <Text style={styles.scheduleHeroEyebrow}>课程表总览</Text>
             </View>
-            <Text style={styles.scheduleHeroTitle}>{currentClass.name}</Text>
-            <Text style={styles.scheduleHeroMeta}>{SEMESTER_START} - {SEMESTER_END}</Text>
+            <Text style={styles.scheduleHeroTitle}>{currentClass?.name ?? '加载中...'}</Text>
+            <Text style={styles.scheduleHeroMeta}>{semesterStart || '--'} - {semesterEnd || '--'}</Text>
           </View>
           <View style={styles.scheduleHeroWeekBadge}>
             <Text style={styles.scheduleHeroWeekBadgeLabel}>本周</Text>
@@ -649,21 +769,21 @@ export default function ScheduleScreen() {
             >
               <Ionicons name="school-outline" size={13} color="#FFFFFF" />
               <Text style={[styles.classTabText, { color: '#FFFFFF' }]}>
-                {currentClass.name}
+                {currentClass?.name ?? '选择班级'}
               </Text>
               <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.7)" />
             </TouchableOpacity>
           </ScrollView>
           <View style={styles.topActions}>
             {isEditing && (
-              <TouchableOpacity style={[styles.importBtn, { borderColor: colors.primary }]} onPress={handleImportExcel} activeOpacity={0.7}>
+              <TouchableOpacity style={[styles.importBtn, { borderColor: colors.primary }]} onPress={handleImportEntry} activeOpacity={0.7}>
                 <Ionicons name="cloud-upload-outline" size={14} color={colors.primary} />
                 <Text style={[styles.importBtnText, { color: colors.primary }]}>导入</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
               style={[styles.editBtn, { backgroundColor: isEditing ? colors.primary : colors.surfaceSecondary }]}
-              onPress={() => { setIsEditing(!isEditing); setFilterSubject(null); }}
+              onPress={() => { if (isEditing) { handleSaveSchedule(); } setIsEditing(!isEditing); setFilterSubject(null); }}
               activeOpacity={0.7}
             >
               <Ionicons name={isEditing ? 'checkmark' : 'create-outline'} size={14} color={isEditing ? '#FFFFFF' : colors.textSecondary} />
@@ -738,6 +858,14 @@ export default function ScheduleScreen() {
               </View>
             );
           })}
+        </View>
+      )}
+
+      {/* 加载指示器 */}
+      {(loading || coursesLoading) && (
+        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 8, gap: 8 }}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={{ fontSize: 12, color: colors.textTertiary }}>{loading ? '加载中...' : '课程加载中...'}</Text>
         </View>
       )}
 
@@ -948,7 +1076,7 @@ export default function ScheduleScreen() {
           <View style={[styles.editHint, { backgroundColor: colors.primaryLight }]}>
             <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
             <Text style={[styles.editHintText, { color: colors.primary }]}>
-              点击格子选择/更换科目，{currentTeacher.subject}课将自动标记为"我的课程"
+              点击格子选择/更换科目，{teacherInfo?.subject ?? ''}课将自动标记为"我的课程"
             </Text>
           </View>
         )}
@@ -1010,7 +1138,7 @@ export default function ScheduleScreen() {
               {subjects.map((subject) => {
                 const colorIndex = subjectColorMap[subject] ?? 0;
                 const courseColor = colors.courseColors[colorIndex % colors.courseColors.length];
-                const isMySubject = subject === currentTeacher.subject;
+                const isMySubject = !!teacherInfo?.subject && subject === teacherInfo.subject;
                 const isCurrentSubject = editingCellCourse?.subject === subject;
                 return (
                   <TouchableOpacity
@@ -1118,7 +1246,7 @@ export default function ScheduleScreen() {
                   <View style={styles.modalBody}>
                     <View style={styles.modalRow}>
                       <Ionicons name="school-outline" size={16} color={colors.textTertiary} />
-                      <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>{currentClass.name}</Text>
+                      <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>{currentClass?.name ?? ''}</Text>
                     </View>
                     <View style={styles.modalRow}>
                       <Ionicons name="calendar-outline" size={16} color={colors.textTertiary} />
@@ -1184,7 +1312,7 @@ export default function ScheduleScreen() {
             <View style={[styles.importHint, { backgroundColor: colors.primaryLight }]}>
               <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
               <Text style={[styles.importHintText, { color: colors.primary }]}>
-                已自动识别 {myCoursesCount} 节{currentTeacher.subject}课为"我的课程"
+                已自动识别 {myCoursesCount} 节{teacherInfo?.subject ?? ''}课为"我的课程"
               </Text>
             </View>
 

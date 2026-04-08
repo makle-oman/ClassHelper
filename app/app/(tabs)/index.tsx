@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
-import { getTeacher, classApi, type TeacherInfo } from '../../src/services/api';
+import { getTeacher, classApi, courseApi, leaveApi, homeworkApi, noticeApi, type TeacherInfo } from '../../src/services/api';
 import { PrimaryHeroSection } from '../../src/components/ui';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -27,12 +27,17 @@ const quickActions: QuickAction[] = [
   { icon: 'calendar', label: '课程表', colorKey: 'cyan', route: '/(tabs)/schedule' },
 ];
 
-const todayCourses = [
-  { period: '第1节', time: '08:00 - 08:40', subject: '语文', class: '三年级2班', isMine: true },
-  { period: '第3节', time: '10:00 - 10:40', subject: '数学', class: '三年级2班', isMine: true },
-  { period: '第5节', time: '14:00 - 14:40', subject: '语文', class: '三年级1班', isMine: true },
-  { period: '第7节', time: '15:40 - 16:20', subject: '体育', class: '三年级1班', isMine: false },
-];
+const periodTimeMap: Record<number, { label: string; time: string }> = {
+  0: { label: '早读', time: '07:40 - 08:00' },
+  1: { label: '第1节', time: '08:00 - 08:40' },
+  2: { label: '第2节', time: '08:50 - 09:30' },
+  3: { label: '第3节', time: '10:00 - 10:40' },
+  4: { label: '第4节', time: '10:50 - 11:30' },
+  5: { label: '午休', time: '12:00 - 14:00' },
+  6: { label: '第5节', time: '14:00 - 14:40' },
+  7: { label: '第6节', time: '14:50 - 15:30' },
+  8: { label: '课后', time: '15:40 - 16:20' },
+};
 
 const courseColorMap: Record<string, string> = {
   '语文': '#5B9FE8',
@@ -45,11 +50,101 @@ export default function HomeScreen() {
   const colors = useTheme();
   const [teacher, setTeacher] = useState<TeacherInfo | null>(null);
   const [classes, setClasses] = useState<any[]>([]);
+  const [todayCourses, setTodayCourses] = useState<{ period: string; time: string; subject: string; class: string; isMine: boolean }[]>([]);
+  const [pendingLeaves, setPendingLeaves] = useState(0);
+  const [todoItems, setTodoItems] = useState<{ text: string; time: string; icon: IoniconsName; colorKey: 'orange' | 'red' | 'blue' | 'green'; urgent: boolean; route: string }[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       getTeacher().then(setTeacher);
-      classApi.list().then(setClasses).catch(() => {});
+      classApi.list().then(async (classList) => {
+        setClasses(classList);
+        // 加载今日课程
+        const allCourses: { period: string; time: string; subject: string; class: string; isMine: boolean }[] = [];
+        for (const cls of classList) {
+          try {
+            const courses = await courseApi.myToday();
+            for (const c of courses) {
+              const pm = periodTimeMap[c.period] || { label: `第${c.period}节`, time: '' };
+              allCourses.push({
+                period: pm.label,
+                time: pm.time,
+                subject: c.subject,
+                class: cls.name,
+                isMine: true,
+              });
+            }
+            break; // myToday returns all courses for today
+          } catch {}
+        }
+        setTodayCourses(allCourses);
+
+        // 加载待办数据
+        const todos: typeof todoItems = [];
+
+        // 1. 待审批请假
+        try {
+          let total = 0;
+          for (const cls of classList) {
+            const leaves = await leaveApi.list(cls.id, '待审批');
+            total += leaves.length;
+          }
+          setPendingLeaves(total);
+          if (total > 0) {
+            todos.push({
+              text: `${total}条请假申请待审批`,
+              time: '待处理',
+              icon: 'hand-left',
+              colorKey: 'red',
+              urgent: true,
+              route: '/leave-approval',
+            });
+          }
+        } catch {}
+
+        // 2. 未完成的作业
+        try {
+          for (const cls of classList) {
+            const hwResult = await homeworkApi.list(cls.id);
+            const hwList = hwResult.list || [];
+            if (hwList.length > 0) {
+              // 检查有未过截止日期的作业
+              const now = new Date().toISOString().split('T')[0];
+              const active = hwList.filter((hw: any) => hw.deadline >= now);
+              const count = active.length || hwList.length;
+              todos.push({
+                text: `${cls.name} 有${count}项作业待跟进`,
+                time: '进行中',
+                icon: 'document-text',
+                colorKey: 'orange',
+                urgent: false,
+                route: '/homework',
+              });
+            }
+          }
+        } catch {}
+
+        // 3. 最新通知
+        try {
+          for (const cls of classList) {
+            const notices = await noticeApi.list(cls.id);
+            if (notices.length > 0) {
+              const latest = notices[0];
+              todos.push({
+                text: `${latest.title}`,
+                time: latest.created_at ? new Date(latest.created_at).toLocaleDateString() : '最近',
+                icon: 'megaphone',
+                colorKey: 'blue',
+                urgent: false,
+                route: '/notices',
+              });
+              break;
+            }
+          }
+        } catch {}
+
+        setTodoItems(todos);
+      }).catch(() => {});
     }, [])
   );
 
@@ -78,8 +173,8 @@ export default function HomeScreen() {
             {[
               { label: '管理班级', value: classes.length.toString() },
               { label: '学生总数', value: classes.reduce((sum: number, c: any) => sum + (c.student_count || 0), 0).toString() },
-              { label: '今日课程', value: '4节' },
-              { label: '出勤率', value: '98%' },
+              { label: '今日课程', value: `${todayCourses.length}节` },
+              { label: '待审批', value: pendingLeaves > 0 ? `${pendingLeaves}条` : '无' },
             ].map((item, i) => (
               <View key={item.label} style={[styles.statItem, i < 3 && styles.statItemBorder]}>
                 <Text style={styles.statValue}>{item.value}</Text>
@@ -183,18 +278,21 @@ export default function HomeScreen() {
             <View style={styles.sectionTitleRow}>
               <View style={[styles.sectionTitleDot, { backgroundColor: colors.warning }]} />
               <Text style={[styles.sectionTitle, { color: colors.text }]}>待办提醒</Text>
+              {pendingLeaves > 0 && (
               <View style={[styles.countBadge, { backgroundColor: colors.errorLight }]}>
-                <Text style={[styles.countBadgeText, { color: colors.error }]}>3</Text>
+                <Text style={[styles.countBadgeText, { color: colors.error }]}>{pendingLeaves}</Text>
               </View>
+              )}
             </View>
           </View>
 
           <View style={[styles.todoListCard, { backgroundColor: colors.surface }]}>
-            {[
-              { text: '三年级2班 数学作业还有5人未交', time: '2小时前', icon: 'document-text' as IoniconsName, colorKey: 'orange' as const, urgent: false, route: '/homework' },
-              { text: '张小明请假申请待审批（家长已提交）', time: '30分钟前', icon: 'hand-left' as IoniconsName, colorKey: 'red' as const, urgent: true, route: '/leave-approval' },
-              { text: '下周一有教研活动，记得准备发言材料', time: '今天', icon: 'calendar' as IoniconsName, colorKey: 'blue' as const, urgent: false, route: '/notices' },
-            ].map((item, i, arr) => (
+            {todoItems.length === 0 ? (
+              <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                <Ionicons name="checkmark-circle-outline" size={32} color={colors.textTertiary} />
+                <Text style={{ color: colors.textTertiary, fontSize: 13, marginTop: 8 }}>暂无待办事项</Text>
+              </View>
+            ) : todoItems.map((item, i, arr) => (
               <TouchableOpacity
                 key={i}
                 style={[

@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../src/theme';
+import { classApi } from '../src/services/api';
+import { showFeedback } from '../src/services/feedback';
 import { PrimaryHeroSection } from '../src/components/ui/PrimaryHeroSection';
 import { AppCard } from '../src/components/ui/AppCard';
 import { AppChip } from '../src/components/ui/AppChip';
@@ -33,20 +35,35 @@ const gradeColorKeys = ['blue', 'green', 'orange', 'red', 'purple', 'cyan'] as c
 const getGradeColorKey = (gradeNum: number) => gradeColorKeys[(gradeNum - 1) % 6];
 const gradeChars = ['一', '二', '三', '四', '五', '六'];
 
-const mockClasses: ClassForPromotion[] = [
-  { id: '1', grade: '三年级', gradeNumber: 3, classNumber: 1, name: '三年级1班', studentCount: 43, targetGrade: '四年级', targetName: '四年级1班', isGraduating: false },
-  { id: '2', grade: '三年级', gradeNumber: 3, classNumber: 2, name: '三年级2班', studentCount: 43, targetGrade: '四年级', targetName: '四年级2班', isGraduating: false },
-  { id: '3', grade: '六年级', gradeNumber: 6, classNumber: 1, name: '六年级1班', studentCount: 45, isGraduating: true },
-];
-
-const mockArchived: ArchivedClass[] = [
-  { id: 'a1', name: '2024届六年级1班', archivedDate: '2024-07-01', studentCount: 45 },
-];
-
 export default function PromotionScreen() {
   const colors = useTheme();
-  const [classes] = useState<ClassForPromotion[]>(mockClasses);
-  const [archived] = useState<ArchivedClass[]>(mockArchived);
+  const [classes, setClasses] = useState<ClassForPromotion[]>([]);
+  const [archived, setArchived] = useState<ArchivedClass[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        try {
+          const list = await classApi.list();
+          const mapped: ClassForPromotion[] = list.map(c => {
+            const isGraduating = c.grade_number >= 6;
+            return {
+              id: c.id.toString(),
+              grade: c.grade,
+              gradeNumber: c.grade_number,
+              classNumber: c.class_number,
+              name: c.name,
+              studentCount: c.student_count,
+              targetGrade: isGraduating ? undefined : gradeChars[c.grade_number] ? `${gradeChars[c.grade_number]}年级` : undefined,
+              targetName: isGraduating ? undefined : `${gradeChars[c.grade_number] || ''}年级${c.class_number}班`,
+              isGraduating,
+            };
+          });
+          setClasses(mapped);
+        } catch {}
+      })();
+    }, [])
+  );
 
   const promotableClasses = classes.filter((item) => !item.isGraduating);
   const graduatingClasses = classes.filter((item) => item.isGraduating);
@@ -69,7 +86,29 @@ export default function PromotionScreen() {
         { text: '取消', style: 'cancel' },
         {
           text: '确认升年级',
-          onPress: () => Alert.alert('操作成功', '班级已完成静态升迁预演。'),
+          onPress: async () => {
+            try {
+              for (const cls of promotableClasses) {
+                await classApi.update(parseInt(cls.id), { grade_number: cls.gradeNumber + 1 });
+              }
+              showFeedback({ title: '升迁成功', message: `${promotableClasses.length}个班级已升入下一年级`, tone: 'success' });
+              // 重新加载
+              const list = await classApi.list();
+              const mapped: ClassForPromotion[] = list.map(c => {
+                const isGraduating = c.grade_number >= 6;
+                return {
+                  id: c.id.toString(), grade: c.grade, gradeNumber: c.grade_number, classNumber: c.class_number,
+                  name: c.name, studentCount: c.student_count,
+                  targetGrade: isGraduating ? undefined : `${gradeChars[c.grade_number] || ''}年级`,
+                  targetName: isGraduating ? undefined : `${gradeChars[c.grade_number] || ''}年级${c.class_number}班`,
+                  isGraduating,
+                };
+              });
+              setClasses(mapped);
+            } catch {
+              showFeedback({ title: '操作失败', tone: 'error' });
+            }
+          },
         },
       ]
     );
@@ -85,7 +124,17 @@ export default function PromotionScreen() {
         {
           text: '确认归档',
           style: 'destructive',
-          onPress: () => Alert.alert('操作成功', '毕业班已完成静态归档预演。'),
+          onPress: async () => {
+            try {
+              for (const cls of graduatingClasses) {
+                await classApi.remove(parseInt(cls.id));
+              }
+              showFeedback({ title: '归档成功', message: `${graduatingClasses.length}个毕业班已归档`, tone: 'success' });
+              setClasses(prev => prev.filter(c => !c.isGraduating));
+            } catch {
+              showFeedback({ title: '操作失败', tone: 'error' });
+            }
+          },
         },
       ]
     );

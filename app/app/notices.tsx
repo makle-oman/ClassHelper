@@ -1,23 +1,16 @@
-import { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/theme';
 import { PrimaryHeroSection, AppCard, AppChip, AppSectionHeader } from '../src/components/ui';
+import { classApi, noticeApi } from '../src/services/api';
+import type { ClassInfo } from '../src/services/api/class';
+import type { NoticeInfo } from '../src/services/api/notice';
+import { showFeedback } from '../src/services/feedback';
 
 type NoticeType = 'normal' | 'holiday' | 'activity' | 'urgent';
-
-interface Notice {
-  id: string;
-  title: string;
-  content: string;
-  type: NoticeType;
-  className: string;
-  date: string;
-  readCount: number;
-  totalCount: number;
-}
 
 const typeConfig: Record<NoticeType, { label: string; color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> = {
   normal: { label: '普通通知', color: '#3B82F6', bg: '#EFF6FF', icon: 'information-circle' },
@@ -26,12 +19,20 @@ const typeConfig: Record<NoticeType, { label: string; color: string; bg: string;
   urgent: { label: '紧急通知', color: '#EF4444', bg: '#FEF2F2', icon: 'warning' },
 };
 
-const mockNotices: Notice[] = [
-  { id: '1', title: '关于五一劳动节放假通知', content: '根据学校安排，五一劳动节放假时间为5月1日至5月5日，4月28日正常上课。请家长提前安排接送并关注假期安全。', type: 'holiday', className: '全部班级', date: '2026-03-20', readCount: 78, totalCount: 86 },
-  { id: '2', title: '第八周课堂表现通报', content: '本周各班课堂纪律总体良好，三年级2班在数学课堂表现突出，获得本周课堂表现优秀班级。', type: 'normal', className: '三年级2班', date: '2026-03-19', readCount: 35, totalCount: 43 },
-  { id: '3', title: '校园春季运动会报名通知', content: '学校定于4月中旬举办春季运动会，请各班组织学生报名。项目报名将于3月28日截止，请尽快确认。', type: 'activity', className: '全部班级', date: '2026-03-18', readCount: 56, totalCount: 86 },
-  { id: '4', title: '紧急：明天上午临时停课通知', content: '因教学楼消防检查，明天上午1-3节课临时停课，下午正常上课。请家长及时知悉并做好时间安排。', type: 'urgent', className: '全部班级', date: '2026-03-16', readCount: 82, totalCount: 86 },
-];
+/** Backend type string <-> frontend key */
+const backendTypeToFrontend: Record<string, NoticeType> = {
+  '普通通知': 'normal',
+  '放假通知': 'holiday',
+  '活动通知': 'activity',
+  '紧急通知': 'urgent',
+};
+
+const frontendTypeToBackend: Record<NoticeType, string> = {
+  normal: '普通通知',
+  holiday: '放假通知',
+  activity: '活动通知',
+  urgent: '紧急通知',
+};
 
 type FilterType = 'all' | NoticeType;
 
@@ -51,16 +52,57 @@ export default function NoticesScreen() {
     title: '',
     content: '',
     type: 'normal' as NoticeType,
-    className: '全部班级',
+    selectedClassId: null as number | null,
   });
 
-  const filteredNotices = selectedFilter === 'all' ? mockNotices : mockNotices.filter((item) => item.type === selectedFilter);
-  const urgentCount = mockNotices.filter((item) => item.type === 'urgent').length;
-  const weeklyCount = mockNotices.length;
-  const averageReadRate = useMemo(() => {
-    const rate = mockNotices.reduce((sum, item) => sum + item.readCount / item.totalCount, 0) / mockNotices.length;
-    return `${Math.round(rate * 100)}%`;
+  // API data state
+  const [classes, setClasses] = useState<ClassInfo[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [notices, setNotices] = useState<NoticeInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Load classes on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await classApi.list();
+        setClasses(data);
+        if (data.length > 0) {
+          setSelectedClassId(data[0].id);
+        }
+      } catch {
+        showFeedback({ title: '加载班级列表失败', tone: 'error' });
+      }
+    })();
   }, []);
+
+  // Load notices when selected class changes
+  const loadNotices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await noticeApi.list(selectedClassId ?? undefined);
+      setNotices(data);
+    } catch {
+      showFeedback({ title: '加载通知列表失败', tone: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedClassId]);
+
+  useEffect(() => {
+    loadNotices();
+  }, [loadNotices]);
+
+  // Map backend notices to frontend view data
+  const mappedNotices = useMemo(() => notices.map((n) => ({
+    ...n,
+    frontendType: backendTypeToFrontend[n.type] ?? ('normal' as NoticeType),
+  })), [notices]);
+
+  const filteredNotices = selectedFilter === 'all' ? mappedNotices : mappedNotices.filter((item) => item.frontendType === selectedFilter);
+  const urgentCount = mappedNotices.filter((item) => item.frontendType === 'urgent').length;
+  const weeklyCount = mappedNotices.length;
+  const averageReadRate = '—';
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -142,11 +184,16 @@ export default function NoticesScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {filteredNotices.length > 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : filteredNotices.length > 0 ? (
           <View style={styles.listSection}>
             {filteredNotices.map((notice) => {
-              const config = typeConfig[notice.type];
-              const readRate = Math.round((notice.readCount / notice.totalCount) * 100);
+              const config = typeConfig[notice.frontendType];
+              const dateStr = notice.created_at ? notice.created_at.slice(0, 10) : '';
+              const className = classes.find((c) => c.id === notice.class_id)?.name ?? '全部班级';
 
               return (
                 <AppCard key={notice.id} radius={18} padding="sm">
@@ -159,7 +206,7 @@ export default function NoticesScreen() {
                         <Text style={[styles.noticeTypeBadgeText, { color: config.color }]}>{config.label}</Text>
                       </View>
                     </View>
-                    <Text style={[styles.noticeDate, { color: colors.textTertiary }]}>{notice.date}</Text>
+                    <Text style={[styles.noticeDate, { color: colors.textTertiary }]}>{dateStr}</Text>
                   </View>
 
                   <Text style={[styles.noticeTitle, { color: colors.text }]}>{notice.title}</Text>
@@ -168,21 +215,7 @@ export default function NoticesScreen() {
                   <View style={styles.noticeMetaRow}>
                     <View style={[styles.noticeMetaChip, { backgroundColor: colors.surfaceSecondary }]}>
                       <Ionicons name="school-outline" size={12} color={colors.textTertiary} />
-                      <Text style={[styles.noticeMetaChipText, { color: colors.textSecondary }]}>{notice.className}</Text>
-                    </View>
-                    <View style={[styles.noticeMetaChip, { backgroundColor: colors.surfaceSecondary }]}>
-                      <Ionicons name="eye-outline" size={12} color={colors.textTertiary} />
-                      <Text style={[styles.noticeMetaChipText, { color: colors.textSecondary }]}>{notice.readCount}/{notice.totalCount} 已读</Text>
-                    </View>
-                  </View>
-
-                  <View style={[styles.progressBlock, { borderTopColor: colors.divider }]}>
-                    <View style={styles.progressHeader}>
-                      <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>阅读进度</Text>
-                      <Text style={[styles.progressValue, { color: colors.primary }]}>{readRate}%</Text>
-                    </View>
-                    <View style={[styles.progressTrack, { backgroundColor: colors.surfaceSecondary }]}>
-                      <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${readRate}%` }]} />
+                      <Text style={[styles.noticeMetaChipText, { color: colors.textSecondary }]}>{className}</Text>
                     </View>
                   </View>
                 </AppCard>
@@ -268,14 +301,14 @@ export default function NoticesScreen() {
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>目标班级</Text>
                 <View style={styles.chipWrap}>
-                  {['全部班级', '三年级1班', '三年级2班'].map((className) => {
-                    const selected = newNotice.className === className;
+                  {classes.map((cls) => {
+                    const selected = newNotice.selectedClassId === cls.id;
                     return (
                       <AppChip
-                        key={className}
-                        label={className}
+                        key={cls.id}
+                        label={cls.name}
                         selected={selected}
-                        onPress={() => setNewNotice((prev) => ({ ...prev, className }))}
+                        onPress={() => setNewNotice((prev) => ({ ...prev, selectedClassId: cls.id }))}
                         style={selected ? { backgroundColor: colors.primaryLight, borderColor: colors.primary } : undefined}
                         textStyle={{ color: selected ? colors.primary : colors.textSecondary }}
                       />
@@ -296,7 +329,27 @@ export default function NoticesScreen() {
               <TouchableOpacity
                 style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
                 activeOpacity={0.82}
-                onPress={() => setShowCreateModal(false)}
+                onPress={async () => {
+                  const targetClassId = newNotice.selectedClassId ?? (classes.length > 0 ? classes[0].id : null);
+                  if (!newNotice.title.trim() || !newNotice.content.trim() || targetClassId === null) {
+                    showFeedback({ title: '请填写完整通知信息', tone: 'warning' });
+                    return;
+                  }
+                  try {
+                    await noticeApi.create({
+                      title: newNotice.title.trim(),
+                      content: newNotice.content.trim(),
+                      type: frontendTypeToBackend[newNotice.type],
+                      class_id: targetClassId,
+                    });
+                    showFeedback({ title: '通知发布成功', tone: 'success' });
+                    setShowCreateModal(false);
+                    setNewNotice({ title: '', content: '', type: 'normal', selectedClassId: null });
+                    loadNotices();
+                  } catch {
+                    showFeedback({ title: '发布通知失败', tone: 'error' });
+                  }
+                }}
               >
                 <Text style={styles.modalConfirmText}>发布通知</Text>
               </TouchableOpacity>
@@ -367,6 +420,7 @@ const styles = StyleSheet.create({
   progressValue: { fontSize: 12, fontWeight: '700' },
   progressTrack: { height: 8, borderRadius: 999, overflow: 'hidden', marginTop: 8 },
   progressFill: { height: '100%', borderRadius: 999 },
+  loadingContainer: { paddingVertical: 40, alignItems: 'center', justifyContent: 'center' },
   emptyCardContent: { alignItems: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 14 },
   emptyText: { fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: 'center' },

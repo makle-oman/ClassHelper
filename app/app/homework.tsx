@@ -1,10 +1,12 @@
-﻿import { useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/theme';
 import { PrimaryHeroSection, AppCard, AppButton, AppSectionHeader } from '../src/components/ui';
+import { classApi, homeworkApi } from '../src/services/api';
+import { showFeedback } from '../src/services/feedback';
 
 interface Homework {
   id: string;
@@ -18,12 +20,6 @@ interface Homework {
   status: 'active' | 'expired' | 'completed';
 }
 
-const mockHomework: Homework[] = [
-  { id: '1', title: '完成课本 P42-43 练习题', subject: '数学', className: '三年级1班', deadline: '2026-03-25', totalStudents: 43, submitted: 38, late: 2, status: 'active' },
-  { id: '2', title: '背诵《望庐山瀑布》并默写', subject: '语文', className: '三年级2班', deadline: '2026-03-23', totalStudents: 43, submitted: 43, late: 1, status: 'completed' },
-  { id: '3', title: '抄写单词表 Unit3 并造句', subject: '英语', className: '三年级1班', deadline: '2026-03-20', totalStudents: 43, submitted: 35, late: 3, status: 'expired' },
-];
-
 type Grade = '优' | '良' | '中' | '差' | null;
 
 interface SubmissionRecord {
@@ -33,29 +29,6 @@ interface SubmissionRecord {
   status: 'submitted' | 'not_submitted' | 'late';
   grade: Grade;
 }
-
-const initialSubmissions: Record<string, SubmissionRecord[]> = {
-  '1': [
-    { id: '1', name: '张小明', studentNo: '20230101', status: 'submitted', grade: '优' },
-    { id: '2', name: '李小红', studentNo: '20230102', status: 'submitted', grade: '良' },
-    { id: '3', name: '王大力', studentNo: '20230103', status: 'not_submitted', grade: null },
-    { id: '4', name: '赵小燕', studentNo: '20230104', status: 'late', grade: null },
-    { id: '5', name: '刘天宇', studentNo: '20230105', status: 'submitted', grade: '中' },
-    { id: '6', name: '陈美丽', studentNo: '20230106', status: 'not_submitted', grade: null },
-    { id: '7', name: '孙浩然', studentNo: '20230107', status: 'submitted', grade: null },
-    { id: '8', name: '周小雪', studentNo: '20230108', status: 'submitted', grade: '优' },
-  ],
-  '2': [
-    { id: '1', name: '刘佳怡', studentNo: '20230201', status: 'submitted', grade: '优' },
-    { id: '2', name: '陈思远', studentNo: '20230202', status: 'submitted', grade: '优' },
-    { id: '3', name: '王子涵', studentNo: '20230203', status: 'submitted', grade: '良' },
-    { id: '4', name: '张雨萱', studentNo: '20230204', status: 'submitted', grade: '良' },
-    { id: '5', name: '李明轩', studentNo: '20230205', status: 'submitted', grade: '中' },
-    { id: '6', name: '赵欣怡', studentNo: '20230206', status: 'submitted', grade: '优' },
-    { id: '7', name: '孙博文', studentNo: '20230207', status: 'submitted', grade: '良' },
-    { id: '8', name: '周雅琪', studentNo: '20230208', status: 'submitted', grade: '优' },
-  ],
-};
 
 const gradeConfig: Record<string, { bg: string; text: string; emoji: string }> = {
   '优': { bg: '#DCFCE7', text: '#16A34A', emoji: '🌟' },
@@ -74,10 +47,83 @@ export default function HomeworkScreen() {
   const colors = useTheme();
   const [selectedTab, setSelectedTab] = useState<'list' | 'status'>('list');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newHomework, setNewHomework] = useState({ content: '', subject: '语文', className: '三年级1班', deadline: '' });
-  const [selectedHomeworkId, setSelectedHomeworkId] = useState(mockHomework[0].id);
-  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const [classes, setClasses] = useState<{ id: number; name: string; student_count: number }[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [newHomework, setNewHomework] = useState({ content: '', subject: '语文', className: '', deadline: '' });
+  const [homeworkList, setHomeworkList] = useState<Homework[]>([]);
+  const [selectedHomeworkId, setSelectedHomeworkId] = useState<string>('');
+  const [submissions, setSubmissions] = useState<Record<string, SubmissionRecord[]>>({});
   const [gradingStudentId, setGradingStudentId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // 加载班级列表
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await classApi.list();
+        const mapped = list.map(c => ({ id: c.id, name: c.name, student_count: c.student_count }));
+        setClasses(mapped);
+        if (mapped.length > 0) {
+          setSelectedClassId(mapped[0].id);
+          setNewHomework(prev => ({ ...prev, className: mapped[0].name }));
+        }
+      } catch (e) { console.error('加载班级失败', e); }
+    })();
+  }, []);
+
+  // 加载作业列表
+  useEffect(() => {
+    if (!selectedClassId) return;
+    (async () => {
+      try {
+        setLoading(true);
+        const result = await homeworkApi.list(selectedClassId);
+        const now = new Date();
+        const mapped: Homework[] = result.list.map(hw => {
+          const deadline = new Date(hw.deadline);
+          let status: Homework['status'] = 'active';
+          if (deadline < now) status = 'expired';
+          return {
+            id: hw.id.toString(),
+            title: hw.content,
+            subject: hw.subject,
+            className: hw.class_name || classes.find(c => c.id === selectedClassId)?.name || '',
+            deadline: hw.deadline,
+            totalStudents: classes.find(c => c.id === selectedClassId)?.student_count || 0,
+            submitted: 0,
+            late: 0,
+            status,
+          };
+        });
+        setHomeworkList(mapped);
+        if (mapped.length > 0 && !selectedHomeworkId) {
+          setSelectedHomeworkId(mapped[0].id);
+        }
+        // 加载每个作业的详情（获取提交情况）
+        for (const hw of mapped) {
+          try {
+            const detail = await homeworkApi.detail(parseInt(hw.id));
+            const records: SubmissionRecord[] = detail.records.map(r => ({
+              id: r.id.toString(),
+              name: r.student_name || '',
+              studentNo: r.student_no || '',
+              status: r.status === '已交' ? 'submitted' : r.status === '迟交' ? 'late' : 'not_submitted',
+              grade: null,
+            }));
+            setSubmissions(prev => ({ ...prev, [hw.id]: records }));
+            const submitted = detail.records.filter(r => r.status === '已交').length;
+            const late = detail.records.filter(r => r.status === '迟交').length;
+            const total = detail.records.length;
+            const allDone = submitted + late >= total && total > 0;
+            setHomeworkList(prev => prev.map(h =>
+              h.id === hw.id ? { ...h, submitted: submitted + late, late, totalStudents: total, status: allDone ? 'completed' : h.status } : h
+            ));
+          } catch {}
+        }
+      } catch (e) { console.error('加载作业失败', e); }
+      finally { setLoading(false); }
+    })();
+  }, [selectedClassId, classes]);
 
   const handleGrade = (studentId: string, grade: Grade) => {
     setSubmissions((prev) => ({
@@ -121,7 +167,7 @@ export default function HomeworkScreen() {
     }
   };
 
-  const selectedHomework = mockHomework.find((item) => item.id === selectedHomeworkId) || mockHomework[0];
+  const selectedHomework = homeworkList.find((item) => item.id === selectedHomeworkId) || homeworkList[0];
   const currentSubmissions = submissions[selectedHomeworkId] || [];
   const submittedCount = currentSubmissions.filter((item: SubmissionRecord) => item.status === 'submitted').length;
   const notSubmittedCount = currentSubmissions.filter((item: SubmissionRecord) => item.status === 'not_submitted').length;
@@ -129,12 +175,13 @@ export default function HomeworkScreen() {
   const gradedCount = currentSubmissions.filter((item: SubmissionRecord) => item.grade != null).length;
   const totalGradable = currentSubmissions.filter((item: SubmissionRecord) => item.status !== 'not_submitted').length;
 
-  const activeCount = useMemo(() => mockHomework.filter((item) => item.status === 'active').length, []);
-  const pendingReviewCount = useMemo(() => mockHomework.reduce((sum, item) => sum + (item.totalStudents - item.submitted), 0), []);
+  const activeCount = useMemo(() => homeworkList.filter((item) => item.status === 'active').length, [homeworkList]);
+  const pendingReviewCount = useMemo(() => homeworkList.reduce((sum, item) => sum + (item.totalStudents - item.submitted), 0), [homeworkList]);
   const averageCompletion = useMemo(() => {
-    const ratio = mockHomework.reduce((sum, item) => sum + item.submitted / item.totalStudents, 0) / mockHomework.length;
+    if (homeworkList.length === 0) return '0%';
+    const ratio = homeworkList.reduce((sum, item) => sum + (item.totalStudents > 0 ? item.submitted / item.totalStudents : 0), 0) / homeworkList.length;
     return `${Math.round(ratio * 100)}%`;
-  }, []);
+  }, [homeworkList]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -210,7 +257,7 @@ export default function HomeworkScreen() {
               </View>
             </View>
             <View style={styles.listSection}>
-              {mockHomework.map((hw) => {
+              {homeworkList.map((hw) => {
                 const subjectColor = getSubjectColor(hw.subject);
                 const status = getStatusConfig(hw.status);
                 const progress = hw.totalStudents > 0 ? Math.round((hw.submitted / hw.totalStudents) * 100) : 0;
@@ -264,7 +311,7 @@ export default function HomeworkScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>查看口径</Text>
               <Text style={[styles.sectionHint, { color: colors.textTertiary }]}>选择一份作业，查看每位学生的完成情况</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectorRow}>
-                {mockHomework.map((hw) => {
+                {homeworkList.map((hw) => {
                   const selected = hw.id === selectedHomeworkId;
                   return (
                     <TouchableOpacity
@@ -426,7 +473,7 @@ export default function HomeworkScreen() {
               <View style={styles.formGroup}>
                 <Text style={[styles.formLabel, { color: colors.textSecondary }]}>班级</Text>
                 <View style={styles.chipWrap}>
-                  {['三年级1班', '三年级2班'].map((className) => {
+                  {classes.map(c => c.name).map((className) => {
                     const selected = newHomework.className === className;
                     return (
                       <TouchableOpacity
@@ -510,7 +557,26 @@ export default function HomeworkScreen() {
               <TouchableOpacity
                 style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
                 activeOpacity={0.82}
-                onPress={() => setShowCreateModal(false)}
+                onPress={async () => {
+                  if (!newHomework.content.trim() || !newHomework.deadline) return;
+                  try {
+                    const targetCls = classes.find(c => c.name === newHomework.className);
+                    if (!targetCls) return;
+                    await homeworkApi.create({
+                      class_id: targetCls.id,
+                      subject: newHomework.subject,
+                      content: newHomework.content.trim(),
+                      deadline: newHomework.deadline,
+                    });
+                    showFeedback({ title: '作业发布成功', tone: 'success' });
+                    setShowCreateModal(false);
+                    setNewHomework({ content: '', subject: '语文', className: targetCls.name, deadline: '' });
+                    // 重新加载
+                    setSelectedClassId(prev => { const v = prev; setSelectedClassId(null); setTimeout(() => setSelectedClassId(v), 0); return prev; });
+                  } catch (e) {
+                    showFeedback({ title: '发布失败，请重试', tone: 'error' });
+                  }
+                }}
               >
                 <Text style={styles.modalConfirmText}>发布作业</Text>
               </TouchableOpacity>

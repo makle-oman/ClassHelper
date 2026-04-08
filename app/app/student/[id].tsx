@@ -1,10 +1,15 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Linking, Alert } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Linking, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { PrimaryHeroSection, AppCard, AppSectionHeader } from '../../src/components/ui';
+import { studentApi, scoreApi, attendanceApi } from '../../src/services/api';
+import { showFeedback } from '../../src/services/feedback';
+import type { StudentInfo } from '../../src/services/api/student';
+import type { StudentScore } from '../../src/services/api/score';
+import type { StudentStats } from '../../src/services/api/attendance';
 
 interface StudentDetail {
   id: string;
@@ -21,37 +26,6 @@ interface StudentDetail {
   attendance: { totalDays: number; present: number; late: number; absent: number; leave: number };
 }
 
-const mockStudents: Record<string, StudentDetail> = {
-  '1': {
-    id: '1', name: '张小明', studentNo: '20230101', gender: '男',
-    birthDate: '2016-03-15', enrollDate: '2023-09-01', className: '三年级1班',
-    parentName: '张伟', parentRelation: '父亲', parentPhone: '138****1234',
-    recentScores: [
-      { exam: '期中考试', subject: '语文', score: 92, fullScore: 100 },
-      { exam: '期中考试', subject: '数学', score: 85, fullScore: 100 },
-      { exam: '第二单元测验', subject: '数学', score: 78, fullScore: 100 },
-      { exam: '第二单元测验', subject: '语文', score: 88, fullScore: 100 },
-      { exam: '第一单元测验', subject: '语文', score: 82, fullScore: 100 },
-      { exam: '第一单元测验', subject: '数学', score: 75, fullScore: 100 },
-    ],
-    attendance: { totalDays: 120, present: 115, late: 3, absent: 1, leave: 1 },
-  },
-  '2': {
-    id: '2', name: '李小红', studentNo: '20230102', gender: '女',
-    birthDate: '2016-05-22', enrollDate: '2023-09-01', className: '三年级1班',
-    parentName: '李芳', parentRelation: '母亲', parentPhone: '139****5678',
-    recentScores: [
-      { exam: '期中考试', subject: '语文', score: 96, fullScore: 100 },
-      { exam: '期中考试', subject: '数学', score: 91, fullScore: 100 },
-      { exam: '第二单元测验', subject: '数学', score: 88, fullScore: 100 },
-      { exam: '第二单元测验', subject: '语文', score: 94, fullScore: 100 },
-      { exam: '第一单元测验', subject: '语文', score: 90, fullScore: 100 },
-      { exam: '第一单元测验', subject: '数学', score: 85, fullScore: 100 },
-    ],
-    attendance: { totalDays: 120, present: 118, late: 1, absent: 0, leave: 1 },
-  },
-};
-
 const subjectColors: Record<string, { bg: string; text: string }> = {
   '语文': { bg: '#E8F4FD', text: '#2E86C1' },
   '数学': { bg: '#FDEAE4', text: '#D35E44' },
@@ -62,37 +36,113 @@ export default function StudentDetailScreen() {
   const colors = useTheme();
   const { id } = useLocalSearchParams();
   const studentId = typeof id === 'string' ? id : '1';
-  const [studentsData, setStudentsData] = useState(mockStudents);
-  const student = studentsData[studentId] || studentsData['1'];
+
+  const [loading, setLoading] = useState(true);
+  const [student, setStudent] = useState<StudentDetail>({
+    id: studentId, name: '', studentNo: '', gender: '男',
+    birthDate: '', enrollDate: '', className: '',
+    parentName: '', parentRelation: '', parentPhone: '',
+    recentScores: [],
+    attendance: { totalDays: 0, present: 0, late: 0, absent: 0, leave: 0 },
+  });
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({
-    name: student.name,
-    gender: student.gender as '男' | '女',
-    birthDate: student.birthDate,
-    parentName: student.parentName,
-    parentRelation: student.parentRelation,
-    parentPhone: student.parentPhone,
+    name: '',
+    gender: '男' as '男' | '女',
+    birthDate: '',
+    parentName: '',
+    parentRelation: '',
+    parentPhone: '',
   });
 
-  const handleSaveEdit = () => {
+  const loadStudentData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const numId = Number(studentId);
+
+      // Load student detail
+      const studentList = await studentApi.list(0);
+      const info = studentList.find((s) => s.id === numId);
+      if (!info) {
+        showFeedback({ title: '未找到该学生', tone: 'error' });
+        handleBack();
+        return;
+      }
+
+      // Load scores and attendance in parallel
+      const now = new Date();
+      const semesterStart = now.getMonth() >= 8
+        ? `${now.getFullYear()}-09-01`
+        : `${now.getFullYear()}-02-01`;
+      const today = now.toISOString().split('T')[0];
+
+      const [scores, stats] = await Promise.all([
+        scoreApi.studentScores(numId, info.class_id).catch(() => [] as StudentScore[]),
+        attendanceApi.studentStats(numId, semesterStart, today).catch(() => null),
+      ]);
+
+      const recentScores = scores.map((s) => ({
+        exam: s.exam_name,
+        subject: s.subject,
+        score: s.score,
+        fullScore: s.full_score,
+      }));
+
+      const attendance = stats
+        ? {
+            totalDays: stats.total,
+            present: stats['出勤'],
+            late: stats['迟到'],
+            absent: stats['缺席'],
+            leave: stats['请假'],
+          }
+        : { totalDays: 0, present: 0, late: 0, absent: 0, leave: 0 };
+
+      setStudent({
+        id: String(info.id),
+        name: info.name,
+        studentNo: info.student_no,
+        gender: info.gender,
+        birthDate: info.birth_date || '',
+        enrollDate: info.created_at?.split('T')[0] || '',
+        className: '',
+        parentName: info.parent_name || '',
+        parentRelation: '',
+        parentPhone: info.parent_phone || '',
+        recentScores,
+        attendance,
+      });
+    } catch (err: any) {
+      showFeedback({ title: err.message || '加载学生信息失败', tone: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [studentId]);
+
+  useEffect(() => {
+    loadStudentData();
+  }, [loadStudentData]);
+
+  const handleSaveEdit = async () => {
     if (!editForm.name.trim()) {
       Alert.alert('提示', '学生姓名不能为空');
       return;
     }
-    setStudentsData((prev) => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
+    try {
+      await studentApi.update({
+        id: Number(studentId),
         name: editForm.name.trim(),
         gender: editForm.gender,
-        birthDate: editForm.birthDate.trim(),
-        parentName: editForm.parentName.trim(),
-        parentRelation: editForm.parentRelation.trim(),
-        parentPhone: editForm.parentPhone.trim(),
-      },
-    }));
-    setShowEditModal(false);
+        parent_name: editForm.parentName.trim(),
+        parent_phone: editForm.parentPhone.trim(),
+      });
+      showFeedback({ title: '学生信息已更新', tone: 'success' });
+      setShowEditModal(false);
+      loadStudentData();
+    } catch (err: any) {
+      showFeedback({ title: err.message || '保存失败', tone: 'error' });
+    }
   };
 
   const handleCall = () => {
@@ -113,11 +163,14 @@ export default function StudentDetailScreen() {
         {
           text: '删除',
           style: 'destructive',
-          onPress: () => {
-            // TODO: 后续对接后端 API
-            Alert.alert('已删除', `${student.name}已从班级中移除`, [
-              { text: '确定', onPress: () => handleBack() },
-            ]);
+          onPress: async () => {
+            try {
+              await studentApi.remove(Number(studentId));
+              showFeedback({ title: `${student.name}已从班级中移除`, tone: 'success' });
+              handleBack();
+            } catch (err: any) {
+              showFeedback({ title: err.message || '删除失败', tone: 'error' });
+            }
           },
         },
       ]
@@ -160,7 +213,7 @@ export default function StudentDetailScreen() {
     }));
 
     // 总平均分
-    const totalAvg = Math.round(scores.reduce((a, b) => a + b.score, 0) / scores.length * 10) / 10;
+    const totalAvg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b.score, 0) / scores.length * 10) / 10 : 0;
 
     // 等级
     const level = totalAvg >= 90 ? '优秀' : totalAvg >= 80 ? '良好' : totalAvg >= 70 ? '中等' : '需努力';
@@ -192,6 +245,14 @@ export default function StudentDetailScreen() {
     ? Math.round((student.recentScores.reduce((sum, item) => sum + item.score, 0) / student.recentScores.length) * 10) / 10
     : 0;
   const highestScore = student.recentScores.length > 0 ? Math.max(...student.recentScores.map((item) => item.score)) : 0;
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]} edges={['top']}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>

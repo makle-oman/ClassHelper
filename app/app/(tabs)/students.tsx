@@ -16,6 +16,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { classApi, studentApi } from '../../src/services/api';
+import { showFeedback } from '../../src/services/feedback';
+import * as XLSX from 'xlsx';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import {
   PrimaryHeroSection,
   AppCard,
@@ -185,24 +189,121 @@ export default function StudentsScreen() {
     </TouchableOpacity>
   );
 
+  // 下载学生导入模板
+  const handleDownloadTemplate = async () => {
+    try {
+      const templateData = [
+        ['姓名', '学号', '性别', '出生日期', '家长姓名', '家长电话'],
+        ['张小明', '20250101', '男', '2016-03-15', '张大明', '13800001111'],
+        ['李小红', '20250102', '女', '2016-07-22', '李强', '13800002222'],
+        ['王小刚', '20250103', '男', '2015-11-08', '王建国', '13800003333'],
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(templateData);
+      ws['!cols'] = [{ wch: 10 }, { wch: 12 }, { wch: 6 }, { wch: 12 }, { wch: 10 }, { wch: 14 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '学生信息');
+
+      if (Platform.OS === 'web') {
+        XLSX.writeFile(wb, '学生导入模板.xlsx');
+        showFeedback({ title: '模板已下载', tone: 'success' });
+      } else {
+        const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+        const uri = FileSystem.cacheDirectory + '学生导入模板.xlsx';
+        await FileSystem.writeAsStringAsync(uri, wbout, { encoding: FileSystem.EncodingType.Base64 });
+        try {
+          const Sharing = require('expo-sharing');
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(uri);
+          } else {
+            Alert.alert('模板已保存', `文件路径：${uri}`);
+          }
+        } catch {
+          Alert.alert('模板已保存', '文件已保存到缓存目录');
+        }
+      }
+    } catch {
+      showFeedback({ title: '生成模板失败', tone: 'error' });
+    }
+  };
+
+  // Excel 导入学生
+  const handleImportExcel = async () => {
+    if (!selectedClassId) {
+      Alert.alert('提示', '请先选择要导入的班级');
+      return;
+    }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+        ],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+
+      const file = result.assets[0];
+      let binary: string;
+
+      if (Platform.OS === 'web') {
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
+        binary = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsBinaryString(blob);
+        });
+      } else {
+        const base64 = await FileSystem.readAsStringAsync(file.uri, { encoding: 'base64' as any });
+        binary = atob(base64);
+      }
+
+      const workbook = XLSX.read(binary, { type: 'binary' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<any>(sheet);
+
+      if (rows.length === 0) {
+        Alert.alert('导入失败', '表格无数据，请检查文件内容');
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+      for (const row of rows) {
+        const name = String(row['姓名'] || '').trim();
+        const studentNo = String(row['学号'] || '').trim();
+        const gender = String(row['性别'] || '男').trim();
+        const parentName = String(row['家长姓名'] || '').trim();
+        const parentPhone = String(row['家长电话'] || '').trim();
+        if (!name || !studentNo) { failCount++; continue; }
+        try {
+          await studentApi.create({
+            class_id: selectedClassId,
+            name,
+            student_no: studentNo,
+            gender: gender === '女' ? '女' : '男',
+            parent_name: parentName || undefined,
+            parent_phone: parentPhone || undefined,
+          });
+          successCount++;
+        } catch { failCount++; }
+      }
+
+      await loadStudents();
+      showFeedback({ title: `导入完成：成功${successCount}人${failCount > 0 ? `，失败${failCount}人` : ''}`, tone: successCount > 0 ? 'success' : 'error' });
+    } catch (err: any) {
+      Alert.alert('导入出错', err?.message || '读取文件失败');
+    }
+  };
+
   const handleImport = () => {
     Alert.alert(
-      'Excel 导入',
-      '选择包含学生信息的 Excel 文件（.xlsx）\n\n表头格式：姓名、学号、性别、班级、家长姓名、家长电话\n\n也可以在电脑端下载标准模板',
+      'Excel 导入学生',
+      '表头格式：姓名、学号、性别、出生日期、家长姓名、家长电话\n\n姓名和学号为必填，其余选填',
       [
         { text: '取消', style: 'cancel' },
-        {
-          text: '下载模板',
-          onPress: () => {
-            Alert.alert('模板下载', '在电脑浏览器打开系统后台，进入「学生管理」即可下载模板');
-          },
-        },
-        {
-          text: '选择文件',
-          onPress: () => {
-            Alert.alert('导入成功', '已成功导入 15 名学生信息');
-          },
-        },
+        { text: '下载模板', onPress: handleDownloadTemplate },
+        { text: '选择文件', onPress: handleImportExcel },
       ],
     );
   };

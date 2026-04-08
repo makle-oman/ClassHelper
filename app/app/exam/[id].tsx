@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,30 +11,18 @@ import { PrimaryHeroSection } from '../../src/components/ui/PrimaryHeroSection';
 import { AppCard } from '../../src/components/ui/AppCard';
 import { AppChip } from '../../src/components/ui/AppChip';
 import { AppSectionHeader } from '../../src/components/ui/AppSectionHeader';
+import { examApi, scoreApi } from '../../src/services/api';
+import { showFeedback } from '../../src/services/feedback';
 
 interface StudentScore {
   id: string;
   name: string;
   studentNo: string;
-  gender: '男' | '女';
   score: string;
   absent?: boolean; // 缺考
 }
 
-const mockStudentScores: StudentScore[] = [
-  { id: '1', name: '张小明', studentNo: '2024001', gender: '男', score: '92' },
-  { id: '2', name: '李小红', studentNo: '2024002', gender: '女', score: '88' },
-  { id: '3', name: '王小刚', studentNo: '2024003', gender: '男', score: '76' },
-  { id: '4', name: '赵小丽', studentNo: '2024004', gender: '女', score: '95' },
-  { id: '5', name: '陈小华', studentNo: '2024005', gender: '男', score: '52' },
-  { id: '6', name: '刘小芳', studentNo: '2024006', gender: '女', score: '', absent: true },
-  { id: '7', name: '孙小龙', studentNo: '2024007', gender: '男', score: '' },
-  { id: '8', name: '周小雨', studentNo: '2024008', gender: '女', score: '' },
-  { id: '9', name: '吴小军', studentNo: '2024009', gender: '男', score: '68' },
-  { id: '10', name: '郑小美', studentNo: '2024010', gender: '女', score: '83' },
-];
-
-const FULL_SCORE = 100;
+const FULL_SCORE_DEFAULT = 100;
 
 function getScoreColor(score: number, colors: any) {
   if (score >= 90) return colors.success;
@@ -46,12 +35,39 @@ function getScoreColor(score: number, colors: any) {
 export default function ExamDetailScreen() {
   const colors = useTheme();
   const { id } = useLocalSearchParams();
-  const [students, setStudents] = useState(mockStudentScores);
+  const [students, setStudents] = useState<StudentScore[]>([]);
+  const [loading, setLoading] = useState(true);
   const inputRefs = useRef<(TextInput | null)[]>([]);
-  const examName = '期中考试';
-  const examSubject = '语文';
-  const examClassName = '三年级2班';
+  const [examName, setExamName] = useState('考试详情');
+  const [examSubject, setExamSubject] = useState('');
+  const [examClassName, setExamClassName] = useState('');
+  const [fullScore, setFullScore] = useState(100);
   const examCaption = `${examSubject} · ${examClassName}`;
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        setLoading(true);
+        const detail = await examApi.detail(Number(id));
+        setExamName(detail.name);
+        setExamSubject(detail.subject);
+        setFullScore(detail.full_score);
+        const mapped: StudentScore[] = detail.students.map(s => ({
+          id: s.student_id.toString(),
+          name: s.student_name,
+          studentNo: s.student_no,
+          score: s.score != null ? s.score.toString() : '',
+          absent: false,
+        }));
+        setStudents(mapped);
+      } catch (e) {
+        showFeedback({ title: '加载考试详情失败', tone: 'error' });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
   const enteredStudents = students.filter((s) => s.score !== '');
   const scores = enteredStudents.map((s) => Number(s.score)).filter((n) => !isNaN(n));
@@ -132,6 +148,11 @@ export default function ExamDetailScreen() {
       </PrimaryHeroSection>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
@@ -192,7 +213,7 @@ export default function ExamDetailScreen() {
 
             <AppSectionHeader
               title="学生成绩"
-              actionLabel={`满分 ${FULL_SCORE}`}
+              actionLabel={`满分 ${fullScore}`}
               style={{ marginTop: 10, marginBottom: 6 }}
             />
 
@@ -206,14 +227,10 @@ export default function ExamDetailScreen() {
                 const scoreColor = hasScore && !isNaN(numScore) ? getScoreColor(numScore, colors) : colors.textTertiary;
                 const avatarBg = isAbsent
                   ? colors.surfaceSecondary
-                  : student.gender === '男'
-                    ? colors.palette.blue.bg
-                    : colors.palette.red.bg;
+                  : colors.palette.blue.bg;
                 const avatarTextColor = isAbsent
                   ? colors.textTertiary
-                  : student.gender === '男'
-                    ? colors.palette.blue.text
-                    : colors.palette.red.text;
+                  : colors.palette.blue.text;
 
                 return (
                   <AppCard
@@ -330,6 +347,7 @@ export default function ExamDetailScreen() {
             </View>
           </View>
         </ScrollView>
+        )}
 
         <View style={[styles.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
           <View style={styles.bottomInfo}>
@@ -338,7 +356,26 @@ export default function ExamDetailScreen() {
               已录入 <Text style={{ color: colors.primary, fontWeight: '700' }}>{enteredStudents.length}</Text> / {students.length}
             </Text>
           </View>
-          <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={[styles.saveBtn, { backgroundColor: colors.primary }]}
+            activeOpacity={0.85}
+            onPress={async () => {
+              try {
+                const items = students
+                  .filter(s => s.score !== '' && !s.absent)
+                  .map(s => ({ student_id: parseInt(s.id), score: parseFloat(s.score) }))
+                  .filter(s => !isNaN(s.score));
+                if (items.length === 0) {
+                  showFeedback({ title: '请至少录入一个成绩', tone: 'warning' });
+                  return;
+                }
+                await scoreApi.batchSave({ exam_id: Number(id), items });
+                showFeedback({ title: `已保存 ${items.length} 条成绩`, tone: 'success' });
+              } catch (e) {
+                showFeedback({ title: '保存失败，请重试', tone: 'error' });
+              }
+            }}
+          >
             <Ionicons name="checkmark" size={18} color="#FFF" />
             <Text style={styles.saveBtnText}>保存成绩</Text>
           </TouchableOpacity>

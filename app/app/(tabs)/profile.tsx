@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
-import { getTeacher, classApi, clearAuth, type TeacherInfo } from '../../src/services/api';
+import { getTeacher, classApi, leaveApi, clearAuth, type TeacherInfo } from '../../src/services/api';
 import { PrimaryHeroSection, AppCard } from '../../src/components/ui';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -20,9 +20,9 @@ interface MenuItem {
 const menuGroups: MenuItem[][] = [
   [
     { icon: 'school', label: '班级管理', subtitle: '查看和编辑班级', colorKey: 'blue' },
-    { icon: 'book', label: '作业管理', subtitle: '布置作业、查看完成情况', colorKey: 'green', badge: '3' },
+    { icon: 'book', label: '作业管理', subtitle: '布置作业、查看完成情况', colorKey: 'green' },
     { icon: 'megaphone', label: '通知公告', subtitle: '给家长发通知', colorKey: 'orange' },
-    { icon: 'hand-left', label: '请假审批', subtitle: '审批学生请假申请', colorKey: 'red', badge: '1' },
+    { icon: 'hand-left', label: '请假审批', subtitle: '审批学生请假申请', colorKey: 'red' },
   ],
   [
     { icon: 'settings', label: '设置', subtitle: '提醒、外观和反馈', colorKey: 'blue' },
@@ -33,11 +33,22 @@ export default function ProfileScreen() {
   const colors = useTheme();
   const [teacher, setTeacher] = useState<TeacherInfo | null>(null);
   const [classes, setClasses] = useState<any[]>([]);
+  const [pendingLeaves, setPendingLeaves] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       getTeacher().then(setTeacher);
-      classApi.list().then(setClasses).catch(() => {});
+      classApi.list().then(async (classList) => {
+        setClasses(classList);
+        try {
+          let total = 0;
+          for (const cls of classList) {
+            const leaves = await leaveApi.list(cls.id, '待审批');
+            total += leaves.length;
+          }
+          setPendingLeaves(total);
+        } catch {}
+      }).catch(() => {});
     }, [])
   );
 
@@ -80,8 +91,8 @@ export default function ProfileScreen() {
           {[
             { label: '管理班级', value: classes.length.toString(), icon: 'school-outline' as IoniconsName },
             { label: '学生总数', value: classes.reduce((sum: number, c: any) => sum + (c.student_count || 0), 0).toString(), icon: 'people-outline' as IoniconsName },
-            { label: '本月考试', value: '3', icon: 'document-text-outline' as IoniconsName },
-            { label: '教龄', value: '5年', icon: 'ribbon-outline' as IoniconsName },
+            { label: '科目', value: teacher?.subject || '--', icon: 'document-text-outline' as IoniconsName },
+            { label: '学校', value: teacher?.school || '--', icon: 'ribbon-outline' as IoniconsName },
           ].map((item) => (
             <View key={item.label} style={[styles.statCard, { backgroundColor: colors.surface }]}>
               <Ionicons name={item.icon} size={20} color={colors.primary} />
@@ -124,9 +135,9 @@ export default function ProfileScreen() {
                       )}
                     </View>
                     <View style={styles.menuRight}>
-                      {item.badge && (
+                      {item.label === '请假审批' && pendingLeaves > 0 && (
                         <View style={[styles.menuBadge, { backgroundColor: colors.error }]}>
-                          <Text style={styles.menuBadgeText}>{item.badge}</Text>
+                          <Text style={styles.menuBadgeText}>{pendingLeaves}</Text>
                         </View>
                       )}
                       <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsNotEmpty({ message: '手机号不能为空' })
@@ -13,4 +13,8 @@ export class RegisterDto {
   @IsNotEmpty({ message: '姓名不能为空' })
   @IsString()
   name: string;
+
+  @IsOptional()
+  @IsString()
+  subject?: string;
 }

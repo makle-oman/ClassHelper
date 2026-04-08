@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../src/theme';
 import { classApi } from '../src/services/api';
+import { showFeedback } from '../src/services/feedback';
 import { PrimaryHeroSection, AppCard, AppButton, AppSectionHeader } from '../src/components/ui';
 
 interface ClassInfo {
@@ -82,24 +83,22 @@ export default function ClassManageScreen() {
     setShowCreateModal(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!classNumber.trim() || !editingClass) return;
-
-    const grade = gradeNames[selectedGrade - 1];
-    setClasses((prev) =>
-      prev.map((item) =>
-        item.id === editingClass.id
-          ? {
-              ...item,
-              grade,
-              gradeNumber: selectedGrade,
-              classNumber: parseInt(classNumber, 10),
-              name: `${grade}${classNumber}班`,
-            }
-          : item
-      )
-    );
-    closeModal();
+    setLoading(true);
+    try {
+      await classApi.update(parseInt(editingClass.id), {
+        grade_number: selectedGrade,
+        class_number: parseInt(classNumber, 10),
+      });
+      await loadClasses();
+      closeModal();
+      showFeedback({ title: '修改成功', tone: 'success' });
+    } catch {
+      showFeedback({ title: '修改失败', tone: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = (cls: ClassInfo) => {
@@ -111,7 +110,15 @@ export default function ClassManageScreen() {
         {
           text: '删除',
           style: 'destructive',
-          onPress: () => setClasses((prev) => prev.filter((item) => item.id !== cls.id)),
+          onPress: async () => {
+            try {
+              await classApi.remove(parseInt(cls.id));
+              await loadClasses();
+              showFeedback({ title: '删除成功', tone: 'success' });
+            } catch {
+              showFeedback({ title: '删除失败', tone: 'error' });
+            }
+          },
         },
       ]
     );

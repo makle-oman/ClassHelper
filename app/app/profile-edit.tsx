@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -9,15 +9,39 @@ import { AppCard } from '../src/components/ui/AppCard';
 import { AppChip } from '../src/components/ui/AppChip';
 import { AppInput } from '../src/components/ui/AppInput';
 import { AppSectionHeader } from '../src/components/ui/AppSectionHeader';
+import { teacherApi, getTeacher } from '../src/services/api';
+import { showFeedback } from '../src/services/feedback';
 
 const ALL_SUBJECTS = ['语文', '数学', '英语', '体育', '音乐', '美术', '科学', '道德与法治'];
 
 export default function ProfileEditScreen() {
   const colors = useTheme();
-  const [name, setName] = useState('王老师');
-  const [phone, setPhone] = useState('13888888888');
-  const [subjects, setSubjects] = useState<string[]>(['语文', '数学']);
-  const [avatarLetter, setAvatarLetter] = useState('王');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [avatarLetter, setAvatarLetter] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const teacher = await getTeacher();
+        if (teacher) {
+          setName(teacher.name || '');
+          setPhone(teacher.phone || '');
+          setAvatarLetter(teacher.name ? teacher.name[0] : '');
+          if (teacher.subject) {
+            setSubjects(teacher.subject.split(',').map((s) => s.trim()).filter(Boolean));
+          }
+        }
+      } catch (err: any) {
+        showFeedback({ title: '加载个人信息失败', tone: 'error' });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const toggleSubject = (subject: string) => {
     setSubjects((prev) => (prev.includes(subject) ? prev.filter((item) => item !== subject) : [...prev, subject]));
@@ -27,7 +51,7 @@ export default function ProfileEditScreen() {
     Alert.alert('提示', '头像上传会在后续接入真实能力后开放。');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('提示', '请输入姓名');
       return;
@@ -41,7 +65,19 @@ export default function ProfileEditScreen() {
       return;
     }
 
-    Alert.alert('保存成功', '个人资料已更新。', [{ text: '确定', onPress: () => router.back() }]);
+    try {
+      setSaving(true);
+      await teacherApi.updateProfile({
+        name: name.trim(),
+        subject: subjects.join(','),
+      });
+      showFeedback({ title: '个人资料已更新', tone: 'success' });
+      router.back();
+    } catch (err: any) {
+      showFeedback({ title: err.message || '保存失败', tone: 'error' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

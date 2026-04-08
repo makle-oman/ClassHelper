@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../src/theme';
 import { PrimaryHeroSection, AppCard, AppChip, AppButton, AppSectionHeader } from '../src/components/ui';
+import { classApi, attendanceApi, studentApi } from '../src/services/api';
+import { showFeedback } from '../src/services/feedback';
 
 type AttendanceStatus = 'present' | 'late' | 'early' | 'leave' | 'absent';
 
@@ -24,26 +26,37 @@ const statusConfig: Record<AttendanceStatus, { label: string; color: string; ico
   absent: { label: '缺席', color: '#EF4444', icon: 'close-circle' },
 };
 
-const initialStudents: StudentAttendance[] = [
-  { id: '1', name: '张小明', studentNo: '20230101', gender: '男', status: 'present' },
-  { id: '2', name: '李小红', studentNo: '20230102', gender: '女', status: 'present' },
-  { id: '3', name: '王大力', studentNo: '20230103', gender: '男', status: 'present' },
-  { id: '4', name: '赵小燕', studentNo: '20230104', gender: '女', status: 'present' },
-  { id: '5', name: '刘天宝', studentNo: '20230105', gender: '男', status: 'present' },
-  { id: '6', name: '陈美丽', studentNo: '20230106', gender: '女', status: 'present' },
-  { id: '7', name: '孙浩然', studentNo: '20230107', gender: '男', status: 'present' },
-  { id: '8', name: '周小婷', studentNo: '20230108', gender: '女', status: 'present' },
-];
+/** Map frontend English status to backend Chinese status */
+const statusToChinese: Record<AttendanceStatus, string> = {
+  present: '出勤',
+  late: '迟到',
+  early: '早退',
+  leave: '请假',
+  absent: '缺席',
+};
 
-const mockMonthlyStats = [
-  { date: '03-22', weekday: '周日', total: 43, present: 43, rate: 100 },
-  { date: '03-21', weekday: '周六', total: 43, present: 42, rate: 97.7 },
-  { date: '03-20', weekday: '周五', total: 43, present: 41, rate: 95.3 },
-  { date: '03-19', weekday: '周四', total: 43, present: 43, rate: 100 },
-  { date: '03-18', weekday: '周三', total: 43, present: 40, rate: 93.0 },
-  { date: '03-17', weekday: '周二', total: 43, present: 42, rate: 97.7 },
-  { date: '03-16', weekday: '周一', total: 43, present: 43, rate: 100 },
-];
+/** Map backend Chinese status to frontend English status */
+const statusToEnglish: Record<string, AttendanceStatus> = {
+  '出勤': 'present',
+  '迟到': 'late',
+  '早退': 'early',
+  '请假': 'leave',
+  '缺席': 'absent',
+};
+
+interface ClassOption {
+  id: number;
+  name: string;
+  student_count: number;
+}
+
+interface MonthlyStatItem {
+  date: string;
+  weekday: string;
+  total: number;
+  present: number;
+  rate: number;
+}
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
@@ -59,16 +72,13 @@ interface StudentAttendanceStats {
   rate: number;
 }
 
-const mockStudentStats: StudentAttendanceStats[] = [
-  { id: '1', name: '张小明', gender: '男', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
-  { id: '2', name: '李小红', gender: '女', totalDays: 22, presentDays: 21, lateDays: 1, absentDays: 0, leaveDays: 0, rate: 95.5 },
-  { id: '3', name: '王大力', gender: '男', totalDays: 22, presentDays: 20, lateDays: 0, absentDays: 1, leaveDays: 1, rate: 90.9 },
-  { id: '4', name: '赵小燕', gender: '女', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
-  { id: '5', name: '刘天宝', gender: '男', totalDays: 22, presentDays: 19, lateDays: 2, absentDays: 1, leaveDays: 0, rate: 86.4 },
-  { id: '6', name: '陈美丽', gender: '女', totalDays: 22, presentDays: 21, lateDays: 0, absentDays: 0, leaveDays: 1, rate: 95.5 },
-  { id: '7', name: '孙浩然', gender: '男', totalDays: 22, presentDays: 22, lateDays: 0, absentDays: 0, leaveDays: 0, rate: 100 },
-  { id: '8', name: '周小婷', gender: '女', totalDays: 22, presentDays: 20, lateDays: 1, absentDays: 1, leaveDays: 0, rate: 90.9 },
-];
+/** Format a Date to YYYY-MM-DD for API calls */
+function toDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 function formatDate(date: Date): string {
   const y = date.getFullYear();
@@ -86,12 +96,219 @@ export default function AttendanceScreen() {
   const colors = useTheme();
   const [selectedTab, setSelectedTab] = useState<'record' | 'stats'>('record');
   const [currentDate, setDate] = useState(new Date());
-  const [selectedClass, setSelectedClass] = useState('三年级1班');
   const [classPickerOpen, setClassPickerOpen] = useState(false);
-  const [students, setStudents] = useState<StudentAttendance[]>(initialStudents);
+  const [students, setStudents] = useState<StudentAttendance[]>([]);
   const [statsView, setStatsView] = useState<'daily' | 'student'>('daily');
 
+  // Real data state
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStatItem[]>([]);
+  const [studentStats, setStudentStats] = useState<StudentAttendanceStats[]>([]);
+  const [classStatsData, setClassStatsData] = useState<{ attendance_rate: number; late: number; absent: number } | null>(null);
+
   const today = new Date();
+
+  const selectedClass = classes.find((c) => c.id === selectedClassId)?.name ?? '';
+
+  // Load classes on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await classApi.list();
+        if (cancelled) return;
+        setClasses(list.map((c) => ({ id: c.id, name: c.name, student_count: c.student_count })));
+        if (list.length > 0 && selectedClassId === null) {
+          setSelectedClassId(list[0].id);
+        }
+      } catch {
+        // Error feedback is handled by request()
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load students + existing attendance when class or date changes
+  useEffect(() => {
+    if (selectedClassId === null) return;
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const [studentList, attendanceRecords] = await Promise.all([
+          studentApi.list(selectedClassId),
+          attendanceApi.list(selectedClassId, toDateString(currentDate)),
+        ]);
+        if (cancelled) return;
+
+        // Build a lookup of existing attendance by student_id
+        const attendanceMap = new Map<number, AttendanceStatus>();
+        attendanceRecords.forEach((r) => {
+          attendanceMap.set(r.student_id, statusToEnglish[r.status] ?? 'present');
+        });
+
+        // Map students to StudentAttendance, merging existing attendance data
+        const mapped: StudentAttendance[] = studentList.map((s) => ({
+          id: String(s.id),
+          name: s.name,
+          studentNo: s.student_no,
+          gender: s.gender,
+          status: attendanceMap.get(s.id) ?? 'present',
+        }));
+        setStudents(mapped);
+      } catch {
+        // Error feedback is handled by request()
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedClassId, currentDate]);
+
+  // Load stats when tab is 'stats' and class changes
+  useEffect(() => {
+    if (selectedTab !== 'stats' || selectedClassId === null) return;
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        // Get current month date range for daily stats
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        // Load class stats for the month (one call per day in the month up to today)
+        // We use classStats for each day in the current month
+        const daysInMonth: Date[] = [];
+        const endDay = now.getDate();
+        for (let d = endDay; d >= 1 && daysInMonth.length < 30; d--) {
+          daysInMonth.push(new Date(now.getFullYear(), now.getMonth(), d));
+        }
+
+        // Fetch class stats for each day (limit to last 7 for performance)
+        const recentDays = daysInMonth.slice(0, 7);
+        const dailyResults = await Promise.all(
+          recentDays.map(async (day) => {
+            try {
+              const stats = await attendanceApi.classStats(selectedClassId, toDateString(day));
+              const total = stats.student_count;
+              const present = stats['出勤'] ?? 0;
+              const rate = stats.attendance_rate ?? (total > 0 ? (present / total) * 100 : 0);
+              const mm = String(day.getMonth() + 1).padStart(2, '0');
+              const dd = String(day.getDate()).padStart(2, '0');
+              return {
+                date: `${mm}-${dd}`,
+                weekday: WEEKDAYS[day.getDay()],
+                total,
+                present,
+                rate: Math.round(rate * 10) / 10,
+              };
+            } catch {
+              return null;
+            }
+          }),
+        );
+        if (cancelled) return;
+
+        setMonthlyStats(dailyResults.filter((r): r is MonthlyStatItem => r !== null));
+
+        // Fetch today's class stats for summary counts (late, absent, rate)
+        try {
+          const todayStats = await attendanceApi.classStats(selectedClassId, toDateString(now));
+          if (!cancelled) {
+            setClassStatsData({
+              attendance_rate: todayStats.attendance_rate ?? 0,
+              late: todayStats['迟到'] ?? 0,
+              absent: todayStats['缺席'] ?? 0,
+            });
+          }
+        } catch {
+          // Fallback: compute average rate from daily results
+          const validDays = dailyResults.filter((r): r is MonthlyStatItem => r !== null);
+          if (validDays.length > 0 && !cancelled) {
+            const avgRate = validDays.reduce((sum, d) => sum + d.rate, 0) / validDays.length;
+            setClassStatsData({
+              attendance_rate: Math.round(avgRate * 10) / 10,
+              late: 0,
+              absent: 0,
+            });
+          }
+        }
+
+        // Load per-student stats
+        if (statsView === 'student') {
+          await loadStudentStats(selectedClassId, monthStart, monthEnd, cancelled);
+        }
+      } catch {
+        // Error feedback is handled by request()
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedTab, selectedClassId]);
+
+  // Load student stats when switching to student view
+  useEffect(() => {
+    if (selectedTab !== 'stats' || statsView !== 'student' || selectedClassId === null) return;
+    let cancelled = false;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    loadStudentStats(selectedClassId, monthStart, monthEnd, cancelled);
+    return () => { cancelled = true; };
+  }, [statsView]);
+
+  async function loadStudentStats(classId: number, monthStart: Date, monthEnd: Date, cancelled: boolean) {
+    try {
+      const studentList = await studentApi.list(classId);
+      if (cancelled) return;
+
+      const statsResults = await Promise.all(
+        studentList.map(async (s) => {
+          try {
+            const stats = await attendanceApi.studentStats(s.id, toDateString(monthStart), toDateString(monthEnd));
+            const totalDays = stats.total;
+            const presentDays = stats['出勤'] ?? 0;
+            const lateDays = stats['迟到'] ?? 0;
+            const absentDays = stats['缺席'] ?? 0;
+            const leaveDays = stats['请假'] ?? 0;
+            return {
+              id: String(s.id),
+              name: s.name,
+              gender: s.gender,
+              totalDays,
+              presentDays,
+              lateDays,
+              absentDays,
+              leaveDays,
+              rate: stats.attendance_rate ?? (totalDays > 0 ? (presentDays / totalDays) * 100 : 0),
+            } as StudentAttendanceStats;
+          } catch {
+            return {
+              id: String(s.id),
+              name: s.name,
+              gender: s.gender,
+              totalDays: 0,
+              presentDays: 0,
+              lateDays: 0,
+              absentDays: 0,
+              leaveDays: 0,
+              rate: 0,
+            } as StudentAttendanceStats;
+          }
+        }),
+      );
+      if (!cancelled) setStudentStats(statsResults);
+    } catch {
+      // Error feedback is handled by request()
+    }
+  }
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -122,8 +339,24 @@ export default function AttendanceScreen() {
   const markedCount = students.length;
   const currentRate = students.length > 0 ? ((presentCount / students.length) * 100).toFixed(1) : '0.0';
 
-  const handleSave = () => {
-    Alert.alert('保存成功', `已保存 ${formatDate(currentDate)} 的考勤记录`);
+  const handleSave = async () => {
+    if (selectedClassId === null) return;
+    setSaving(true);
+    try {
+      await attendanceApi.batchSave({
+        class_id: selectedClassId,
+        date: toDateString(currentDate),
+        items: students.map((s) => ({
+          student_id: Number(s.id),
+          status: statusToChinese[s.status],
+        })),
+      });
+      showFeedback({ title: `已保存 ${formatDate(currentDate)} 的考勤记录`, tone: 'success' });
+    } catch {
+      // Error feedback is handled by request()
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getRateColor = (rate: number) => {
@@ -132,13 +365,13 @@ export default function AttendanceScreen() {
     return colors.error;
   };
 
-  const monthlyLate = 3;
-  const monthlyAbsent = 2;
-  const monthlyRate = 97.2;
-  const topStudentRate = Math.max(...mockStudentStats.map((item) => item.rate));
-  const averageStudentRate = (
-    mockStudentStats.reduce((sum, item) => sum + item.rate, 0) / mockStudentStats.length
-  ).toFixed(1);
+  const monthlyLate = classStatsData?.late ?? 0;
+  const monthlyAbsent = classStatsData?.absent ?? 0;
+  const monthlyRate = classStatsData?.attendance_rate ?? 0;
+  const topStudentRate = studentStats.length > 0 ? Math.max(...studentStats.map((item) => item.rate)) : 0;
+  const averageStudentRate = studentStats.length > 0
+    ? (studentStats.reduce((sum, item) => sum + item.rate, 0) / studentStats.length).toFixed(1)
+    : '0.0';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -164,7 +397,7 @@ export default function AttendanceScreen() {
               ]
             : [
                 { label: statsView === 'daily' ? '本月出勤率' : '班级平均', value: `${statsView === 'daily' ? monthlyRate : averageStudentRate}%` },
-                { label: statsView === 'daily' ? '本月迟到' : '全勤人数', value: `${statsView === 'daily' ? monthlyLate : mockStudentStats.filter((item) => item.rate === 100).length}` },
+                { label: statsView === 'daily' ? '本月迟到' : '全勤人数', value: `${statsView === 'daily' ? monthlyLate : studentStats.filter((item) => item.rate === 100).length}` },
                 { label: statsView === 'daily' ? '本月缺席' : '最高出勤率', value: `${statsView === 'daily' ? monthlyAbsent : topStudentRate}${statsView === 'daily' ? '' : '%'}` },
               ]).map((item, index) => (
             <View
@@ -267,7 +500,18 @@ export default function AttendanceScreen() {
             </View>
 
             <View style={styles.listSection}>
-              {students.map((student) => (
+              {loading && (
+                <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={{ color: colors.textTertiary, marginTop: 8, fontSize: 13 }}>加载中...</Text>
+                </View>
+              )}
+              {!loading && students.length === 0 && (
+                <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                  <Text style={{ color: colors.textTertiary, fontSize: 13 }}>暂无学生数据</Text>
+                </View>
+              )}
+              {!loading && students.map((student) => (
                 <AppCard key={student.id} radius={14} padding="sm">
                   <View style={styles.studentLeft}>
                     <View
@@ -313,13 +557,14 @@ export default function AttendanceScreen() {
           <View style={[styles.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
             <Text style={[styles.bottomInfo, { color: colors.textSecondary }]}>已标记 {markedCount}/{students.length}</Text>
             <AppButton
-              label="保存考勤"
+              label={saving ? '保存中...' : '保存考勤'}
               leftIconName="save"
               tone="success"
               onPress={handleSave}
               fullWidth={false}
               size="md"
               style={styles.saveBtn}
+              disabled={saving || loading || students.length === 0}
             />
           </View>
         </View>
@@ -369,7 +614,7 @@ export default function AttendanceScreen() {
                 ]
               : [
                   { label: '班级平均出勤率', value: `${averageStudentRate}%`, icon: 'stats-chart' as const, colorKey: 'green' as const },
-                  { label: '全勤学生', value: mockStudentStats.filter((item) => item.rate === 100).length.toString(), icon: 'ribbon' as const, colorKey: 'blue' as const },
+                  { label: '全勤学生', value: studentStats.filter((item) => item.rate === 100).length.toString(), icon: 'ribbon' as const, colorKey: 'blue' as const },
                   { label: '最高出勤率', value: `${topStudentRate}%`, icon: 'trophy' as const, colorKey: 'orange' as const },
                 ]).map((item) => (
               <AppCard key={item.label} radius={14} padding="sm" style={{ flex: 1, alignItems: 'center', gap: 4 }}>
@@ -386,14 +631,14 @@ export default function AttendanceScreen() {
             <View style={styles.statsSection}>
               <AppSectionHeader title="本月每日考勤" />
               <AppCard radius={14} padding="none" style={{ overflow: 'hidden' }}>
-                {mockMonthlyStats.map((item, index) => {
+                {monthlyStats.map((item, index) => {
                   const rateColor = getRateColor(item.rate);
                   return (
                     <View
                       key={item.date}
                       style={[
                         styles.statsRow,
-                        index < mockMonthlyStats.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.divider },
+                        index < monthlyStats.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.divider },
                       ]}
                     >
                       <View style={styles.statsDateCol}>
@@ -418,7 +663,7 @@ export default function AttendanceScreen() {
             <View style={styles.statsSection}>
               <AppSectionHeader title="本月学生出勤率" />
               <AppCard radius={14} padding="none" style={{ overflow: 'hidden' }}>
-                {mockStudentStats.map((item, index) => {
+                {studentStats.map((item, index) => {
                   const rateColor = getRateColor(item.rate);
                   const accentColor = item.gender === '男' ? colors.info : '#EC4899';
                   const accentBg = item.gender === '男' ? colors.infoLight : '#FDF2F8';
@@ -427,7 +672,7 @@ export default function AttendanceScreen() {
                       key={item.id}
                       style={[
                         styles.studentStatsRow,
-                        index < mockStudentStats.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.divider },
+                        index < studentStats.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: colors.divider },
                       ]}
                     >
                       <View style={styles.studentStatsHeader}>
@@ -477,11 +722,11 @@ export default function AttendanceScreen() {
             <View style={[styles.classPkHandle, { backgroundColor: colors.border }]} />
             <Text style={[styles.classPkTitle, { color: colors.text }]}>选择班级</Text>
             <View style={styles.classPkList}>
-              {['三年级1班', '三年级2班'].map((cls) => {
-                const isActive = selectedClass === cls;
+              {classes.map((cls) => {
+                const isActive = selectedClassId === cls.id;
                 return (
                   <TouchableOpacity
-                    key={cls}
+                    key={cls.id}
                     style={[
                       styles.classPkItem,
                       {
@@ -491,12 +736,12 @@ export default function AttendanceScreen() {
                     ]}
                     activeOpacity={0.7}
                     onPress={() => {
-                      setSelectedClass(cls);
+                      setSelectedClassId(cls.id);
                       setClassPickerOpen(false);
                     }}
                   >
                     <Ionicons name="school-outline" size={18} color={isActive ? colors.primary : colors.textTertiary} />
-                    <Text style={[styles.classPkItemText, { color: isActive ? colors.primary : colors.text }]}>{cls}</Text>
+                    <Text style={[styles.classPkItemText, { color: isActive ? colors.primary : colors.text }]}>{cls.name}</Text>
                     {isActive && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
                   </TouchableOpacity>
                 );

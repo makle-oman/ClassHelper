@@ -54,15 +54,28 @@ export default function SettingsScreen() {
     await saveReminderSettings(nextSettings);
   };
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     if (!feedbackText.trim()) {
       Alert.alert('提示', '请输入反馈内容');
       return;
     }
 
-    Alert.alert('提交成功', '感谢您的反馈，我们会认真查看。');
-    setFeedbackText('');
-    setShowFeedbackModal(false);
+    try {
+      // 将反馈保存到本地存储
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const existing = await AsyncStorage.getItem('app_feedbacks');
+      const feedbacks = existing ? JSON.parse(existing) : [];
+      feedbacks.push({
+        content: feedbackText.trim(),
+        time: new Date().toISOString(),
+      });
+      await AsyncStorage.setItem('app_feedbacks', JSON.stringify(feedbacks));
+      Alert.alert('提交成功', '感谢您的反馈，已记录到本地。');
+      setFeedbackText('');
+      setShowFeedbackModal(false);
+    } catch {
+      Alert.alert('提交失败', '请稍后再试');
+    }
   };
 
   const themeOptions: { mode: ThemeModeType; label: string; icon: keyof typeof Ionicons.glyphMap; description: string }[] = [

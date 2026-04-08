@@ -16,6 +16,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '../../src/theme';
 import { PrimaryHeroSection, AppCard, AppSectionHeader } from '../../src/components/ui';
+import { classApi, examApi, scoreApi, semesterApi, studentApi } from '../../src/services/api';
+import { showFeedback } from '../../src/services/feedback';
+import type { ScoreStats } from '../../src/services/api/score';
+import * as XLSX from 'xlsx';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 
 interface Exam {
   id: string;
@@ -32,27 +38,6 @@ interface Exam {
   passRate?: number;
 }
 
-const mockExams: Exam[] = [
-  {
-    id: '1', name: '期中考试', subject: '语文', date: '2026-03-15',
-    className: '三年级2班', fullScore: 100, enteredCount: 43, totalStudents: 43,
-    avg: 85.6, max: 98, min: 52, passRate: 92,
-  },
-  {
-    id: '2', name: '第二单元测验', subject: '数学', date: '2026-03-10',
-    className: '三年级2班', fullScore: 100, enteredCount: 43, totalStudents: 43,
-    avg: 78.3, max: 100, min: 45, passRate: 85,
-  },
-  {
-    id: '3', name: '第一单元测验', subject: '语文', date: '2026-02-28',
-    className: '三年级1班', fullScore: 100, enteredCount: 40, totalStudents: 43,
-    avg: 82.1, max: 96, min: 48, passRate: 88,
-  },
-  {
-    id: '4', name: '口算竞赛', subject: '数学', date: '2026-03-20',
-    className: '三年级2班', fullScore: 50, enteredCount: 10, totalStudents: 43,
-  },
-];
 
 const subjectColors: Record<string, { bg: string; text: string; dot: string }> = {
   '语文': { bg: '#E8F4FD', text: '#2E86C1', dot: '#2E86C1' },
@@ -60,44 +45,83 @@ const subjectColors: Record<string, { bg: string; text: string; dot: string }> =
   '英语': { bg: '#EDE7F6', text: '#7E57C2', dot: '#7E57C2' },
 };
 
-const mockScoreDistributions: Record<string, { range: string; count: number; label: string; color: string }[]> = {
-  '1': [
-    { range: '90-100', count: 8, label: '优秀', color: '#22C55E' },
-    { range: '80-89', count: 15, label: '良好', color: '#3B82F6' },
-    { range: '70-79', count: 10, label: '中等', color: '#F59E0B' },
-    { range: '60-69', count: 7, label: '及格', color: '#EA580C' },
-    { range: '60以下', count: 3, label: '不及格', color: '#EF4444' },
-  ],
-  '2': [
-    { range: '90-100', count: 5, label: '优秀', color: '#22C55E' },
-    { range: '80-89', count: 12, label: '良好', color: '#3B82F6' },
-    { range: '70-79', count: 11, label: '中等', color: '#F59E0B' },
-    { range: '60-69', count: 9, label: '及格', color: '#EA580C' },
-    { range: '60以下', count: 6, label: '不及格', color: '#EF4444' },
-  ],
-  '3': [
-    { range: '90-100', count: 6, label: '优秀', color: '#22C55E' },
-    { range: '80-89', count: 14, label: '良好', color: '#3B82F6' },
-    { range: '70-79', count: 9, label: '中等', color: '#F59E0B' },
-    { range: '60-69', count: 8, label: '及格', color: '#EA580C' },
-    { range: '60以下', count: 3, label: '不及格', color: '#EF4444' },
-  ],
-};
 
 export default function ScoresScreen() {
   const colors = useTheme();
   const [selectedTab, setSelectedTab] = useState<'list' | 'analysis'>('list');
-  const [selectedClass, setSelectedClass] = useState('三年级2班');
+  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [classDropdownOpen, setClassDropdownOpen] = useState(false);
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newExam, setNewExam] = useState({ name: '', subject: '语文', className: '三年级2班', fullScore: '100', date: '' });
-  const [exams, setExams] = useState<Exam[]>(mockExams);
+  const [newExam, setNewExam] = useState({ name: '', subject: '语文', className: '', fullScore: '100', date: '' });
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [classes, setClasses] = useState<{ id: number; name: string; student_count: number }[]>([]);
+  const [scoreStats, setScoreStats] = useState<Record<string, ScoreStats>>({});
+  const [loading, setLoading] = useState(false);
+  const [semesterLabel, setSemesterLabel] = useState('');
   const listScrollRef = useRef<ScrollView | null>(null);
   const analysisScrollRef = useRef<ScrollView | null>(null);
 
-  const allClasses = ['三年级1班', '三年级2班'];
-  const classExams = exams.filter((exam) => exam.className === selectedClass);
+  const allClasses = classes.map(c => c.name);
+  const classExams = exams;
+
+  // 加载班级列表和学期
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await classApi.list();
+        setClasses(list.map(c => ({ id: c.id, name: c.name, student_count: c.student_count })));
+        if (list.length > 0) {
+          setSelectedClassId(list[0].id);
+          setSelectedClass(list[0].name);
+          setNewExam(prev => ({ ...prev, className: list[0].name }));
+        }
+      } catch (e) { console.error('加载班级失败', e); }
+      try {
+        const semesters = await semesterApi.list();
+        const active = semesters.find(s => s.is_active);
+        if (active) setSemesterLabel(active.name);
+      } catch {}
+    })();
+  }, []);
+
+  // 加载考试列表
+  useEffect(() => {
+    if (!selectedClassId) return;
+    (async () => {
+      try {
+        setLoading(true);
+        const list = await examApi.list(selectedClassId);
+        const cls = classes.find(c => c.id === selectedClassId);
+        const mapped: Exam[] = list.map(e => ({
+          id: e.id.toString(),
+          name: e.name,
+          subject: e.subject,
+          date: e.date,
+          className: cls?.name || '',
+          fullScore: e.full_score,
+          enteredCount: e.score_count || 0,
+          totalStudents: cls?.student_count || 0,
+        }));
+        setExams(mapped);
+
+        // 加载有成绩的考试统计
+        for (const exam of mapped) {
+          if (exam.enteredCount > 0) {
+            try {
+              const stats = await scoreApi.stats(parseInt(exam.id));
+              setScoreStats(prev => ({ ...prev, [exam.id]: stats }));
+              setExams(prev => prev.map(e =>
+                e.id === exam.id ? { ...e, avg: stats.avg, max: stats.max, min: stats.min, passRate: stats.pass_rate } : e
+              ));
+            } catch {}
+          }
+        }
+      } catch (e) { console.error('加载考试失败', e); }
+      finally { setLoading(false); }
+    })();
+  }, [selectedClassId, classes]);
 
   // 日期选择器
   const [datePickerVisible, setDatePickerVisible] = useState(false);
@@ -130,41 +154,131 @@ export default function ScoresScreen() {
     setDatePickerVisible(false);
   };
 
-  const handleCreateExam = () => {
-    if (!newExam.name.trim()) return;
-    const created: Exam = {
-      id: Date.now().toString(),
-      name: newExam.name.trim(),
-      subject: newExam.subject,
-      date: newExam.date || new Date().toISOString().split('T')[0],
-      className: newExam.className,
-      fullScore: parseInt(newExam.fullScore) || 100,
-      enteredCount: 0,
-      totalStudents: 43,
-    };
-    setExams([created, ...exams]);
-    setNewExam({ name: '', subject: '语文', className: '三年级2班', fullScore: '100', date: '' });
-    setShowCreateModal(false);
+  const handleCreateExam = async () => {
+    if (!newExam.name.trim() || !selectedClassId) return;
+    try {
+      const targetCls = classes.find(c => c.name === newExam.className) || classes.find(c => c.id === selectedClassId);
+      const result = await examApi.create({
+        name: newExam.name.trim(),
+        subject: newExam.subject,
+        date: newExam.date || new Date().toISOString().split('T')[0],
+        full_score: parseInt(newExam.fullScore) || 100,
+        class_id: targetCls?.id || selectedClassId,
+      });
+      const created: Exam = {
+        id: result.id.toString(),
+        name: result.name,
+        subject: result.subject,
+        date: result.date,
+        className: targetCls?.name || '',
+        fullScore: result.full_score,
+        enteredCount: 0,
+        totalStudents: targetCls?.student_count || 0,
+      };
+      setExams(prev => [created, ...prev]);
+      setNewExam({ name: '', subject: '语文', className: targetCls?.name || '', fullScore: '100', date: '' });
+      setShowCreateModal(false);
+      showFeedback({ title: '考试创建成功', tone: 'success' });
+    } catch (e) {
+      showFeedback({ title: '创建失败，请重试', tone: 'error' });
+    }
+  };
+
+  const handleDownloadScoreTemplate = async () => {
+    if (!selectedClassId) return;
+    try {
+      // 获取该班学生列表
+      const students = await studentApi.list(selectedClassId);
+      const data = students.map((s: any) => ({
+        '学号': s.student_no || '',
+        '姓名': s.name,
+        '分数': '',
+      }));
+      if (data.length === 0) {
+        data.push({ '学号': '001', '姓名': '示例学生', '分数': '' });
+      }
+      const ws = XLSX.utils.json_to_sheet(data);
+      ws['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 10 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '成绩导入');
+      if (Platform.OS === 'web') {
+        XLSX.writeFile(wb, '成绩导入模板.xlsx');
+      } else {
+        const wbout = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+        const uri = FileSystem.cacheDirectory + '成绩导入模板.xlsx';
+        await FileSystem.writeAsStringAsync(uri, wbout, { encoding: FileSystem.EncodingType.Base64 });
+        Alert.alert('模板已保存', `文件位置：${uri}`);
+      }
+    } catch {
+      showFeedback({ title: '模板生成失败', tone: 'error' });
+    }
+  };
+
+  const handleImportScoreFile = async () => {
+    if (!selectedClassId) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'] });
+      if (result.canceled || !result.assets?.length) return;
+      const file = result.assets[0];
+      let wb: XLSX.WorkBook;
+      if (Platform.OS === 'web') {
+        const resp = await fetch(file.uri);
+        const buf = await resp.arrayBuffer();
+        wb = XLSX.read(buf, { type: 'array' });
+      } else {
+        const b64 = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
+        wb = XLSX.read(b64, { type: 'base64' });
+      }
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(ws);
+      if (rows.length === 0) {
+        showFeedback({ title: '文件为空', message: '未检测到有效数据行', tone: 'info' });
+        return;
+      }
+
+      // 获取学生列表做学号/姓名匹配
+      const students = await studentApi.list(selectedClassId);
+      const items: { student_id: number; score: number }[] = [];
+      let skipped = 0;
+      for (const row of rows) {
+        const name = row['姓名']?.toString().trim();
+        const no = row['学号']?.toString().trim();
+        const scoreVal = parseFloat(row['分数']);
+        if (isNaN(scoreVal)) { skipped++; continue; }
+        const matched = students.find((s: any) => (no && s.student_no === no) || (name && s.name === name));
+        if (!matched) { skipped++; continue; }
+        items.push({ student_id: matched.id, score: scoreVal });
+      }
+
+      if (items.length === 0) {
+        showFeedback({ title: '导入失败', message: '未匹配到任何学生', tone: 'error' });
+        return;
+      }
+
+      // 需要选定一个考试来导入
+      if (!selectedExamId) {
+        showFeedback({ title: '请先选择考试', message: '在列表中选中一场考试后再导入成绩', tone: 'info' });
+        return;
+      }
+
+      await scoreApi.batchSave({ exam_id: parseInt(selectedExamId), items });
+      showFeedback({ title: '导入成功', message: `成功导入 ${items.length} 条成绩${skipped > 0 ? `，${skipped} 条跳过` : ''}`, tone: 'success' });
+
+      // 刷新数据
+      setSelectedClassId(prev => prev);
+    } catch {
+      showFeedback({ title: '导入失败', message: '请检查文件格式', tone: 'error' });
+    }
   };
 
   const handleImportScores = () => {
     Alert.alert(
       'Excel 导入成绩',
-      '选择包含成绩数据的 Excel 文件（.xlsx）\n\n表头格式：学号、姓名、分数\n\n也可以在电脑端下载标准模板',
+      '选择包含成绩数据的 Excel 文件（.xlsx）\n\n表头格式：学号、姓名、分数',
       [
         { text: '取消', style: 'cancel' },
-        {
-          text: '下载模板',
-          onPress: () => {
-            Alert.alert('模板下载', '在电脑浏览器打开系统后台，进入「成绩管理」即可下载模板');
-          },
-        },
-        {
-          text: '选择文件',
-          onPress: () => {
-            Alert.alert('导入成功', '已成功导入 43 名学生的成绩');
-          },
-        },
+        { text: '下载模板', onPress: handleDownloadScoreTemplate },
+        { text: '选择文件', onPress: handleImportScoreFile },
       ]
     );
   };
@@ -172,11 +286,10 @@ export default function ScoresScreen() {
   const getSubjectColor = (subject: string) => subjectColors[subject] || subjectColors['语文'];
   const pendingCount = classExams.filter((exam) => exam.enteredCount < exam.totalStudents).length;
   const completedCount = classExams.filter((exam) => exam.enteredCount >= exam.totalStudents).length;
-  const highlightedExam = classExams.find((exam) => exam.enteredCount < exam.totalStudents) || classExams[0];
+  const highlightedExam = classExams.find((exam) => exam.enteredCount < exam.totalStudents) || classExams[0] || null;
   const analysisExam = selectedExamId
-    ? classExams.find((exam) => exam.id === selectedExamId) || classExams[0]
-    : classExams.find((exam) => exam.avg != null) || classExams[0];
-  const semesterLabel = '2025-2026学年第二学期';
+    ? classExams.find((exam) => exam.id === selectedExamId) || classExams[0] || null
+    : classExams.find((exam) => exam.avg != null) || classExams[0] || null;
   const heroMetrics = useMemo(
     () => [
       { label: '考试总数', value: `${classExams.length} 场` },
@@ -299,6 +412,7 @@ export default function ScoresScreen() {
               </TouchableOpacity>
             </View>
 
+            {highlightedExam && (
             <AppCard radius={18} padding="sm" style={{ marginTop: 10 }}>
               <View style={styles.scopeHeader}>
                 <View style={styles.scopeTitleWrap}>
@@ -326,6 +440,7 @@ export default function ScoresScreen() {
                 ))}
               </View>
             </AppCard>
+            )}
 
             <AppSectionHeader
               title="考试进度"
@@ -440,7 +555,7 @@ export default function ScoresScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           <View style={styles.pageContent}>
-            {analysisExam?.avg == null ? (
+            {!analysisExam || analysisExam.avg == null ? (
               <AppCard radius={18} padding="none" style={{ padding: 40, alignItems: 'center', gap: 8 }}>
                 <Ionicons name="bar-chart-outline" size={40} color={colors.textTertiary} />
                 <Text style={[styles.noDataTitle, { color: colors.textSecondary }]}>暂无分析数据</Text>
@@ -501,7 +616,15 @@ export default function ScoresScreen() {
                     </View>
                   </View>
                   {(() => {
-                    const distData = mockScoreDistributions[analysisExam.id] || mockScoreDistributions['1'];
+                    const ss = scoreStats[analysisExam.id];
+                    const distData = ss?.segments ? [
+                      { range: '90-100', count: ss.segments['90-100'] || 0, label: '优秀', color: '#22C55E' },
+                      { range: '80-89', count: ss.segments['80-89'] || 0, label: '良好', color: '#3B82F6' },
+                      { range: '70-79', count: ss.segments['70-79'] || 0, label: '中等', color: '#F59E0B' },
+                      { range: '60-69', count: ss.segments['60-69'] || 0, label: '及格', color: '#EA580C' },
+                      { range: '60以下', count: ss.segments['<60'] || 0, label: '不及格', color: '#EF4444' },
+                    ] : [];
+                    if (distData.length === 0) return <Text style={{ color: colors.textTertiary, textAlign: 'center', paddingVertical: 20 }}>暂无分布数据</Text>;
                     const maxCount = Math.max(...distData.map(d => d.count), 1);
                     return distData.map((item) => (
                       <View key={item.range} style={styles.barRow}>
@@ -637,7 +760,7 @@ export default function ScoresScreen() {
                   <View style={styles.formGroup}>
                     <Text style={[styles.formLabel, { color: colors.textSecondary }]}>班级</Text>
                     <View style={styles.optionGrid}>
-                      {['三年级1班', '三年级2班'].map((c) => (
+                      {allClasses.map((c) => (
                         <TouchableOpacity
                           key={c}
                           style={[
@@ -768,7 +891,9 @@ export default function ScoresScreen() {
                     ]}
                     activeOpacity={0.7}
                     onPress={() => {
+                      const matched = classes.find(c => c.name === cls);
                       setSelectedClass(cls);
+                      if (matched) setSelectedClassId(matched.id);
                       setClassDropdownOpen(false);
                     }}
                   >

@@ -1,5 +1,5 @@
-﻿import { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -7,32 +7,57 @@ import { useTheme } from '../src/theme';
 import { PrimaryHeroSection } from '../src/components/ui/PrimaryHeroSection';
 import { AppCard } from '../src/components/ui/AppCard';
 import { AppButton } from '../src/components/ui/AppButton';
+import { classApi, leaveApi } from '../src/services/api';
+import type { ClassInfo } from '../src/services/api/class';
+import type { LeaveInfo } from '../src/services/api/leave';
+import { showFeedback } from '../src/services/feedback';
 
 type LeaveStatus = 'pending' | 'approved' | 'rejected';
 
-interface LeaveRequest {
-  id: string;
-  studentName: string;
-  studentId: string;
-  className: string;
-  startDate: string;
-  endDate: string;
-  days: number;
-  reason: string;
-  parentName: string;
-  parentRelation: string;
-  status: LeaveStatus;
-  createdAt: string;
-  processedAt?: string;
+/** Backend status <-> frontend status */
+const backendStatusToFrontend: Record<string, LeaveStatus> = {
+  '待审批': 'pending',
+  '已批准': 'approved',
+  '已拒绝': 'rejected',
+};
+
+/** Calculate days between two date strings */
+function calcDays(start: string, end: string): number {
+  const s = new Date(start);
+  const e = new Date(end);
+  const diff = Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(diff + 1, 1);
 }
 
-const mockLeaves: LeaveRequest[] = [
-  { id: '1', studentName: '张小明', studentId: '20230101', className: '三年级1班', startDate: '3月24日', endDate: '3月25日', days: 2, reason: '家中有事需要回老家，请假两天。', parentName: '张伟', parentRelation: '父亲', status: 'pending', createdAt: '2026-03-22 09:30' },
-  { id: '2', studentName: '赵小燕', studentId: '20230104', className: '三年级2班', startDate: '3月25日', endDate: '3月25日', days: 1, reason: '需要去医院做复查。', parentName: '赵丽', parentRelation: '母亲', status: 'pending', createdAt: '2026-03-22 08:15' },
-  { id: '3', studentName: '李小红', studentId: '20230102', className: '三年级2班', startDate: '3月18日', endDate: '3月19日', days: 2, reason: '发烧感冒，需要在家休息。', parentName: '李芳', parentRelation: '母亲', status: 'approved', createdAt: '2026-03-17 20:00', processedAt: '2026-03-17 21:15' },
-  { id: '4', studentName: '王大力', studentId: '20230103', className: '三年级1班', startDate: '3月15日', endDate: '3月15日', days: 1, reason: '参加校外比赛。', parentName: '王强', parentRelation: '父亲', status: 'approved', createdAt: '2026-03-14 18:30', processedAt: '2026-03-14 19:00' },
-  { id: '5', studentName: '刘天宇', studentId: '20230105', className: '三年级1班', startDate: '3月10日', endDate: '3月10日', days: 1, reason: '请假理由不充分。', parentName: '刘明', parentRelation: '父亲', status: 'rejected', createdAt: '2026-03-09 22:00', processedAt: '2026-03-10 07:30' },
-];
+/** Format a date string for display, e.g. "3月24日" */
+function formatDateShort(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+/** Map a LeaveInfo from API to the view model used by the card renderer */
+function mapLeave(info: LeaveInfo, classes: ClassInfo[]) {
+  const status = backendStatusToFrontend[info.status] ?? 'pending';
+  return {
+    id: String(info.id),
+    studentName: info.student?.name ?? '未知学生',
+    studentId: info.student?.student_no ?? '',
+    className: classes.find((c) => c.id === info.class_id)?.name ?? '',
+    startDate: formatDateShort(info.start_date),
+    endDate: formatDateShort(info.end_date),
+    days: calcDays(info.start_date, info.end_date),
+    reason: info.reason,
+    parentName: info.parent?.name ?? '—',
+    parentRelation: info.parent?.relationship ?? '',
+    status,
+    createdAt: info.created_at?.replace('T', ' ').slice(0, 16) ?? '',
+    processedAt: info.reviewed_at?.replace('T', ' ').slice(0, 16) ?? undefined,
+    _apiId: info.id,
+  };
+}
+
+type MappedLeave = ReturnType<typeof mapLeave>;
 
 const avatarColors = ['#4CC590', '#3B82F6', '#F59E0B', '#EC4899', '#7C3AED', '#0891B2'];
 
@@ -47,7 +72,45 @@ function getAvatarColor(name: string) {
 export default function LeaveApprovalScreen() {
   const colors = useTheme();
   const [selectedTab, setSelectedTab] = useState<'pending' | 'processed'>('pending');
-  const [leaves, setLeaves] = useState<LeaveRequest[]>(mockLeaves);
+
+  // API data state
+  const [classes, setClasses] = useState<ClassInfo[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [leaves, setLeaves] = useState<MappedLeave[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Load classes on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await classApi.list();
+        setClasses(data);
+        if (data.length > 0) {
+          setSelectedClassId(data[0].id);
+        }
+      } catch {
+        showFeedback({ title: '加载班级列表失败', tone: 'error' });
+      }
+    })();
+  }, []);
+
+  // Load leave requests when selected class changes
+  const loadLeaves = useCallback(async () => {
+    if (selectedClassId === null) return;
+    setLoading(true);
+    try {
+      const data = await leaveApi.list(selectedClassId);
+      setLeaves(data.map((item) => mapLeave(item, classes)));
+    } catch {
+      showFeedback({ title: '加载请假列表失败', tone: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedClassId, classes]);
+
+  useEffect(() => {
+    loadLeaves();
+  }, [loadLeaves]);
 
   const pendingLeaves = leaves.filter((item) => item.status === 'pending');
   const processedLeaves = leaves.filter((item) => item.status !== 'pending');
@@ -65,7 +128,7 @@ export default function LeaveApprovalScreen() {
     router.replace('/(tabs)/index');
   };
 
-  const handleApprove = (leave: LeaveRequest) => {
+  const handleApprove = (leave: MappedLeave) => {
     Alert.alert(
       '确认批准',
       `确定批准 ${leave.studentName} 的请假申请吗？\n${leave.startDate} - ${leave.endDate} · 共 ${leave.days} 天`,
@@ -73,17 +136,21 @@ export default function LeaveApprovalScreen() {
         { text: '取消', style: 'cancel' },
         {
           text: '批准',
-          onPress: () => {
-            const now = new Date();
-            const processedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            setLeaves((prev) => prev.map((item) => (item.id === leave.id ? { ...item, status: 'approved', processedAt } : item)));
+          onPress: async () => {
+            try {
+              await leaveApi.approve(leave._apiId);
+              showFeedback({ title: '已批准请假申请', tone: 'success' });
+              loadLeaves();
+            } catch {
+              showFeedback({ title: '批准操作失败', tone: 'error' });
+            }
           },
         },
       ]
     );
   };
 
-  const handleReject = (leave: LeaveRequest) => {
+  const handleReject = (leave: MappedLeave) => {
     Alert.alert(
       '确认拒绝',
       `确定拒绝 ${leave.studentName} 的请假申请吗？`,
@@ -92,17 +159,21 @@ export default function LeaveApprovalScreen() {
         {
           text: '拒绝',
           style: 'destructive',
-          onPress: () => {
-            const now = new Date();
-            const processedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            setLeaves((prev) => prev.map((item) => (item.id === leave.id ? { ...item, status: 'rejected', processedAt } : item)));
+          onPress: async () => {
+            try {
+              await leaveApi.reject(leave._apiId);
+              showFeedback({ title: '已拒绝请假申请', tone: 'success' });
+              loadLeaves();
+            } catch {
+              showFeedback({ title: '拒绝操作失败', tone: 'error' });
+            }
           },
         },
       ]
     );
   };
 
-  const renderLeaveCard = (leave: LeaveRequest, pending: boolean) => {
+  const renderLeaveCard = (leave: MappedLeave, pending: boolean) => {
     const avatarColor = getAvatarColor(leave.studentName);
     const processedStatus = leave.status === 'approved'
       ? { label: '已批准', bg: colors.palette.green.bg, text: colors.palette.green.text, icon: 'checkmark-circle' as const }
@@ -263,7 +334,11 @@ export default function LeaveApprovalScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {currentList.length > 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : currentList.length > 0 ? (
           <View style={styles.listSection}>{currentList.map((leave) => renderLeaveCard(leave, selectedTab === 'pending'))}</View>
         ) : (
           <AppCard padding="lg" style={styles.emptyCard}>
@@ -335,6 +410,7 @@ const styles = StyleSheet.create({
   createdAt: { fontSize: 12, marginTop: 8 },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   actionButton: { flex: 1 },
+  loadingContainer: { paddingVertical: 40, alignItems: 'center', justifyContent: 'center' },
   emptyCard: { alignItems: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 14 },
   emptyText: { fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: 'center' },

@@ -63,7 +63,7 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-      const { token, teacher } = await authApi.register(phone.trim(), password, name.trim());
+      const { token, teacher } = await authApi.register(phone.trim(), password, name.trim(), subjects.join(','));
       await saveAuth(token, teacher);
       showFeedback({
         title: '注册成功',

@@ -28,7 +28,7 @@ export class Attendance {
   @Column({ length: 10, default: '出勤', comment: '考勤状态：出勤/迟到/早退/请假/缺席' })
   status: string;
 
-  @Column({ length: 200, nullable: true, comment: '备注' })
+  @Column({ type: 'varchar', length: 200, nullable: true, comment: '备注' })
   remark: string | null;
 
   @Column({ type: 'int', comment: '记录教师ID' })
