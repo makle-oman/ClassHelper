@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../src/theme';
-import { getTeacher, classApi, leaveApi, clearAuth, type TeacherInfo } from '../../src/services/api';
+import { classApi, leaveApi, clearAuth, authApi, teacherApi, saveAuth, getToken, type TeacherInfo } from '../../src/services/api';
 import { PrimaryHeroSection, AppCard } from '../../src/components/ui';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -37,7 +37,11 @@ export default function ProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      getTeacher().then(setTeacher);
+      teacherApi.getProfile().then(async (t) => {
+        setTeacher(t);
+        const token = await getToken();
+        if (token && t) await saveAuth(token, t);
+      }).catch(() => {});
       classApi.list().then(async (classList) => {
         setClasses(classList);
         try {
@@ -78,6 +82,11 @@ export default function ProfileScreen() {
                     <Text style={styles.profileTagText}>{tag}</Text>
                   </View>
                 ))}
+                {teacher?.teaching_years != null && (
+                  <View style={styles.profileTag}>
+                    <Text style={styles.profileTagText}>教龄 {teacher.teaching_years} 年</Text>
+                  </View>
+                )}
               </View>
             </View>
             <TouchableOpacity style={styles.editProfileBtn} onPress={() => router.push('/profile-edit')}>
@@ -160,6 +169,7 @@ export default function ProfileScreen() {
                 text: '退出',
                 style: 'destructive',
                 onPress: async () => {
+                  try { await authApi.logout(); } catch {}
                   await clearAuth();
                   router.replace('/(auth)/login' as any);
                 },

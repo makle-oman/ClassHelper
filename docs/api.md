@@ -21,6 +21,20 @@
 Authorization: Bearer <token>
 ```
 
+### 单设备登录
+系统采用单设备登录策略，每次登录会生成新 token 并覆盖旧 token（存储在 teachers 表 `current_token` 字段）。旧设备请求时会返回 HTTP 401：
+```json
+{ "code": 401, "message": "账号已在其他设备登录，请重新登录", "data": null }
+```
+
+### Token 失效处理
+以下情况会返回 **HTTP 401**（非 200）：
+- Token 过期或无效
+- 账号在其他设备登录（current_token 不匹配）
+- 调用 logout 后 token 被清除
+
+前端收到 401 后应清除本地缓存并跳转到登录页。
+
 ---
 
 ## 1. 认证模块 `/auth`
@@ -103,11 +117,29 @@ Authorization: Bearer <token>
       "name": "张老师",
       "avatar": null,
       "school": null,
-      "subject": null
+      "subject": null,
+      "teaching_years": null
     }
   }
 }
 ```
+
+### 1.3 退出登录
+
+**POST** `/api/auth/logout`（需登录）
+
+**请求参数：** 无（通过 Token 识别用户）
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "退出成功",
+  "data": null
+}
+```
+
+> 退出后会清除服务端的 current_token，使当前 token 失效。
 
 ---
 
@@ -131,6 +163,7 @@ Authorization: Bearer <token>
     "avatar": null,
     "school": "阳光小学",
     "subject": "数学",
+    "teaching_years": 5,
     "created_at": "2026-03-25T10:00:00.000Z",
     "updated_at": "2026-03-25T10:00:00.000Z"
   }
@@ -149,13 +182,15 @@ Authorization: Bearer <token>
 | name | string | 否 | 姓名 |
 | avatar | string | 否 | 头像 URL |
 | school | string | 否 | 学校 |
-| subject | string | 否 | 科目 |
+| subject | string | 否 | 科目（多科目用逗号分隔，如"语文,数学"） |
+| teaching_years | int | 否 | 教龄（年），最小值0 |
 
 **请求示例：**
 ```json
 {
   "school": "阳光小学",
-  "subject": "数学"
+  "subject": "语文,数学",
+  "teaching_years": 5
 }
 ```
 
@@ -284,6 +319,33 @@ Authorization: Bearer <token>
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | id | int | 是 | 学生ID |
+
+### 5.5 获取学生详情
+**POST** `/api/student/detail`
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | int | 是 | 学生ID |
+
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "student_no": "001",
+    "name": "张三",
+    "gender": "男",
+    "birth_date": null,
+    "class_id": 1,
+    "class_name": "三年级1班",
+    "parent_name": "张父",
+    "parent_phone": "13800000001",
+    "created_at": "2026-04-01T10:00:00.000Z",
+    "updated_at": "2026-04-01T10:00:00.000Z"
+  }
+}
+```
 
 ---
 
@@ -415,6 +477,39 @@ status 可选值：出勤 / 迟到 / 早退 / 请假 / 缺席
 |------|------|------|------|
 | id | int | 是 | 考试ID |
 
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "name": "第一单元测试",
+    "subject": "语文",
+    "date": "2026-04-10",
+    "full_score": 100,
+    "class_id": 1,
+    "class_name": "三年级1班",
+    "students": [
+      {
+        "student_id": 1,
+        "student_no": "001",
+        "student_name": "张三",
+        "score": 95
+      },
+      {
+        "student_id": 2,
+        "student_no": "002",
+        "student_name": "李四",
+        "score": null
+      }
+    ]
+  }
+}
+```
+
+> `score` 为 null 表示尚未录入成绩。`class_name` 为该考试所属班级名称。
+
 ---
 
 ## 9. 成绩模块 `/score`（需登录）
@@ -483,12 +578,57 @@ status 可选值：出勤 / 迟到 / 早退 / 请假 / 缺席
 |------|------|------|------|
 | id | int | 是 | 作业ID |
 
-### 10.6 批量更新提交状态
+**成功响应：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "class_id": 1,
+    "class_name": "三年级1班",
+    "subject": "语文",
+    "content": "完成课后练习第1-3题",
+    "deadline": "2026-04-15",
+    "created_at": "...",
+    "updated_at": "...",
+    "records": [
+      {
+        "id": 1,
+        "student_id": 1,
+        "student_name": "张三",
+        "student_no": "001",
+        "status": "已交",
+        "grade": "优"
+      },
+      {
+        "id": 2,
+        "student_id": 2,
+        "student_name": "李四",
+        "student_no": "002",
+        "status": "未交",
+        "grade": null
+      }
+    ]
+  }
+}
+```
+
+> `grade` 可选值：优/良/中/差，null 表示未评分。
+
+### 10.6 批量更新提交状态与评分
 **POST** `/api/homework/record-save`
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | homework_id | int | 是 | 作业ID |
-| items | array | 是 | [{student_id, status}]，status: 已交/未交/迟交 |
+| items | array | 是 | [{student_id, status, grade?}] |
+
+**items 字段说明：**
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| student_id | int | 是 | 学生ID |
+| status | string | 是 | 提交状态：已交/未交/迟交 |
+| grade | string | 否 | 评分：优/良/中/差 |
 
 ### 10.7 作业完成率统计
 **POST** `/api/homework/stats`
@@ -586,6 +726,7 @@ status 可选值：出勤 / 迟到 / 早退 / 请假 / 缺席
 |------|------|------|
 | 认证 | POST /api/auth/register | ✅ 已完成 |
 | 认证 | POST /api/auth/login | ✅ 已完成 |
+| 认证 | POST /api/auth/logout | ✅ 已完成 |
 | 教师 | POST /api/teacher/profile | ✅ 已完成 |
 | 教师 | POST /api/teacher/update | ✅ 已完成 |
 | 教师 | POST /api/teacher/change-password | ✅ 已完成 |
@@ -603,6 +744,7 @@ status 可选值：出勤 / 迟到 / 早退 / 请假 / 缺席
 | 学生 | POST /api/student/create | ✅ 已完成 |
 | 学生 | POST /api/student/update | ✅ 已完成 |
 | 学生 | POST /api/student/delete | ✅ 已完成 |
+| 学生 | POST /api/student/detail | ✅ 已完成 |
 | 课程 | POST /api/course/list | ✅ 已完成 |
 | 课程 | POST /api/course/create | ✅ 已完成 |
 | 课程 | POST /api/course/update | ✅ 已完成 |

@@ -73,6 +73,34 @@ export class StudentService {
     });
   }
 
+  /** 获取单个学生详情（含班级名和家长信息） */
+  async detail(teacherId: number, studentId: number) {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId },
+      relations: ['classEntity'],
+    });
+    if (!student) return null;
+
+    const classEntity = await this.verifyClassOwnership(teacherId, student.class_id);
+    if (!classEntity) return null;
+
+    const parent = await this.parentRepo.findOne({ where: { student_id: studentId } });
+
+    return {
+      id: student.id,
+      student_no: student.student_no,
+      name: student.name,
+      gender: student.gender,
+      birth_date: student.birth_date,
+      class_id: student.class_id,
+      class_name: student.classEntity?.name || null,
+      parent_name: parent?.name || null,
+      parent_phone: parent?.phone || null,
+      created_at: student.created_at,
+      updated_at: student.updated_at,
+    };
+  }
+
   /** 创建学生 */
   async create(teacherId: number, dto: CreateStudentDto) {
     const classEntity = await this.verifyClassOwnership(teacherId, dto.class_id);

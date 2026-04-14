@@ -24,6 +24,9 @@ export class HomeworkRecord {
   @Column({ length: 10, default: '未交', comment: '提交状态：已交/未交/迟交' })
   status: string;
 
+  @Column({ type: 'varchar', length: 10, nullable: true, comment: '评分：优/良/中/差' })
+  grade: string | null;
+
   @ManyToOne(() => Homework)
   @JoinColumn({ name: 'homework_id' })
   homework: Homework;

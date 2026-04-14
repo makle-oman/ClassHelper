@@ -55,6 +55,7 @@ export default function HomeworkScreen() {
   const [submissions, setSubmissions] = useState<Record<string, SubmissionRecord[]>>({});
   const [gradingStudentId, setGradingStudentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [editingHomework, setEditingHomework] = useState<{ id: number; content: string; subject: string; deadline: string } | null>(null);
 
   // 加载班级列表
   useEffect(() => {
@@ -71,61 +72,63 @@ export default function HomeworkScreen() {
     })();
   }, []);
 
+  const loadHomeworkList = async (classId: number) => {
+    try {
+      setLoading(true);
+      const result = await homeworkApi.list(classId);
+      const now = new Date();
+      const mapped: Homework[] = result.list.map(hw => {
+        const deadline = new Date(hw.deadline);
+        let status: Homework['status'] = 'active';
+        if (deadline < now) status = 'expired';
+        return {
+          id: hw.id.toString(),
+          title: hw.content,
+          subject: hw.subject,
+          className: hw.class_name || classes.find(c => c.id === classId)?.name || '',
+          deadline: hw.deadline,
+          totalStudents: classes.find(c => c.id === classId)?.student_count || 0,
+          submitted: 0,
+          late: 0,
+          status,
+        };
+      });
+      setHomeworkList(mapped);
+      if (mapped.length > 0 && !selectedHomeworkId) {
+        setSelectedHomeworkId(mapped[0].id);
+      }
+      // 加载每个作业的详情（获取提交情况）
+      for (const hw of mapped) {
+        try {
+          const detail = await homeworkApi.detail(parseInt(hw.id));
+          const records: SubmissionRecord[] = detail.records.map(r => ({
+            id: r.id.toString(),
+            name: r.student_name || '',
+            studentNo: r.student_no || '',
+            status: r.status === '已交' ? 'submitted' : r.status === '迟交' ? 'late' : 'not_submitted',
+            grade: (r.grade as Grade) || null,
+          }));
+          setSubmissions(prev => ({ ...prev, [hw.id]: records }));
+          const submitted = detail.records.filter(r => r.status === '已交').length;
+          const late = detail.records.filter(r => r.status === '迟交').length;
+          const total = detail.records.length;
+          const allDone = submitted + late >= total && total > 0;
+          setHomeworkList(prev => prev.map(h =>
+            h.id === hw.id ? { ...h, submitted: submitted + late, late, totalStudents: total, status: allDone ? 'completed' : h.status } : h
+          ));
+        } catch {}
+      }
+    } catch (e) { console.error('加载作业失败', e); }
+    finally { setLoading(false); }
+  };
+
   // 加载作业列表
   useEffect(() => {
     if (!selectedClassId) return;
-    (async () => {
-      try {
-        setLoading(true);
-        const result = await homeworkApi.list(selectedClassId);
-        const now = new Date();
-        const mapped: Homework[] = result.list.map(hw => {
-          const deadline = new Date(hw.deadline);
-          let status: Homework['status'] = 'active';
-          if (deadline < now) status = 'expired';
-          return {
-            id: hw.id.toString(),
-            title: hw.content,
-            subject: hw.subject,
-            className: hw.class_name || classes.find(c => c.id === selectedClassId)?.name || '',
-            deadline: hw.deadline,
-            totalStudents: classes.find(c => c.id === selectedClassId)?.student_count || 0,
-            submitted: 0,
-            late: 0,
-            status,
-          };
-        });
-        setHomeworkList(mapped);
-        if (mapped.length > 0 && !selectedHomeworkId) {
-          setSelectedHomeworkId(mapped[0].id);
-        }
-        // 加载每个作业的详情（获取提交情况）
-        for (const hw of mapped) {
-          try {
-            const detail = await homeworkApi.detail(parseInt(hw.id));
-            const records: SubmissionRecord[] = detail.records.map(r => ({
-              id: r.id.toString(),
-              name: r.student_name || '',
-              studentNo: r.student_no || '',
-              status: r.status === '已交' ? 'submitted' : r.status === '迟交' ? 'late' : 'not_submitted',
-              grade: null,
-            }));
-            setSubmissions(prev => ({ ...prev, [hw.id]: records }));
-            const submitted = detail.records.filter(r => r.status === '已交').length;
-            const late = detail.records.filter(r => r.status === '迟交').length;
-            const total = detail.records.length;
-            const allDone = submitted + late >= total && total > 0;
-            setHomeworkList(prev => prev.map(h =>
-              h.id === hw.id ? { ...h, submitted: submitted + late, late, totalStudents: total, status: allDone ? 'completed' : h.status } : h
-            ));
-          } catch {}
-        }
-      } catch (e) { console.error('加载作业失败', e); }
-      finally { setLoading(false); }
-    })();
+    loadHomeworkList(selectedClassId);
   }, [selectedClassId, classes]);
 
-  const handleGrade = (studentId: string, grade: Grade) => {
+  const handleGrade = async (studentId: string, grade: Grade) => {
     setSubmissions((prev) => ({
       ...prev,
       [selectedHomeworkId]: (prev[selectedHomeworkId] || []).map((s) =>
@@ -133,6 +136,19 @@ export default function HomeworkScreen() {
       ),
     }));
     setGradingStudentId(null);
+
+    // 持久化到后端
+    const record = (submissions[selectedHomeworkId] || []).find(s => s.id === studentId);
+    if (record) {
+      try {
+        await homeworkApi.recordSave({
+          homework_id: parseInt(selectedHomeworkId),
+          items: [{ student_id: parseInt(studentId), status: record.status === 'submitted' ? '已交' : record.status === 'late' ? '迟交' : '未交', grade: grade || undefined }],
+        });
+      } catch {
+        showFeedback({ title: '评分保存失败', tone: 'error' });
+      }
+    }
   };
 
   const handleBack = () => {
@@ -290,14 +306,41 @@ export default function HomeworkScreen() {
                         </View>
                       </View>
 
-                      <View style={[styles.progressBlock, { borderTopColor: colors.divider }]}> 
+                      <View style={[styles.progressBlock, { borderTopColor: colors.divider }]}>
                         <View style={styles.progressHeader}>
                           <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>提交进度</Text>
                           <Text style={[styles.progressValue, { color: colors.primary }]}>{hw.submitted}/{hw.totalStudents}</Text>
                         </View>
-                        <View style={[styles.progressTrack, { backgroundColor: colors.surfaceSecondary }]}> 
+                        <View style={[styles.progressTrack, { backgroundColor: colors.surfaceSecondary }]}>
                           <View style={[styles.progressFill, { backgroundColor: hw.status === 'completed' ? colors.success : colors.primary, width: `${progress}%` }]} />
                         </View>
+                      </View>
+
+                      <View style={styles.hwActionRow}>
+                        <TouchableOpacity
+                          style={[styles.hwActionBtn, { backgroundColor: colors.surfaceSecondary }]}
+                          activeOpacity={0.7}
+                          onPress={() => setEditingHomework({ id: parseInt(hw.id), content: hw.title, subject: hw.subject, deadline: hw.deadline })}
+                        >
+                          <Ionicons name="create-outline" size={14} color={colors.primary} />
+                          <Text style={[styles.hwActionBtnText, { color: colors.primary }]}>编辑</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.hwActionBtn, { backgroundColor: colors.surfaceSecondary }]}
+                          activeOpacity={0.7}
+                          onPress={async () => {
+                            try {
+                              await homeworkApi.remove(parseInt(hw.id));
+                              showFeedback({ title: '作业已删除', tone: 'success' });
+                              if (selectedClassId) loadHomeworkList(selectedClassId);
+                            } catch {
+                              showFeedback({ title: '删除失败', tone: 'error' });
+                            }
+                          }}
+                        >
+                          <Ionicons name="trash-outline" size={14} color={colors.error} />
+                          <Text style={[styles.hwActionBtnText, { color: colors.error }]}>删除</Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </View>
@@ -456,6 +499,110 @@ export default function HomeworkScreen() {
         <Ionicons name="add" size={24} color="#FFF" />
       </TouchableOpacity>
 
+      {/* 编辑作业弹窗 */}
+      <Modal visible={!!editingHomework} transparent animationType="fade" onRequestClose={() => setEditingHomework(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>编辑作业</Text>
+                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>修改作业内容后保存</Text>
+              </View>
+              <TouchableOpacity onPress={() => setEditingHomework(null)}>
+                <Ionicons name="close" size={22} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>科目</Text>
+                <View style={styles.chipWrap}>
+                  {['语文', '数学', '英语'].map((subject) => {
+                    const subjectColor = getSubjectColor(subject);
+                    const selected = editingHomework?.subject === subject;
+                    return (
+                      <TouchableOpacity
+                        key={subject}
+                        style={[
+                          styles.optionChip,
+                          {
+                            backgroundColor: selected ? subjectColor.bg : colors.surfaceSecondary,
+                            borderColor: selected ? subjectColor.text : colors.border,
+                          },
+                        ]}
+                        activeOpacity={0.75}
+                        onPress={() => setEditingHomework((prev) => prev ? { ...prev, subject } : prev)}
+                      >
+                        <Text style={[styles.optionChipText, { color: selected ? subjectColor.text : colors.textSecondary }]}>{subject}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>作业内容</Text>
+                <TextInput
+                  style={[styles.formTextArea, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, color: colors.text }]}
+                  placeholder="请输入作业内容"
+                  placeholderTextColor={colors.textTertiary}
+                  multiline
+                  textAlignVertical="top"
+                  value={editingHomework?.content ?? ''}
+                  onChangeText={(value) => setEditingHomework((prev) => prev ? { ...prev, content: value } : prev)}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>截止日期</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, color: colors.text }]}
+                  placeholder="如：2026-03-25"
+                  placeholderTextColor={colors.textTertiary}
+                  value={editingHomework?.deadline ?? ''}
+                  onChangeText={(value) => setEditingHomework((prev) => prev ? { ...prev, deadline: value } : prev)}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalCancelButton, { borderColor: colors.border }]}
+                activeOpacity={0.75}
+                onPress={() => setEditingHomework(null)}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
+                activeOpacity={0.82}
+                onPress={async () => {
+                  if (!editingHomework || !editingHomework.content.trim() || !editingHomework.deadline) {
+                    showFeedback({ title: '请填写完整信息', tone: 'warning' });
+                    return;
+                  }
+                  try {
+                    await homeworkApi.update({
+                      id: editingHomework.id,
+                      subject: editingHomework.subject,
+                      content: editingHomework.content.trim(),
+                      deadline: editingHomework.deadline,
+                    });
+                    showFeedback({ title: '作业更新成功', tone: 'success' });
+                    setEditingHomework(null);
+                    if (selectedClassId) loadHomeworkList(selectedClassId);
+                  } catch {
+                    showFeedback({ title: '更新失败', tone: 'error' });
+                  }
+                }}
+              >
+                <Text style={styles.modalConfirmText}>保存</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={showCreateModal} transparent animationType="fade" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.surface }]}> 
@@ -572,7 +719,7 @@ export default function HomeworkScreen() {
                     setShowCreateModal(false);
                     setNewHomework({ content: '', subject: '语文', className: targetCls.name, deadline: '' });
                     // 重新加载
-                    setSelectedClassId(prev => { const v = prev; setSelectedClassId(null); setTimeout(() => setSelectedClassId(v), 0); return prev; });
+                    loadHomeworkList(targetCls.id);
                   } catch (e) {
                     showFeedback({ title: '发布失败，请重试', tone: 'error' });
                   }
@@ -710,4 +857,7 @@ const styles = StyleSheet.create({
   gradeSelector: { flexDirection: 'row', gap: 6 },
   gradeOption: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1.5 },
   gradeOptionText: { fontSize: 12, fontWeight: '700' },
+  hwActionRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  hwActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  hwActionBtnText: { fontSize: 12, fontWeight: '600' },
 });

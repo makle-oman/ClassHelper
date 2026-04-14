@@ -6,7 +6,7 @@ import { useTheme } from '../../src/theme';
 import { PrimaryHeroSection, AppCard, AppButton } from '../../src/components/ui';
 import * as DocumentPicker from 'expo-document-picker';
 import * as XLSX from 'xlsx';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { classApi, semesterApi, courseApi, getTeacher, type TeacherInfo } from '../../src/services/api';
 import { showFeedback } from '../../src/services/feedback';
 
@@ -764,14 +764,16 @@ export default function ScheduleScreen() {
                   borderColor: colors.primary,
                 },
               ]}
-              onPress={() => setClassPickerOpen(true)}
-              activeOpacity={0.7}
+              onPress={() => { if (classesData.length > 1) setClassPickerOpen(true); }}
+              activeOpacity={classesData.length > 1 ? 0.7 : 1}
             >
               <Ionicons name="school-outline" size={13} color="#FFFFFF" />
               <Text style={[styles.classTabText, { color: '#FFFFFF' }]}>
                 {currentClass?.name ?? '选择班级'}
               </Text>
-              <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.7)" />
+              {classesData.length > 1 && (
+                <Ionicons name="chevron-down" size={13} color="rgba(255,255,255,0.7)" />
+              )}
             </TouchableOpacity>
           </ScrollView>
           <View style={styles.topActions}>

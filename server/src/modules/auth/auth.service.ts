@@ -95,6 +95,7 @@ export class AuthService {
         phone: teacher.phone,
         name: teacher.name,
         subject: teacher.subject,
+        teaching_years: teacher.teaching_years,
       },
     };
   }
@@ -127,8 +128,15 @@ export class AuthService {
         avatar: teacher.avatar,
         school: teacher.school,
         subject: teacher.subject,
+        teaching_years: teacher.teaching_years,
       },
     };
+  }
+
+  async logout(teacherId: number) {
+    await this.withDatabaseRetry(() =>
+      this.teacherRepo.update(teacherId, { current_token: null }),
+    );
   }
 
   async validateToken(id: number, token: string): Promise<boolean> {

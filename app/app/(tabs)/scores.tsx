@@ -21,7 +21,7 @@ import { showFeedback } from '../../src/services/feedback';
 import type { ScoreStats } from '../../src/services/api/score';
 import * as XLSX from 'xlsx';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 interface Exam {
   id: string;
@@ -334,9 +334,9 @@ export default function ScoresScreen() {
               <Text style={styles.scoreHeroEyebrow}>成绩总览</Text>
             </View>
             <View style={{ zIndex: 10 }}>
-              <TouchableOpacity style={styles.scoreHeroClassBtn} activeOpacity={0.7} onPress={() => setClassDropdownOpen(true)}>
+              <TouchableOpacity style={styles.scoreHeroClassBtn} activeOpacity={classes.length > 1 ? 0.7 : 1} onPress={() => { if (classes.length > 1) setClassDropdownOpen(true); }}>
                 <Text style={styles.scoreHeroTitle}>{selectedClass}</Text>
-                <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.7)" />
+                {classes.length > 1 && <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.7)" />}
               </TouchableOpacity>
             </View>
             <Text style={styles.scoreHeroMeta}>{semesterLabel}</Text>

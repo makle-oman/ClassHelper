@@ -25,3 +25,8 @@ export function login(phone: string, password: string) {
 export function register(phone: string, password: string, name: string, subject?: string) {
   return request<RegisterResult>('/auth/register', { phone, password, name, subject }, { skipAuth: true });
 }
+
+/** 退出登录 */
+export function logout() {
+  return request<null>('/auth/logout', {}, { silent: true });
+}

@@ -34,8 +34,8 @@ export class Course {
   @Column({ type: 'int', comment: '授课教师ID' })
   teacher_id: number;
 
-  @Column({ length: 50, nullable: true, comment: '教室' })
-  room: string;
+  @Column({ type: 'varchar', length: 50, nullable: true, comment: '教室' })
+  room: string | null;
 
   @ManyToOne(() => Class)
   @JoinColumn({ name: 'class_id' })

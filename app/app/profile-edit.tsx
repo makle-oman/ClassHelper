@@ -9,7 +9,7 @@ import { AppCard } from '../src/components/ui/AppCard';
 import { AppChip } from '../src/components/ui/AppChip';
 import { AppInput } from '../src/components/ui/AppInput';
 import { AppSectionHeader } from '../src/components/ui/AppSectionHeader';
-import { teacherApi, getTeacher } from '../src/services/api';
+import { teacherApi, saveAuth, getToken } from '../src/services/api';
 import { showFeedback } from '../src/services/feedback';
 
 const ALL_SUBJECTS = ['语文', '数学', '英语', '体育', '音乐', '美术', '科学', '道德与法治'];
@@ -21,18 +21,22 @@ export default function ProfileEditScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [subjects, setSubjects] = useState<string[]>([]);
+  const [teachingYears, setTeachingYears] = useState('');
   const [avatarLetter, setAvatarLetter] = useState('');
 
   useEffect(() => {
     (async () => {
       try {
-        const teacher = await getTeacher();
+        const teacher = await teacherApi.getProfile();
         if (teacher) {
           setName(teacher.name || '');
           setPhone(teacher.phone || '');
           setAvatarLetter(teacher.name ? teacher.name[0] : '');
           if (teacher.subject) {
             setSubjects(teacher.subject.split(',').map((s) => s.trim()).filter(Boolean));
+          }
+          if (teacher.teaching_years != null) {
+            setTeachingYears(teacher.teaching_years.toString());
           }
         }
       } catch (err: any) {
@@ -67,10 +71,19 @@ export default function ProfileEditScreen() {
 
     try {
       setSaving(true);
-      await teacherApi.updateProfile({
+      const updateData: any = {
         name: name.trim(),
         subject: subjects.join(','),
-      });
+      };
+      if (teachingYears.trim()) {
+        updateData.teaching_years = parseInt(teachingYears.trim(), 10);
+      }
+      const updatedTeacher = await teacherApi.updateProfile(updateData);
+      // 更新本地缓存，让 profile 页面能读到最新数据
+      const token = await getToken();
+      if (token && updatedTeacher) {
+        await saveAuth(token, updatedTeacher);
+      }
       showFeedback({ title: '个人资料已更新', tone: 'success' });
       router.back();
     } catch (err: any) {
@@ -149,7 +162,16 @@ export default function ProfileEditScreen() {
             placeholder="请输入手机号"
             keyboardType="phone-pad"
             maxLength={11}
+            containerStyle={styles.fieldGroup}
             onChangeText={setPhone}
+          />
+          <AppInput
+            label="教龄（年）"
+            value={teachingYears}
+            placeholder="请输入教龄"
+            keyboardType="number-pad"
+            maxLength={2}
+            onChangeText={(v) => setTeachingYears(v.replace(/[^0-9]/g, ''))}
           />
         </AppCard>
 

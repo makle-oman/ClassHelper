@@ -15,6 +15,7 @@ export interface TeacherInfo {
   avatar: string | null;
   school: string | null;
   subject: string | null;
+  teaching_years: number | null;
 }
 
 /** 保存登录信息（Token + 教师信息） */

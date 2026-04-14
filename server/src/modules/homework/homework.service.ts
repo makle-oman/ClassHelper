@@ -177,6 +177,7 @@ export class HomeworkService {
         student_name: r.student?.name || null,
         student_no: r.student?.student_no || null,
         status: r.status,
+        grade: r.grade || null,
       })),
     };
   }
@@ -194,13 +195,16 @@ export class HomeworkService {
       const existing = await this.recordRepo.findOne({
         where: { homework_id: homeworkId, student_id: item.student_id },
       });
+      const updateData: Partial<HomeworkRecord> = { status: item.status };
+      if (item.grade !== undefined) updateData.grade = item.grade;
+
       if (existing) {
-        await this.recordRepo.update(existing.id, { status: item.status });
+        await this.recordRepo.update(existing.id, updateData);
       } else {
         const record = this.recordRepo.create({
           homework_id: homeworkId,
           student_id: item.student_id,
-          status: item.status,
+          ...updateData,
         });
         await this.recordRepo.save(record);
       }

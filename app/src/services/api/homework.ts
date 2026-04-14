@@ -28,6 +28,7 @@ export interface HomeworkDetail extends HomeworkInfo {
     student_name: string | null;
     student_no: string | null;
     status: '已交' | '未交' | '迟交';
+    grade: string | null;
   }[];
 }
 
@@ -78,7 +79,7 @@ export function detail(id: number) {
 /** 批量更新提交状态 */
 export function recordSave(data: {
   homework_id: number;
-  items: { student_id: number; status: '已交' | '未交' | '迟交' }[];
+  items: { student_id: number; status: '已交' | '未交' | '迟交'; grade?: string }[];
 }) {
   return request<null>('/homework/record-save', data);
 }

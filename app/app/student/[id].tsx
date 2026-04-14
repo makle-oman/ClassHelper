@@ -62,8 +62,7 @@ export default function StudentDetailScreen() {
       const numId = Number(studentId);
 
       // Load student detail
-      const studentList = await studentApi.list(0);
-      const info = studentList.find((s) => s.id === numId);
+      const info = await studentApi.detail(numId);
       if (!info) {
         showFeedback({ title: '未找到该学生', tone: 'error' });
         handleBack();
@@ -106,7 +105,7 @@ export default function StudentDetailScreen() {
         gender: info.gender,
         birthDate: info.birth_date || '',
         enrollDate: info.created_at?.split('T')[0] || '',
-        className: '',
+        className: (info as any).class_name || '',
         parentName: info.parent_name || '',
         parentRelation: '',
         parentPhone: info.parent_phone || '',

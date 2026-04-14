@@ -59,89 +59,67 @@ export default function HomeScreen() {
       getTeacher().then(setTeacher);
       classApi.list().then(async (classList) => {
         setClasses(classList);
-        // 加载今日课程
-        const allCourses: { period: string; time: string; subject: string; class: string; isMine: boolean }[] = [];
-        for (const cls of classList) {
-          try {
-            const courses = await courseApi.myToday();
-            for (const c of courses) {
-              const pm = periodTimeMap[c.period] || { label: `第${c.period}节`, time: '' };
-              allCourses.push({
-                period: pm.label,
-                time: pm.time,
-                subject: c.subject,
-                class: cls.name,
-                isMine: true,
-              });
-            }
-            break; // myToday returns all courses for today
-          } catch {}
-        }
-        setTodayCourses(allCourses);
 
-        // 加载待办数据
+        // 并行加载：今日课程 + 待办数据
+        const [coursesResult, leavesResult, hwResult, noticesResult] = await Promise.allSettled([
+          // 1. 今日课程（只需调用一次）
+          courseApi.myToday(),
+          // 2. 各班请假
+          Promise.all(classList.map((cls: any) => leaveApi.list(cls.id, '待审批').catch(() => []))),
+          // 3. 各班作业
+          Promise.all(classList.map((cls: any) => homeworkApi.list(cls.id).catch(() => ({ list: [] })))),
+          // 4. 各班通知
+          Promise.all(classList.map((cls: any) => noticeApi.list(cls.id).catch(() => []))),
+        ]);
+
+        // 处理今日课程
+        if (coursesResult.status === 'fulfilled') {
+          setTodayCourses(coursesResult.value.map((c: any) => {
+            const pm = periodTimeMap[c.period] || { label: `第${c.period}节`, time: '' };
+            return {
+              period: pm.label,
+              time: pm.time,
+              subject: c.subject,
+              class: c.classEntity?.name || '',
+              isMine: true,
+            };
+          }));
+        }
+
+        // 处理待办
         const todos: typeof todoItems = [];
 
-        // 1. 待审批请假
-        try {
-          let total = 0;
-          for (const cls of classList) {
-            const leaves = await leaveApi.list(cls.id, '待审批');
-            total += leaves.length;
-          }
+        // 待审批请假
+        if (leavesResult.status === 'fulfilled') {
+          const total = leavesResult.value.reduce((sum: number, arr: any[]) => sum + arr.length, 0);
           setPendingLeaves(total);
           if (total > 0) {
-            todos.push({
-              text: `${total}条请假申请待审批`,
-              time: '待处理',
-              icon: 'hand-left',
-              colorKey: 'red',
-              urgent: true,
-              route: '/leave-approval',
-            });
+            todos.push({ text: `${total}条请假申请待审批`, time: '待处理', icon: 'hand-left', colorKey: 'red', urgent: true, route: '/leave-approval' });
           }
-        } catch {}
+        }
 
-        // 2. 未完成的作业
-        try {
-          for (const cls of classList) {
-            const hwResult = await homeworkApi.list(cls.id);
-            const hwList = hwResult.list || [];
-            if (hwList.length > 0) {
-              // 检查有未过截止日期的作业
-              const now = new Date().toISOString().split('T')[0];
-              const active = hwList.filter((hw: any) => hw.deadline >= now);
-              const count = active.length || hwList.length;
-              todos.push({
-                text: `${cls.name} 有${count}项作业待跟进`,
-                time: '进行中',
-                icon: 'document-text',
-                colorKey: 'orange',
-                urgent: false,
-                route: '/homework',
-              });
+        // 未完成作业
+        if (hwResult.status === 'fulfilled') {
+          const now = new Date().toISOString().split('T')[0];
+          hwResult.value.forEach((result: any, i: number) => {
+            const hwList = result.list || [];
+            const active = hwList.filter((hw: any) => hw.deadline >= now);
+            if (active.length > 0) {
+              todos.push({ text: `${classList[i].name} 有${active.length}项作业待跟进`, time: '进行中', icon: 'document-text', colorKey: 'orange', urgent: false, route: '/homework' });
             }
-          }
-        } catch {}
+          });
+        }
 
-        // 3. 最新通知
-        try {
-          for (const cls of classList) {
-            const notices = await noticeApi.list(cls.id);
-            if (notices.length > 0) {
-              const latest = notices[0];
-              todos.push({
-                text: `${latest.title}`,
-                time: latest.created_at ? new Date(latest.created_at).toLocaleDateString() : '最近',
-                icon: 'megaphone',
-                colorKey: 'blue',
-                urgent: false,
-                route: '/notices',
-              });
+        // 最新通知
+        if (noticesResult.status === 'fulfilled') {
+          for (const notices of noticesResult.value) {
+            if ((notices as any[]).length > 0) {
+              const latest = (notices as any[])[0];
+              todos.push({ text: `${latest.title}`, time: latest.created_at ? new Date(latest.created_at).toLocaleDateString() : '最近', icon: 'megaphone', colorKey: 'blue', urgent: false, route: '/notices' });
               break;
             }
           }
-        } catch {}
+        }
 
         setTodoItems(todos);
       }).catch(() => {});

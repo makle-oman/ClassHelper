@@ -52,6 +52,7 @@ export default function ExamDetailScreen() {
         const detail = await examApi.detail(Number(id));
         setExamName(detail.name);
         setExamSubject(detail.subject);
+        setExamClassName((detail as any).class_name || '');
         setFullScore(detail.full_score);
         const mapped: StudentScore[] = detail.students.map(s => ({
           id: s.student_id.toString(),
@@ -84,6 +85,12 @@ export default function ExamDetailScreen() {
   const handleScoreChange = (index: number, value: string) => {
     // 只允许数字和小数点
     const cleaned = value.replace(/[^0-9.]/g, '');
+    // 校验不超过满分
+    const num = parseFloat(cleaned);
+    if (!isNaN(num) && num > fullScore) {
+      showFeedback({ title: `成绩不能超过满分 ${fullScore}`, tone: 'warning' });
+      return;
+    }
     const updated = [...students];
     updated[index] = { ...updated[index], score: cleaned };
     setStudents(updated);
@@ -114,10 +121,7 @@ export default function ExamDetailScreen() {
           <View style={styles.navCenter}>
             <Text style={styles.navTitle}>{examName}</Text>
           </View>
-          <TouchableOpacity style={styles.navAction}>
-            <Ionicons name="document-outline" size={16} color="#FFF" />
-            <Text style={styles.navActionText}>导入</Text>
-          </TouchableOpacity>
+          <View style={{ width: 34 }} />
         </View>
 
         <View style={styles.heroCard}>
@@ -367,6 +371,11 @@ export default function ExamDetailScreen() {
                   .filter(s => !isNaN(s.score));
                 if (items.length === 0) {
                   showFeedback({ title: '请至少录入一个成绩', tone: 'warning' });
+                  return;
+                }
+                const overMax = items.find(s => s.score > fullScore);
+                if (overMax) {
+                  showFeedback({ title: `存在成绩超过满分 ${fullScore}，请检查`, tone: 'warning' });
                   return;
                 }
                 await scoreApi.batchSave({ exam_id: Number(id), items });

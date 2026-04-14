@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -16,4 +16,9 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   subject?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  teaching_years?: number;
 }

@@ -3,6 +3,7 @@ import {
   Catch,
   ArgumentsHost,
   HttpException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Response } from 'express';
 
@@ -22,6 +23,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = Array.isArray(msg) ? msg[0] : msg;
       } else {
         message = exception.message;
+      }
+
+      // 401 认证失败：保留 HTTP 401 状态码，让前端能正确识别并跳转登录页
+      if (exception instanceof UnauthorizedException) {
+        response.status(401).json({ code: 401, message, data: null });
+        return;
       }
     } else {
       message = '服务器内部错误';

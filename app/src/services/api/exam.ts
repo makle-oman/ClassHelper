@@ -16,6 +16,7 @@ export interface ExamInfo {
 }
 
 export interface ExamDetail extends ExamInfo {
+  class_name?: string | null;
   students: {
     student_id: number;
     student_name: string;

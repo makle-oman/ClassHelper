@@ -60,6 +60,8 @@ export default function NoticesScreen() {
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [notices, setNotices] = useState<NoticeInfo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [viewingNotice, setViewingNotice] = useState<(NoticeInfo & { frontendType: NoticeType }) | null>(null);
+  const [editingNotice, setEditingNotice] = useState<{ id: number; title: string; content: string; type: NoticeType } | null>(null);
 
   // Load classes on mount
   useEffect(() => {
@@ -196,7 +198,8 @@ export default function NoticesScreen() {
               const className = classes.find((c) => c.id === notice.class_id)?.name ?? '全部班级';
 
               return (
-                <AppCard key={notice.id} radius={18} padding="sm">
+                <TouchableOpacity key={notice.id} activeOpacity={0.75} onPress={() => setViewingNotice(notice)}>
+                <AppCard radius={18} padding="sm">
                   <View style={styles.noticeHeader}>
                     <View style={styles.noticeHeaderLeft}>
                       <View style={[styles.noticeIcon, { backgroundColor: config.bg }]}>
@@ -219,6 +222,7 @@ export default function NoticesScreen() {
                     </View>
                   </View>
                 </AppCard>
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -238,6 +242,180 @@ export default function NoticesScreen() {
       >
         <Ionicons name="add" size={24} color="#FFF" />
       </TouchableOpacity>
+
+      {/* 通知详情弹窗 */}
+      <Modal visible={!!viewingNotice} transparent animationType="fade" onRequestClose={() => setViewingNotice(null)}>
+        <View style={styles.modalOverlay}>
+          <AppCard radius={24} padding="none">
+            {viewingNotice && (() => {
+              const config = typeConfig[viewingNotice.frontendType];
+              const dateStr = viewingNotice.created_at ? viewingNotice.created_at.slice(0, 10) : '';
+              const className = classes.find((c) => c.id === viewingNotice.class_id)?.name ?? '全部班级';
+              return (
+                <>
+                  <View style={styles.modalHeader}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={[styles.noticeIcon, { backgroundColor: config.bg }]}>
+                          <Ionicons name={config.icon} size={16} color={config.color} />
+                        </View>
+                        <View style={[styles.noticeTypeBadge, { backgroundColor: config.bg }]}>
+                          <Text style={[styles.noticeTypeBadgeText, { color: config.color }]}>{config.label}</Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.noticeTitle, { color: colors.text, marginTop: 12 }]}>{viewingNotice.title}</Text>
+                      <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
+                        <Text style={{ fontSize: 12, color: colors.textTertiary }}>{className}</Text>
+                        <Text style={{ fontSize: 12, color: colors.textTertiary }}>{dateStr}</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity onPress={() => setViewingNotice(null)}>
+                      <Ionicons name="close" size={22} color={colors.textTertiary} />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.modalBody}>
+                    <ScrollView style={{ maxHeight: 300 }}>
+                      <Text style={{ fontSize: 14, lineHeight: 22, color: colors.textSecondary }}>{viewingNotice.content}</Text>
+                    </ScrollView>
+                  </View>
+                  <View style={styles.modalFooter}>
+                    <TouchableOpacity
+                      style={[styles.modalCancelButton, { borderColor: colors.error }]}
+                      activeOpacity={0.75}
+                      onPress={async () => {
+                        try {
+                          await noticeApi.remove(viewingNotice.id);
+                          showFeedback({ title: '通知已删除', tone: 'success' });
+                          setViewingNotice(null);
+                          loadNotices();
+                        } catch {
+                          showFeedback({ title: '删除失败', tone: 'error' });
+                        }
+                      }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.error }}>删除</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
+                      activeOpacity={0.82}
+                      onPress={() => {
+                        setEditingNotice({
+                          id: viewingNotice.id,
+                          title: viewingNotice.title,
+                          content: viewingNotice.content,
+                          type: viewingNotice.frontendType,
+                        });
+                        setViewingNotice(null);
+                      }}
+                    >
+                      <Text style={styles.modalConfirmText}>编辑</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              );
+            })()}
+          </AppCard>
+        </View>
+      </Modal>
+
+      {/* 编辑通知弹窗 */}
+      <Modal visible={!!editingNotice} transparent animationType="fade" onRequestClose={() => setEditingNotice(null)}>
+        <View style={styles.modalOverlay}>
+          <AppCard radius={24} padding="none">
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>编辑通知</Text>
+                <Text style={[styles.modalHint, { color: colors.textTertiary }]}>修改通知内容后保存</Text>
+              </View>
+              <TouchableOpacity onPress={() => setEditingNotice(null)}>
+                <Ionicons name="close" size={22} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>通知标题</Text>
+                <TextInput
+                  style={[styles.formInput, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, color: colors.text }]}
+                  placeholder="请输入通知标题"
+                  placeholderTextColor={colors.textTertiary}
+                  value={editingNotice?.title ?? ''}
+                  onChangeText={(value) => setEditingNotice((prev) => prev ? { ...prev, title: value } : prev)}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>通知内容</Text>
+                <TextInput
+                  style={[styles.formTextArea, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, color: colors.text }]}
+                  placeholder="请输入通知内容"
+                  placeholderTextColor={colors.textTertiary}
+                  multiline
+                  textAlignVertical="top"
+                  value={editingNotice?.content ?? ''}
+                  onChangeText={(value) => setEditingNotice((prev) => prev ? { ...prev, content: value } : prev)}
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>通知类型</Text>
+                <View style={styles.chipWrap}>
+                  {(Object.keys(typeConfig) as NoticeType[]).map((type) => {
+                    const config = typeConfig[type];
+                    const selected = editingNotice?.type === type;
+                    return (
+                      <AppChip
+                        key={type}
+                        iconName={config.icon}
+                        label={config.label.replace('通知', '')}
+                        selected={selected}
+                        onPress={() => setEditingNotice((prev) => prev ? { ...prev, type } : prev)}
+                        style={selected ? { backgroundColor: config.bg, borderColor: config.color } : undefined}
+                        textStyle={{ color: selected ? config.color : colors.textSecondary }}
+                      />
+                    );
+                  })}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalCancelButton, { borderColor: colors.border }]}
+                activeOpacity={0.75}
+                onPress={() => setEditingNotice(null)}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmButton, { backgroundColor: colors.primary }]}
+                activeOpacity={0.82}
+                onPress={async () => {
+                  if (!editingNotice || !editingNotice.title.trim() || !editingNotice.content.trim()) {
+                    showFeedback({ title: '请填写完整信息', tone: 'warning' });
+                    return;
+                  }
+                  try {
+                    await noticeApi.update({
+                      id: editingNotice.id,
+                      title: editingNotice.title.trim(),
+                      content: editingNotice.content.trim(),
+                      type: frontendTypeToBackend[editingNotice.type],
+                    });
+                    showFeedback({ title: '通知更新成功', tone: 'success' });
+                    setEditingNotice(null);
+                    loadNotices();
+                  } catch {
+                    showFeedback({ title: '更新失败', tone: 'error' });
+                  }
+                }}
+              >
+                <Text style={styles.modalConfirmText}>保存</Text>
+              </TouchableOpacity>
+            </View>
+          </AppCard>
+        </View>
+      </Modal>
 
       <Modal visible={showCreateModal} transparent animationType="fade" onRequestClose={() => setShowCreateModal(false)}>
         <View style={styles.modalOverlay}>

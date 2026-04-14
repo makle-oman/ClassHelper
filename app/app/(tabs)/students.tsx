@@ -19,7 +19,7 @@ import { classApi, studentApi } from '../../src/services/api';
 import { showFeedback } from '../../src/services/feedback';
 import * as XLSX from 'xlsx';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
   PrimaryHeroSection,
   AppCard,
@@ -46,6 +46,7 @@ export default function StudentsScreen() {
   const [classList, setClassList] = useState<{id: number; name: string}[]>([]);
   const [classPickerOpen, setClassPickerOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newStudent, setNewStudent] = useState({
     name: '',
@@ -319,9 +320,9 @@ export default function StudentsScreen() {
           <View style={styles.summaryTopRow}>
             <View>
               <Text style={styles.summaryEyebrow}>学生花名册</Text>
-              <TouchableOpacity style={styles.classPickerBtn} activeOpacity={0.7} onPress={() => setClassPickerOpen(true)}>
+              <TouchableOpacity style={styles.classPickerBtn} activeOpacity={classList.length > 1 ? 0.7 : 1} onPress={() => { if (classList.length > 1) setClassPickerOpen(true); }}>
                 <Text style={styles.summaryClassName}>{selectedClass}</Text>
-                <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.7)" />
+                {classList.length > 1 && <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.7)" />}
               </TouchableOpacity>
               <Text style={styles.summaryHint}>点击学生可查看详情和家长联系方式</Text>
             </View>
@@ -355,12 +356,12 @@ export default function StudentsScreen() {
           <View style={styles.toolbar}>
             <TouchableOpacity
               style={[styles.classPickerToolbarBtn, { backgroundColor: colors.surface, borderColor: colors.primary }]}
-              activeOpacity={0.7}
-              onPress={() => setClassPickerOpen(true)}
+              activeOpacity={classList.length > 1 ? 0.7 : 1}
+              onPress={() => { if (classList.length > 1) setClassPickerOpen(true); }}
             >
               <Ionicons name="school-outline" size={15} color={colors.primary} />
               <Text style={[styles.classPickerToolbarText, { color: colors.primary }]}>{selectedClass}</Text>
-              <Ionicons name="chevron-down" size={14} color={colors.primary} />
+              {classList.length > 1 && <Ionicons name="chevron-down" size={14} color={colors.primary} />}
             </TouchableOpacity>
           </View>
 
@@ -429,6 +430,12 @@ export default function StudentsScreen() {
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={async () => {
+          setRefreshing(true);
+          await loadStudents();
+          setRefreshing(false);
+        }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="people-outline" size={56} color={colors.textTertiary} />

@@ -10,7 +10,7 @@ export function getProfile() {
 }
 
 /** 更新个人信息 */
-export function updateProfile(data: Partial<Pick<TeacherInfo, 'name' | 'avatar' | 'school' | 'subject'>>) {
+export function updateProfile(data: Partial<Pick<TeacherInfo, 'name' | 'avatar' | 'school' | 'subject' | 'teaching_years'>>) {
   return request<TeacherInfo>('/teacher/update', data);
 }
 

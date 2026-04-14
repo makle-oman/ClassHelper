@@ -3,6 +3,7 @@ import {
   IsString,
   IsIn,
   IsArray,
+  IsOptional,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -14,6 +15,11 @@ export class RecordItemDto {
   @IsString()
   @IsIn(['已交', '未交', '迟交'])
   status: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['优', '良', '中', '差'])
+  grade?: string;
 }
 
 export class RecordSaveDto {

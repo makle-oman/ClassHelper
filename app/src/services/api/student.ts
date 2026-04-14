@@ -20,6 +20,11 @@ export function list(class_id: number) {
   return request<StudentInfo[]>('/student/list', { class_id });
 }
 
+/** 获取学生详情 */
+export function detail(id: number) {
+  return request<StudentInfo & { class_name: string | null }>('/student/detail', { id });
+}
+
 /** 添加学生 */
 export function create(data: {
   class_id: number;

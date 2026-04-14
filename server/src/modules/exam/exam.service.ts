@@ -145,11 +145,16 @@ export class ExamService {
       scoreMap[s.student_id] = Number(s.score);
     }
 
+    // 获取班级名称
+    const classEntity = await this.classRepo.findOne({
+      where: { id: exam.class_id },
+    });
+
     // 组装学生成绩列表
     const studentScores = students.map((stu) => ({
       student_id: stu.id,
       student_no: stu.student_no,
-      name: stu.name,
+      student_name: stu.name,
       score: scoreMap[stu.id] ?? null,
     }));
 
@@ -160,6 +165,7 @@ export class ExamService {
       date: exam.date,
       full_score: exam.full_score,
       class_id: exam.class_id,
+      class_name: classEntity?.name || null,
       students: studentScores,
     };
   }

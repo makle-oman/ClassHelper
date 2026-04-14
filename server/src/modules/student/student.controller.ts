@@ -20,6 +20,16 @@ export class StudentController {
     return success(data);
   }
 
+  /** 获取学生详情 */
+  @Post('detail')
+  async detail(@Request() req: any, @Body('id') id: number) {
+    const data = await this.studentService.detail(req.user.id, id);
+    if (data === null) {
+      return fail('学生不存在');
+    }
+    return success(data);
+  }
+
   /** 创建学生 */
   @Post('create')
   async create(@Request() req: any, @Body() dto: CreateStudentDto) {

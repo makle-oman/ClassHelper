@@ -278,7 +278,7 @@ export default function LeaveApprovalScreen() {
           <Text style={styles.heroTitle}>{selectedTab === 'pending' ? '待审批请假申请' : '已处理请假记录'}</Text>
           <View style={styles.heroStatsRow}>
             {[
-              { label: '本周申请', value: weeklyTotal.toString() },
+              { label: '全部申请', value: weeklyTotal.toString() },
               { label: '待审批', value: pendingCount.toString() },
               { label: '待批天数', value: pendingDays.toString() },
             ].map((item, index) => (
@@ -314,6 +314,30 @@ export default function LeaveApprovalScreen() {
             })}
           </View>
         </AppCard>
+
+        {classes.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.classFilterRow}>
+            {classes.map((cls) => {
+              const selected = selectedClassId === cls.id;
+              return (
+                <TouchableOpacity
+                  key={cls.id}
+                  style={[
+                    styles.classFilterChip,
+                    {
+                      backgroundColor: selected ? colors.primary : colors.surfaceSecondary,
+                      borderColor: selected ? colors.primary : colors.border,
+                    },
+                  ]}
+                  activeOpacity={0.75}
+                  onPress={() => setSelectedClassId(cls.id)}
+                >
+                  <Text style={[styles.classFilterChipText, { color: selected ? '#FFF' : colors.textSecondary }]}>{cls.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
 
         {selectedTab === 'processed' && (
           <View style={styles.overviewRow}>
@@ -414,4 +438,7 @@ const styles = StyleSheet.create({
   emptyCard: { alignItems: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '700', marginTop: 14 },
   emptyText: { fontSize: 13, lineHeight: 20, marginTop: 8, textAlign: 'center' },
+  classFilterRow: { gap: 8, marginBottom: 12 },
+  classFilterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
+  classFilterChipText: { fontSize: 13, fontWeight: '600' },
 });
